@@ -597,7 +597,7 @@
                 <div class="tipo-btn saida" data-tipo-mobile="saida">📤 SAÍDA</div>
             </div>
             <div class="input-field"><label>📝 DESCRIÇÃO</label><input type="text" id="mobileDesc" placeholder="Ex: Salário, Uber, Conta de luz"></div>
-            <div class="input-field"><label>💰 VALOR (R$) - Aceita 13.350,50 ou 13350.50 ou 13,350.50</label><input type="text" id="mobileValor" inputmode="decimal" placeholder="Ex: 13.350,50 ou 1250,75"></div>
+            <div class="input-field"><label>💰 VALOR (R$)</label><input type="text" id="mobileValor" inputmode="decimal" placeholder="Digite o valor aqui..."></div>
             <div class="input-field">
                 <label>🏷️ CATEGORIA</label>
                 <div class="categoria-row">
@@ -633,7 +633,7 @@
         <button id="restoreBtnMobile" class="tool-btn">📥 Restaurar</button>
         <button id="clearAllMobile" class="tool-btn">🗑️ Limpar tudo</button>
     </div>
-    <footer>✔️ Dados salvos automaticamente. Suporte a centavos e valores ilimitados (ex: 13.350,50).</footer>
+    <footer>✔️ Dados salvos automaticamente.</footer>
 </div>
 
 <!-- Modal Nova Categoria -->
@@ -789,13 +789,13 @@
         if(!t) return;
         let novaDesc = prompt("Editar descrição:", t.descricao);
         if(novaDesc && novaDesc.trim()) t.descricao = novaDesc.trim();
-        let novoValor = prompt("Editar valor (ex: 13.350,50 ou 1250,75):", t.valor.toLocaleString('pt-BR', {minimumFractionDigits:2, maximumFractionDigits:2}));
+        let novoValor = prompt("Editar valor:", t.valor.toLocaleString('pt-BR', {minimumFractionDigits:2, maximumFractionDigits:2}));
         if(novoValor && novoValor.trim()) {
             let parsed = parseMoneyValue(novoValor);
             if(parsed !== null && parsed > 0) {
                 t.valor = parsed;
             } else {
-                alert("Valor inválido! Use formato como 13.350,50 ou 1250,75");
+                alert("Valor inválido! Digite um valor positivo.");
             }
         }
         renderMovements(); calcularCards(); atualizarGraficos(); renderResumoCat(); saveCurrentUser();
@@ -815,7 +815,7 @@
         
         let valor = parseMoneyValue(valorInput);
         if(valor === null || valor <= 0) {
-            return alert("❌ Valor inválido! Digite um valor positivo.\nExemplos válidos:\n• 13.350,50 (milhar com ponto)\n• 1250,75 (vírgula decimal)\n• 1000 (número inteiro)\n• 13350.50 (ponto decimal)");
+            return alert("❌ Valor inválido! Digite um valor positivo.");
         }
         
         if(!data) { 
