@@ -60,16 +60,13 @@
             transition: background-color 0.2s, color 0.2s;
         }
 
-        /* ESTILO PARA VALORES OCULTOS - Mostra "•••••" em vez do valor real */
-        .value-hidden {
-            font-family: monospace;
-            letter-spacing: 2px;
-        }
+        /* ESTILO PARA OCULTAR VALORES - MOSTRA "•••••" SEM ALTERAR A FONTE */
         .value-hidden .resumo-valor,
         .value-hidden .transaction-value,
         .value-hidden .cat-item span:last-child {
             visibility: hidden;
             position: relative;
+            display: inline-block;
         }
         .value-hidden .resumo-valor::before,
         .value-hidden .transaction-value::before,
@@ -77,22 +74,24 @@
             visibility: visible;
             position: absolute;
             left: 0;
+            top: 0;
             content: "•••••";
-            font-family: monospace;
-            font-size: 1.2em;
+            font-family: inherit;
+            font-size: inherit;
+            font-weight: inherit;
             letter-spacing: 2px;
             color: var(--text-muted);
-            font-weight: normal;
+            background: transparent;
         }
-        /* Ajuste para o valor de saída que tem sinal de menos */
+        /* Ajuste para valores negativos (saídas) */
         .value-hidden .transaction-value.saida-value::before {
             content: "- •••••";
         }
-        .transaction-value.entrada-value {
-            color: #10b981;
-        }
-        .transaction-value.saida-value {
-            color: #ef4444;
+        /* Cursor pointer para indicar que pode interagir */
+        .value-hidden .resumo-valor,
+        .value-hidden .transaction-value,
+        .value-hidden .cat-item span:last-child {
+            cursor: pointer;
         }
 
         .auth-screen {
@@ -518,6 +517,8 @@
             font-size: 18px;
             margin-right: 12px;
         }
+        .entrada .transaction-value { color: #10b981; }
+        .saida .transaction-value { color: #ef4444; }
 
         .transaction-actions {
             display: flex;
@@ -579,6 +580,11 @@
             font-size: 14px;
             color: var(--text-primary);
         }
+        .cat-item span:last-child {
+            font-weight: bold;
+        }
+        .entrada .cat-item span:last-child { color: #10b981; }
+        .saida .cat-item span:last-child { color: #ef4444; }
 
         .modal-mobile {
             display: none;
@@ -885,19 +891,22 @@
         
         let container = document.getElementById('movementsList');
         if(filtrados.length === 0) { container.innerHTML = '<div class="empty-state">Nenhuma movimentação registrada 💸</div>'; return; }
-        container.innerHTML = filtrados.map(t => `
+        container.innerHTML = filtrados.map(t => {
+            let valueClass = t.tipo === 'entrada' ? 'entrada-value' : 'saida-value';
+            let displayValue = t.tipo === 'entrada' ? formatMoney(t.valor) : `- ${formatMoney(t.valor)}`;
+            return `
             <div class="transaction-item ${t.tipo}">
                 <div class="transaction-info">
                     <div class="transaction-desc">${escapeHtml(t.descricao)}</div>
                     <div class="transaction-meta"><span>${formatDateBR(t.data)}</span><span>${escapeHtml(t.categoria)}</span></div>
                 </div>
-                <div class="transaction-value ${t.tipo === 'entrada' ? 'entrada-value' : 'saida-value'}">${t.tipo === 'entrada' ? formatMoney(t.valor) : `- ${formatMoney(t.valor)}`}</div>
+                <div class="transaction-value ${valueClass}">${displayValue}</div>
                 <div class="transaction-actions">
                     <button class="action-icon edit-trans" data-id="${t.id}">✏️</button>
                     <button class="action-icon del-trans" data-id="${t.id}">🗑️</button>
                 </div>
             </div>
-        `).join('');
+        `}).join('');
         document.querySelectorAll('.edit-trans').forEach(btn=>btn.addEventListener('click', (e)=>openEditModal(btn.dataset.id)));
         document.querySelectorAll('.del-trans').forEach(btn=>btn.addEventListener('click', (e)=>deleteTransacao(btn.dataset.id)));
     }
@@ -1017,7 +1026,6 @@
         const savedPreference = localStorage.getItem('hideValuesPreference');
         const body = document.body;
         const hideBtn = document.getElementById('hideValuesBtn');
-        // Padrão: valores OCULTOS (true)
         const shouldHide = savedPreference === null ? true : savedPreference === 'true';
         
         if(shouldHide) {
@@ -1143,7 +1151,7 @@
         const numeroExtrato = Math.floor(Math.random() * 1000000).toString().padStart(6, '0');
         const agencia = "0001";
         const conta = currentUser.substring(0, 8).toUpperCase().padEnd(8, 'X');
-        let html = `<!DOCTYPE html><html><head><meta charset="UTF-8"><title>Extrato - ${currentUser}</title><style>body{font-family:'Courier New', monospace; background:white; padding:20px; color:#000;} .header-banco{text-align:center; border-bottom:2px solid #000; padding-bottom:15px;} .info-conta{display:flex; justify-content:space-between; margin:15px 0; padding:10px; background:#f5f5f5; border:1px solid #000;} .resumo-extrato{display:flex; justify-content:space-between; margin:20px 0; padding:12px; background:#e8e8e8; border:1px solid #000;} table{width:100%; border-collapse:collapse;} th, td{padding:8px; border:1px solid #ccc; text-align:left;} th{background:#000; color:white;} .valor-credito{color:#006600; font-weight:bold;} .valor-debito{color:#cc0000; font-weight:bold;} </style></head><body><div class="header-banco"><h1>💰 EXTRATO FINANCEIRO</h1><p>Movimentações - ${formatDateExtenso()}</p></div><div class="info-conta"><span>Agência: ${agencia}</span><span>Conta: ${conta}</span><span>Cliente: ${currentUser}</span><span>Extrato: ${numeroExtrato}</span></div><div class="resumo-extrato"><div><strong>Total Créditos:</strong> ${formatMoney(totalEntradas)}</div><div><strong>Total Débitos:</strong> ${formatMoney(totalSaidas)}</div><div><strong>Saldo:</strong> ${formatMoney(saldoAtual)}</div></div></table><thead><tr><th>Data</th><th>Descrição</th><th>Categoria</th><th>Valor</th><th>Saldo</th></tr></thead><tbody>`;
+        let html = `<!DOCTYPE html><html><head><meta charset="UTF-8"><title>Extrato - ${currentUser}</title><style>body{font-family:'Courier New', monospace; background:white; padding:20px; color:#000;} .header-banco{text-align:center; border-bottom:2px solid #000; padding-bottom:15px;} .info-conta{display:flex; justify-content:space-between; margin:15px 0; padding:10px; background:#f5f5f5; border:1px solid #000;} .resumo-extrato{display:flex; justify-content:space-between; margin:20px 0; padding:12px; background:#e8e8e8; border:1px solid #000;} table{width:100%; border-collapse:collapse;} th, td{padding:8px; border:1px solid #ccc; text-align:left;} th{background:#000; color:white;} .valor-credito{color:#006600; font-weight:bold;} .valor-debito{color:#cc0000; font-weight:bold;} </style></head><body><div class="header-banco"><h1>💰 EXTRATO FINANCEIRO</h1><p>Movimentações - ${formatDateExtenso()}</p></div><div class="info-conta"><span>Agência: ${agencia}</span><span>Conta: ${conta}</span><span>Cliente: ${currentUser}</span><span>Extrato: ${numeroExtrato}</span></div><div class="resumo-extrato"><div><strong>Total Créditos:</strong> ${formatMoney(totalEntradas)}</div><div><strong>Total Débitos:</strong> ${formatMoney(totalSaidas)}</div><div><strong>Saldo:</strong> ${formatMoney(saldoAtual)}</div></div><table><thead><tr><th>Data</th><th>Descrição</th><th>Categoria</th><th>Valor</th><th>Saldo</th></tr></thead><tbody>`;
         for(let t of transacoesOrdenadas) { html += `<tr><td>${formatDateBR(t.data)}</td><td>${escapeHtml(t.descricao)}</td><td>${escapeHtml(t.categoria)}</td><td class="${t.tipo === 'entrada' ? 'valor-credito' : 'valor-debito'}">${t.tipo === 'entrada' ? formatMoney(t.valor) : `- ${formatMoney(t.valor)}`}</td><td>${formatMoney(saldosMap.get(t.id) || 0)}</td></tr>`; }
         html += `</tbody> </table><footer style="margin-top:20px; text-align:center; font-size:9px;">Gerado em ${new Date().toLocaleString('pt-BR')} - ${transacoes.length} lançamentos</footer></body></html>`;
         const div = document.createElement('div'); div.innerHTML = html; document.body.appendChild(div);
@@ -1217,4 +1225,4 @@
     applyHideValuesState();
 </script>
 </body>
-    </html>
+</html>
