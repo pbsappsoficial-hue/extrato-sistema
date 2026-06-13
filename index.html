@@ -14,7 +14,6 @@
             -webkit-tap-highlight-color: transparent;
         }
 
-        /* Tema claro (PADRÃO) */
         :root {
             --bg-page: #f0f2f5;
             --bg-surface: #ffffff;
@@ -36,7 +35,6 @@
             --hover-bg: #e9ecef;
         }
 
-        /* Tema escuro */
         body.dark-theme {
             --bg-page: #000000;
             --bg-surface: #0a0a0a;
@@ -60,7 +58,6 @@
             transition: background-color 0.2s, color 0.2s;
         }
 
-        /* ESTILO PARA OCULTAR VALORES - MOSTRA "•••••" SEM ALTERAR A FONTE */
         .value-hidden .resumo-valor,
         .value-hidden .transaction-value,
         .value-hidden .cat-item span:last-child {
@@ -83,11 +80,9 @@
             color: var(--text-muted);
             background: transparent;
         }
-        /* Ajuste para valores negativos (saídas) */
         .value-hidden .transaction-value.saida-value::before {
             content: "- •••••";
         }
-        /* Cursor pointer para indicar que pode interagir */
         .value-hidden .resumo-valor,
         .value-hidden .transaction-value,
         .value-hidden .cat-item span:last-child {
@@ -206,25 +201,6 @@
             flex-wrap: wrap;
         }
 
-        .icon-btn {
-            background: var(--bg-elevated);
-            border: 1px solid var(--border);
-            padding: 10px 14px;
-            border-radius: 30px;
-            color: var(--text-primary);
-            font-size: 14px;
-            font-weight: 500;
-            display: flex;
-            align-items: center;
-            gap: 6px;
-            cursor: pointer;
-            transition: all 0.2s;
-        }
-
-        .icon-btn:hover {
-            background: var(--hover-bg);
-        }
-
         .hide-toggle {
             background: var(--bg-elevated);
             border: 2px solid var(--success);
@@ -245,7 +221,6 @@
             border-color: var(--success);
         }
 
-        /* Menu de 3 pontos */
         .menu-dropdown {
             position: relative;
             display: inline-block;
@@ -270,7 +245,7 @@
             right: 0;
             top: 45px;
             background: var(--bg-card);
-            min-width: 200px;
+            min-width: 230px;
             border-radius: 20px;
             box-shadow: var(--shadow);
             border: 1px solid var(--border);
@@ -294,6 +269,12 @@
         }
         .menu-content button:hover {
             background: var(--hover-bg);
+        }
+        .menu-content .danger-item {
+            color: var(--danger);
+        }
+        .menu-content .danger-item:hover {
+            background: rgba(239, 68, 68, 0.1);
         }
         .menu-divider {
             height: 1px;
@@ -648,7 +629,6 @@
 </head>
 <body class="value-hidden">
 
-<!-- Tela de Login -->
 <div id="loginScreen" class="auth-screen">
     <div class="auth-card">
         <h2>💰 Extrato Financeiro</h2>
@@ -661,7 +641,6 @@
     </div>
 </div>
 
-<!-- Tela de Registro -->
 <div id="regScreen" class="auth-screen" style="display: none;">
     <div class="auth-card">
         <h2>📝 Criar Conta</h2>
@@ -675,25 +654,23 @@
     </div>
 </div>
 
-<!-- App Principal -->
 <div id="mainApp" class="app-container">
     <div class="mobile-header">
         <div class="logo-area"><h1>💰 Extrato Financeiro</h1></div>
         <div class="user-actions">
             <span style="background: var(--bg-elevated); padding: 8px 16px; border-radius: 40px; font-size: 14px; border:1px solid var(--border);">👤 <span id="userNameDisplay"></span></span>
             <button id="hideValuesBtn" class="hide-toggle">🔓 Mostrar</button>
-            
             <div class="menu-dropdown">
                 <button id="menuBtn" class="menu-btn">⋮</button>
                 <div id="menuContent" class="menu-content">
+                    <button id="menuPdf">📄 Gerar Extrato PDF</button>
                     <button id="menuBackup">💾 Backup</button>
                     <button id="menuRestore">📥 Restaurar Backup</button>
-                    <button id="menuPdf">📄 Gerar Extrato PDF</button>
-                    <div class="menu-divider"></div>
-                    <button id="menuClearData">🗑️ Apagar Dados da Conta</button>
-                    <button id="menuClearAll">⚠️ Limpar Todas Transações</button>
                     <div class="menu-divider"></div>
                     <button id="menuTheme">🌓 Alternar Tema</button>
+                    <div class="menu-divider"></div>
+                    <button id="menuClearAll">⚠️ Limpar Todas Transações</button>
+                    <button id="menuDeleteAccount" class="danger-item">🗑️ Excluir Conta Permanentemente</button>
                     <div class="menu-divider"></div>
                     <button id="menuLogout">🚪 Sair da Conta</button>
                 </div>
@@ -774,7 +751,6 @@
     <footer>✔️ Dados salvos automaticamente. | Valores ocultos por padrão 🔒</footer>
 </div>
 
-<!-- Modais -->
 <div id="catModal" class="modal-mobile">
     <div class="modal-card"><h3>➕ Adicionar Nova Categoria</h3><input type="text" id="newCatName" class="auth-input" placeholder="Ex: Investimentos, Streaming"><div style="display: flex; gap:12px; margin-top:20px;"><button id="confirmCatBtn" class="auth-btn" style="background:var(--success);">Adicionar</button><button id="cancelCatBtn" class="auth-btn" style="background:#333;">Cancelar</button></div></div>
 </div>
@@ -794,6 +770,19 @@
 
 <div id="backupModalMobile" class="modal-mobile">
     <div class="modal-card"><h3>🔐 Backup Criptografado</h3><p style="font-size:13px; margin-bottom:12px;">Digite uma senha para proteger seu backup</p><input type="password" id="backupPass" class="auth-input" placeholder="Senha"><div style="display: flex; gap:12px; margin-top:20px;"><button id="confirmBackupMobile" class="auth-btn">Confirmar</button><button id="cancelBackupMobile" class="auth-btn" style="background:#333;">Cancelar</button></div></div>
+</div>
+
+<div id="deleteAccountModal" class="modal-mobile">
+    <div class="modal-card">
+        <h3 style="color: var(--danger);">⚠️ EXCLUIR CONTA</h3>
+        <p style="font-size: 14px; margin-bottom: 16px;">Esta ação é <strong>IRREVERSÍVEL</strong>. Todos os seus dados serão perdidos permanentemente.</p>
+        <p style="font-size: 13px; margin-bottom: 16px;">Digite sua senha para confirmar a exclusão da conta <strong id="deleteAccountName"></strong>:</p>
+        <input type="password" id="deleteConfirmPassword" class="auth-input" placeholder="Sua senha">
+        <div style="display: flex; gap:12px; margin-top:8px;">
+            <button id="confirmDeleteAccount" class="auth-btn" style="background:var(--danger);">Excluir Conta</button>
+            <button id="cancelDeleteAccount" class="auth-btn" style="background:#333;">Cancelar</button>
+        </div>
+    </div>
 </div>
 
 <script>
@@ -860,6 +849,17 @@
             users[currentUser].catSaida = categoriaSaidas;
             saveUsers(users);
         }
+    }
+
+    // Função para excluir a conta permanentemente com verificação de senha
+    function deleteAccount(password) {
+        let users = loadUsers();
+        if(!users[currentUser]) return false;
+        if(users[currentUser].senha !== password) return false;
+        
+        delete users[currentUser];
+        saveUsers(users);
+        return true;
     }
 
     function atualizarSelectCategorias(selectEl = null) {
@@ -1003,7 +1003,6 @@
         select.innerHTML = '<option value="todas">📋 Todas categorias</option>' + catsUnicas.map(c=>`<option value="${c}">🏷️ ${c}</option>`).join('');
     }
     
-    // Alterna entre mostrar e ocultar valores
     function toggleHideValues() {
         const body = document.body;
         const hideBtn = document.getElementById('hideValuesBtn');
@@ -1057,14 +1056,6 @@
             document.body.classList.add('dark-theme');
         } else {
             document.body.classList.remove('dark-theme');
-        }
-    }
-    
-    function clearAccountData() {
-        if(confirm("⚠️ ATENÇÃO! Isso apagará TODAS as transações da sua conta. Esta ação é irreversível. Deseja continuar?")) {
-            transacoes = [];
-            refreshAll();
-            alert("✅ Todas as transações foram removidas da sua conta.");
         }
     }
     
@@ -1153,7 +1144,7 @@
         const conta = currentUser.substring(0, 8).toUpperCase().padEnd(8, 'X');
         let html = `<!DOCTYPE html><html><head><meta charset="UTF-8"><title>Extrato - ${currentUser}</title><style>body{font-family:'Courier New', monospace; background:white; padding:20px; color:#000;} .header-banco{text-align:center; border-bottom:2px solid #000; padding-bottom:15px;} .info-conta{display:flex; justify-content:space-between; margin:15px 0; padding:10px; background:#f5f5f5; border:1px solid #000;} .resumo-extrato{display:flex; justify-content:space-between; margin:20px 0; padding:12px; background:#e8e8e8; border:1px solid #000;} table{width:100%; border-collapse:collapse;} th, td{padding:8px; border:1px solid #ccc; text-align:left;} th{background:#000; color:white;} .valor-credito{color:#006600; font-weight:bold;} .valor-debito{color:#cc0000; font-weight:bold;} </style></head><body><div class="header-banco"><h1>💰 EXTRATO FINANCEIRO</h1><p>Movimentações - ${formatDateExtenso()}</p></div><div class="info-conta"><span>Agência: ${agencia}</span><span>Conta: ${conta}</span><span>Cliente: ${currentUser}</span><span>Extrato: ${numeroExtrato}</span></div><div class="resumo-extrato"><div><strong>Total Créditos:</strong> ${formatMoney(totalEntradas)}</div><div><strong>Total Débitos:</strong> ${formatMoney(totalSaidas)}</div><div><strong>Saldo:</strong> ${formatMoney(saldoAtual)}</div></div><table><thead><tr><th>Data</th><th>Descrição</th><th>Categoria</th><th>Valor</th><th>Saldo</th></tr></thead><tbody>`;
         for(let t of transacoesOrdenadas) { html += `<tr><td>${formatDateBR(t.data)}</td><td>${escapeHtml(t.descricao)}</td><td>${escapeHtml(t.categoria)}</td><td class="${t.tipo === 'entrada' ? 'valor-credito' : 'valor-debito'}">${t.tipo === 'entrada' ? formatMoney(t.valor) : `- ${formatMoney(t.valor)}`}</td><td>${formatMoney(saldosMap.get(t.id) || 0)}</td></tr>`; }
-        html += `</tbody> </table><footer style="margin-top:20px; text-align:center; font-size:9px;">Gerado em ${new Date().toLocaleString('pt-BR')} - ${transacoes.length} lançamentos</footer></body></html>`;
+        html += `</tbody></table><footer style="margin-top:20px; text-align:center; font-size:9px;">Gerado em ${new Date().toLocaleString('pt-BR')} - ${transacoes.length} lançamentos</footer></body></html>`;
         const div = document.createElement('div'); div.innerHTML = html; document.body.appendChild(div);
         const opt = { margin: [0.5,0.5,0.5,0.5], filename: `Extrato_${currentUser}_${new Date().toISOString().slice(0,10)}.pdf`, image: { type: 'jpeg', quality: 0.98 }, html2canvas: { scale: 2, backgroundColor: '#ffffff' }, jsPDF: { unit: 'in', format: 'a4', orientation: 'portrait' } };
         try { await html2pdf().set(opt).from(div).save(); alert("✅ PDF gerado!"); } catch(e) { alert("❌ Erro: " + e.message); } finally { document.body.removeChild(div); }
@@ -1166,6 +1157,32 @@
             document.getElementById('loginScreen').style.display = 'flex';
             document.getElementById('loginNome').value = '';
             document.getElementById('loginSenha').value = '';
+        }
+    }
+
+    function openDeleteAccountModal() {
+        document.getElementById('deleteAccountName').innerText = currentUser;
+        document.getElementById('deleteConfirmPassword').value = '';
+        document.getElementById('deleteAccountModal').classList.add('active');
+    }
+
+    function confirmDeleteAccount() {
+        const password = document.getElementById('deleteConfirmPassword').value;
+        if(!password) {
+            alert("Digite sua senha para confirmar a exclusão da conta.");
+            return;
+        }
+        
+        if(deleteAccount(password)) {
+            alert("✅ Conta excluída permanentemente! Todos os seus dados foram removidos.");
+            document.getElementById('deleteAccountModal').classList.remove('active');
+            currentUser = null;
+            document.getElementById('mainApp').style.display = 'none';
+            document.getElementById('loginScreen').style.display = 'flex';
+            document.getElementById('loginNome').value = '';
+            document.getElementById('loginSenha').value = '';
+        } else {
+            alert("❌ Senha incorreta! A conta NÃO foi excluída.");
         }
     }
     
@@ -1181,8 +1198,8 @@
     document.getElementById('menuBackup').onclick = () => { document.getElementById('backupModalMobile').classList.add('active'); };
     document.getElementById('menuRestore').onclick = restoreAction;
     document.getElementById('menuPdf').onclick = gerarPDF;
-    document.getElementById('menuClearData').onclick = clearAccountData;
     document.getElementById('menuClearAll').onclick = clearAllTransactions;
+    document.getElementById('menuDeleteAccount').onclick = openDeleteAccountModal;
     document.getElementById('menuTheme').onclick = toggleTheme;
     document.getElementById('menuLogout').onclick = logout;
     
@@ -1217,6 +1234,8 @@
     document.getElementById('cancelEditBtn').onclick=()=>{ document.getElementById('editModal').classList.remove('active'); };
     document.getElementById('confirmBackupMobile').onclick=backupAction;
     document.getElementById('cancelBackupMobile').onclick=()=>{ document.getElementById('backupModalMobile').classList.remove('active'); document.getElementById('backupPass').value=''; };
+    document.getElementById('confirmDeleteAccount').onclick=confirmDeleteAccount;
+    document.getElementById('cancelDeleteAccount').onclick=()=>{ document.getElementById('deleteAccountModal').classList.remove('active'); };
     
     let today=new Date().toISOString().slice(0,10);
     if(document.getElementById('mobileData')) document.getElementById('mobileData').value=today;
