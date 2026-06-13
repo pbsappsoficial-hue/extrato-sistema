@@ -60,24 +60,39 @@
             transition: background-color 0.2s, color 0.2s;
         }
 
-        /* CLASSE PARA OCULTAR VALORES - ATIVADA POR PADRÃO */
-        .hide-values .resumo-valor,
-        .hide-values .transaction-value,
-        .hide-values .cat-item span:last-child {
-            filter: blur(5px);
-            cursor: pointer;
-            transition: filter 0.2s;
+        /* ESTILO PARA VALORES OCULTOS - Mostra "•••••" em vez do valor real */
+        .value-hidden {
+            font-family: monospace;
+            letter-spacing: 2px;
         }
-        .hide-values .resumo-valor:hover,
-        .hide-values .transaction-value:hover,
-        .hide-values .cat-item span:last-child:hover {
-            filter: blur(0);
+        .value-hidden .resumo-valor,
+        .value-hidden .transaction-value,
+        .value-hidden .cat-item span:last-child {
+            visibility: hidden;
+            position: relative;
         }
-        .hide-values .resumo-valor::after {
-            content: " 🔒";
-            filter: blur(0);
-            display: inline-block;
-            font-size: 14px;
+        .value-hidden .resumo-valor::before,
+        .value-hidden .transaction-value::before,
+        .value-hidden .cat-item span:last-child::before {
+            visibility: visible;
+            position: absolute;
+            left: 0;
+            content: "•••••";
+            font-family: monospace;
+            font-size: 1.2em;
+            letter-spacing: 2px;
+            color: var(--text-muted);
+            font-weight: normal;
+        }
+        /* Ajuste para o valor de saída que tem sinal de menos */
+        .value-hidden .transaction-value.saida-value::before {
+            content: "- •••••";
+        }
+        .transaction-value.entrada-value {
+            color: #10b981;
+        }
+        .transaction-value.saida-value {
+            color: #ef4444;
         }
 
         .auth-screen {
@@ -211,6 +226,26 @@
             background: var(--hover-bg);
         }
 
+        .hide-toggle {
+            background: var(--bg-elevated);
+            border: 2px solid var(--success);
+            border-radius: 30px;
+            padding: 8px 14px;
+            font-size: 12px;
+            font-weight: 700;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            color: var(--success);
+            transition: all 0.2s;
+        }
+        .hide-toggle:hover {
+            background: var(--success);
+            color: white;
+            border-color: var(--success);
+        }
+
         /* Menu de 3 pontos */
         .menu-dropdown {
             position: relative;
@@ -243,7 +278,7 @@
             z-index: 100;
             overflow: hidden;
         }
-        .menu-content a, .menu-content button {
+        .menu-content button {
             display: flex;
             align-items: center;
             gap: 12px;
@@ -258,7 +293,7 @@
             cursor: pointer;
             transition: background 0.2s;
         }
-        .menu-content a:hover, .menu-content button:hover {
+        .menu-content button:hover {
             background: var(--hover-bg);
         }
         .menu-divider {
@@ -268,26 +303,6 @@
         }
         .show-menu {
             display: block;
-        }
-
-        .hide-toggle {
-            background: var(--bg-elevated);
-            border: 2px solid var(--success);
-            border-radius: 30px;
-            padding: 8px 14px;
-            font-size: 12px;
-            font-weight: 700;
-            cursor: pointer;
-            display: flex;
-            align-items: center;
-            gap: 6px;
-            color: var(--success);
-            transition: all 0.2s;
-        }
-        .hide-toggle:hover {
-            background: var(--success);
-            color: white;
-            border-color: var(--success);
         }
 
         .resumo-grid {
@@ -503,8 +518,6 @@
             font-size: 18px;
             margin-right: 12px;
         }
-        .entrada .transaction-value { color: #10b981; }
-        .saida .transaction-value { color: #ef4444; }
 
         .transaction-actions {
             display: flex;
@@ -627,7 +640,7 @@
         }
     </style>
 </head>
-<body class="hide-values">
+<body class="value-hidden">
 
 <!-- Tela de Login -->
 <div id="loginScreen" class="auth-screen">
@@ -662,9 +675,8 @@
         <div class="logo-area"><h1>💰 Extrato Financeiro</h1></div>
         <div class="user-actions">
             <span style="background: var(--bg-elevated); padding: 8px 16px; border-radius: 40px; font-size: 14px; border:1px solid var(--border);">👤 <span id="userNameDisplay"></span></span>
-            <button id="hideValuesBtn" class="hide-toggle">🔒 Ocultar</button>
+            <button id="hideValuesBtn" class="hide-toggle">🔓 Mostrar</button>
             
-            <!-- Menu de 3 pontos -->
             <div class="menu-dropdown">
                 <button id="menuBtn" class="menu-btn">⋮</button>
                 <div id="menuContent" class="menu-content">
@@ -683,7 +695,6 @@
         </div>
     </div>
 
-    <!-- Cards resumo -->
     <div class="resumo-grid">
         <div class="resumo-card card-entradas">
             <div class="resumo-info"><div class="resumo-label">📥 TOTAL DE ENTRADAS</div><div class="resumo-valor" id="mobileTotalEntradas">R$ 0</div></div>
@@ -699,7 +710,6 @@
         </div>
     </div>
 
-    <!-- Tabs mobile -->
     <div class="mobile-tabs">
         <button class="mobile-tab active" data-tab="movements">📋 EXTRATO</button>
         <button class="mobile-tab" data-tab="add">➕ ADICIONAR</button>
@@ -707,7 +717,6 @@
         <button class="mobile-tab" data-tab="cats">🏷️ CATEGORIAS</button>
     </div>
 
-    <!-- Aba Extrato -->
     <div id="tabMovements" class="tab-pane" style="display: block;">
         <div style="display: flex; gap: 10px; margin-bottom: 16px;">
             <select id="filtroTipoMobile" style="flex:1; background: var(--bg-elevated); border-radius: 30px; padding: 12px; border:1px solid var(--border); color:var(--text-primary);">
@@ -722,7 +731,6 @@
         <div id="movementsList" class="transaction-list"></div>
     </div>
 
-    <!-- Aba Adicionar -->
     <div id="tabAdd" class="tab-pane" style="display: none;">
         <div class="form-mobile">
             <div class="tipo-switch">
@@ -743,7 +751,6 @@
         </div>
     </div>
 
-    <!-- Aba Gráficos -->
     <div id="tabCharts" class="tab-pane" style="display: none;">
         <div class="chart-container"><h3>📊 Entradas por Categoria</h3><canvas id="chartEntradasCat"></canvas></div>
         <div class="chart-container"><h3>📉 Saídas por Categoria</h3><canvas id="chartSaidasCat"></canvas></div>
@@ -751,7 +758,6 @@
         <div class="chart-container"><h3>📉 Evolução Diária - Saídas</h3><canvas id="chartEvolucaoSai"></canvas></div>
     </div>
 
-    <!-- Aba Categorias -->
     <div id="tabCats" class="tab-pane" style="display: none;">
         <div class="cat-grid">
             <div class="cat-box"><h4>📥 ENTRADAS POR CATEGORIA</h4><div id="catResumoEntradas" class="cat-list"></div></div>
@@ -762,12 +768,11 @@
     <footer>✔️ Dados salvos automaticamente. | Valores ocultos por padrão 🔒</footer>
 </div>
 
-<!-- Modal Nova Categoria -->
+<!-- Modais -->
 <div id="catModal" class="modal-mobile">
     <div class="modal-card"><h3>➕ Adicionar Nova Categoria</h3><input type="text" id="newCatName" class="auth-input" placeholder="Ex: Investimentos, Streaming"><div style="display: flex; gap:12px; margin-top:20px;"><button id="confirmCatBtn" class="auth-btn" style="background:var(--success);">Adicionar</button><button id="cancelCatBtn" class="auth-btn" style="background:#333;">Cancelar</button></div></div>
 </div>
 
-<!-- Modal Edição Completa -->
 <div id="editModal" class="modal-mobile">
     <div class="modal-card">
         <h3>✏️ Editar Movimentação</h3>
@@ -781,7 +786,6 @@
     </div>
 </div>
 
-<!-- Modal Backup -->
 <div id="backupModalMobile" class="modal-mobile">
     <div class="modal-card"><h3>🔐 Backup Criptografado</h3><p style="font-size:13px; margin-bottom:12px;">Digite uma senha para proteger seu backup</p><input type="password" id="backupPass" class="auth-input" placeholder="Senha"><div style="display: flex; gap:12px; margin-top:20px;"><button id="confirmBackupMobile" class="auth-btn">Confirmar</button><button id="cancelBackupMobile" class="auth-btn" style="background:#333;">Cancelar</button></div></div>
 </div>
@@ -887,7 +891,7 @@
                     <div class="transaction-desc">${escapeHtml(t.descricao)}</div>
                     <div class="transaction-meta"><span>${formatDateBR(t.data)}</span><span>${escapeHtml(t.categoria)}</span></div>
                 </div>
-                <div class="transaction-value">${t.tipo === 'entrada' ? formatMoney(t.valor) : `- ${formatMoney(t.valor)}`}</div>
+                <div class="transaction-value ${t.tipo === 'entrada' ? 'entrada-value' : 'saida-value'}">${t.tipo === 'entrada' ? formatMoney(t.valor) : `- ${formatMoney(t.valor)}`}</div>
                 <div class="transaction-actions">
                     <button class="action-icon edit-trans" data-id="${t.id}">✏️</button>
                     <button class="action-icon del-trans" data-id="${t.id}">🗑️</button>
@@ -987,39 +991,43 @@
     function atualizarFiltroCategorias() {
         let catsUnicas = [...new Set(transacoes.map(t=>t.categoria))];
         let select = document.getElementById('filtroCatMobile');
-        select.innerHTML = '<option value="todas">📋 Todas as categorias</option>' + catsUnicas.map(c=>`<option value="${c}">🏷️ ${c}</option>`).join('');
+        select.innerHTML = '<option value="todas">📋 Todas categorias</option>' + catsUnicas.map(c=>`<option value="${c}">🏷️ ${c}</option>`).join('');
     }
     
+    // Alterna entre mostrar e ocultar valores
     function toggleHideValues() {
-        const mainApp = document.getElementById('mainApp');
+        const body = document.body;
         const hideBtn = document.getElementById('hideValuesBtn');
-        const isHidden = mainApp.classList.contains('hide-values');
+        const isHidden = body.classList.contains('value-hidden');
+        
         if(isHidden) {
-            mainApp.classList.remove('hide-values');
-            hideBtn.innerHTML = '🔓 Mostrar';
-            hideBtn.style.borderColor = 'var(--warning)';
-            localStorage.setItem('hideValuesPreference', 'false');
-        } else {
-            mainApp.classList.add('hide-values');
+            body.classList.remove('value-hidden');
             hideBtn.innerHTML = '🔒 Ocultar';
             hideBtn.style.borderColor = 'var(--success)';
+            localStorage.setItem('hideValuesPreference', 'false');
+        } else {
+            body.classList.add('value-hidden');
+            hideBtn.innerHTML = '🔓 Mostrar';
+            hideBtn.style.borderColor = 'var(--warning)';
             localStorage.setItem('hideValuesPreference', 'true');
         }
     }
     
     function applyHideValuesState() {
         const savedPreference = localStorage.getItem('hideValuesPreference');
-        const shouldHide = savedPreference === null ? true : savedPreference === 'true';
-        const mainApp = document.getElementById('mainApp');
+        const body = document.body;
         const hideBtn = document.getElementById('hideValuesBtn');
+        // Padrão: valores OCULTOS (true)
+        const shouldHide = savedPreference === null ? true : savedPreference === 'true';
+        
         if(shouldHide) {
-            mainApp.classList.add('hide-values');
-            hideBtn.innerHTML = '🔒 Ocultar';
-            hideBtn.style.borderColor = 'var(--success)';
-        } else {
-            mainApp.classList.remove('hide-values');
+            body.classList.add('value-hidden');
             hideBtn.innerHTML = '🔓 Mostrar';
             hideBtn.style.borderColor = 'var(--warning)';
+        } else {
+            body.classList.remove('value-hidden');
+            hideBtn.innerHTML = '🔒 Ocultar';
+            hideBtn.style.borderColor = 'var(--success)';
         }
     }
     
@@ -1044,7 +1052,6 @@
         }
     }
     
-    // Apagar apenas os dados da conta atual (transações, mas mantém usuário)
     function clearAccountData() {
         if(confirm("⚠️ ATENÇÃO! Isso apagará TODAS as transações da sua conta. Esta ação é irreversível. Deseja continuar?")) {
             transacoes = [];
@@ -1053,7 +1060,6 @@
         }
     }
     
-    // Limpar tudo (todas as transações - mesmo efeito que o acima, mantido para compatibilidade)
     function clearAllTransactions() {
         if(confirm("⚠️ ATENÇÃO! Isso apagará TODAS as movimentações financeiras. Esta ação é irreversível. Deseja continuar?")) {
             transacoes = [];
@@ -1137,7 +1143,7 @@
         const numeroExtrato = Math.floor(Math.random() * 1000000).toString().padStart(6, '0');
         const agencia = "0001";
         const conta = currentUser.substring(0, 8).toUpperCase().padEnd(8, 'X');
-        let html = `<!DOCTYPE html><html><head><meta charset="UTF-8"><title>Extrato - ${currentUser}</title><style>body{font-family:'Courier New', monospace; background:white; padding:20px; color:#000;} .header-banco{text-align:center; border-bottom:2px solid #000; padding-bottom:15px;} .info-conta{display:flex; justify-content:space-between; margin:15px 0; padding:10px; background:#f5f5f5; border:1px solid #000;} .resumo-extrato{display:flex; justify-content:space-between; margin:20px 0; padding:12px; background:#e8e8e8; border:1px solid #000;} table{width:100%; border-collapse:collapse;} th, td{padding:8px; border:1px solid #ccc; text-align:left;} th{background:#000; color:white;} .valor-credito{color:#006600; font-weight:bold;} .valor-debito{color:#cc0000; font-weight:bold;} </style></head><body><div class="header-banco"><h1>💰 EXTRATO FINANCEIRO</h1><p>Movimentações - ${formatDateExtenso()}</p></div><div class="info-conta"><span>Agência: ${agencia}</span><span>Conta: ${conta}</span><span>Cliente: ${currentUser}</span><span>Extrato: ${numeroExtrato}</span></div><div class="resumo-extrato"><div><strong>Total Créditos:</strong> ${formatMoney(totalEntradas)}</div><div><strong>Total Débitos:</strong> ${formatMoney(totalSaidas)}</div><div><strong>Saldo:</strong> ${formatMoney(saldoAtual)}</div></div><table><thead><tr><th>Data</th><th>Descrição</th><th>Categoria</th><th>Valor</th><th>Saldo</th></tr></thead><tbody>`;
+        let html = `<!DOCTYPE html><html><head><meta charset="UTF-8"><title>Extrato - ${currentUser}</title><style>body{font-family:'Courier New', monospace; background:white; padding:20px; color:#000;} .header-banco{text-align:center; border-bottom:2px solid #000; padding-bottom:15px;} .info-conta{display:flex; justify-content:space-between; margin:15px 0; padding:10px; background:#f5f5f5; border:1px solid #000;} .resumo-extrato{display:flex; justify-content:space-between; margin:20px 0; padding:12px; background:#e8e8e8; border:1px solid #000;} table{width:100%; border-collapse:collapse;} th, td{padding:8px; border:1px solid #ccc; text-align:left;} th{background:#000; color:white;} .valor-credito{color:#006600; font-weight:bold;} .valor-debito{color:#cc0000; font-weight:bold;} </style></head><body><div class="header-banco"><h1>💰 EXTRATO FINANCEIRO</h1><p>Movimentações - ${formatDateExtenso()}</p></div><div class="info-conta"><span>Agência: ${agencia}</span><span>Conta: ${conta}</span><span>Cliente: ${currentUser}</span><span>Extrato: ${numeroExtrato}</span></div><div class="resumo-extrato"><div><strong>Total Créditos:</strong> ${formatMoney(totalEntradas)}</div><div><strong>Total Débitos:</strong> ${formatMoney(totalSaidas)}</div><div><strong>Saldo:</strong> ${formatMoney(saldoAtual)}</div></div></table><thead><tr><th>Data</th><th>Descrição</th><th>Categoria</th><th>Valor</th><th>Saldo</th></tr></thead><tbody>`;
         for(let t of transacoesOrdenadas) { html += `<tr><td>${formatDateBR(t.data)}</td><td>${escapeHtml(t.descricao)}</td><td>${escapeHtml(t.categoria)}</td><td class="${t.tipo === 'entrada' ? 'valor-credito' : 'valor-debito'}">${t.tipo === 'entrada' ? formatMoney(t.valor) : `- ${formatMoney(t.valor)}`}</td><td>${formatMoney(saldosMap.get(t.id) || 0)}</td></tr>`; }
         html += `</tbody> </table><footer style="margin-top:20px; text-align:center; font-size:9px;">Gerado em ${new Date().toLocaleString('pt-BR')} - ${transacoes.length} lançamentos</footer></body></html>`;
         const div = document.createElement('div'); div.innerHTML = html; document.body.appendChild(div);
@@ -1158,8 +1164,7 @@
     // Eventos do menu
     document.getElementById('menuBtn').onclick = (e) => {
         e.stopPropagation();
-        const menu = document.getElementById('menuContent');
-        menu.classList.toggle('show-menu');
+        document.getElementById('menuContent').classList.toggle('show-menu');
     };
     document.addEventListener('click', () => {
         document.getElementById('menuContent').classList.remove('show-menu');
