@@ -167,6 +167,7 @@
             color: var(--success);
             font-weight: 600;
             text-decoration: none;
+            cursor: pointer;
         }
 
         .password-requirements {
@@ -192,13 +193,6 @@
         .password-requirements li.valid {
             color: var(--success);
             text-decoration: line-through;
-        }
-        .req-error {
-            color: var(--danger);
-            font-size: 12px;
-            margin-top: -12px;
-            margin-bottom: 12px;
-            display: block;
         }
 
         .force-update-modal {
@@ -229,11 +223,6 @@
         .force-update-card h3 {
             color: var(--danger);
             margin-bottom: 16px;
-        }
-        .force-update-card p {
-            margin-bottom: 20px;
-            font-size: 14px;
-            color: var(--text-secondary);
         }
 
         .app-container {
@@ -631,8 +620,6 @@
         .cat-item span:last-child {
             font-weight: bold;
         }
-        .entrada .cat-item span:last-child { color: #10b981; }
-        .saida .cat-item span:last-child { color: #ef4444; }
 
         .modal-mobile {
             display: none;
@@ -696,6 +683,7 @@
 </head>
 <body class="value-hidden">
 
+<!-- Tela de Login -->
 <div id="loginScreen" class="auth-screen">
     <div class="auth-card">
         <h2>💰 Extrato Financeiro</h2>
@@ -708,6 +696,7 @@
     </div>
 </div>
 
+<!-- Tela de Registro -->
 <div id="regScreen" class="auth-screen" style="display: none;">
     <div class="auth-card">
         <h2>📝 Criar Conta</h2>
@@ -716,7 +705,7 @@
         <input type="text" id="regNome" class="auth-input" placeholder="Nome do usuário">
         <input type="password" id="regSenha" class="auth-input" placeholder="Senha (4-6 números)">
         <input type="password" id="regConfirm" class="auth-input" placeholder="Confirmar senha">
-        <div class="password-requirements" id="passwordReqs">
+        <div class="password-requirements">
             <p>🔒 Requisitos da senha:</p>
             <ul>
                 <li id="reqLength">✓ 4 a 6 caracteres</li>
@@ -730,6 +719,7 @@
     </div>
 </div>
 
+<!-- Modal Forçar Troca de Senha -->
 <div id="forceUpdateModal" class="force-update-modal">
     <div class="force-update-card">
         <h3>⚠️ SENHA FRACA DETECTADA</h3>
@@ -742,6 +732,7 @@
     </div>
 </div>
 
+<!-- App Principal -->
 <div id="mainApp" class="app-container">
     <div class="mobile-header">
         <div class="logo-area"><h1>💰 Extrato Financeiro</h1></div>
@@ -841,6 +832,7 @@
     <footer>✔️ Dados salvos automaticamente. | Valores ocultos por padrão 🔒</footer>
 </div>
 
+<!-- Modais -->
 <div id="catModal" class="modal-mobile">
     <div class="modal-card"><h3>➕ Adicionar Nova Categoria</h3><input type="text" id="newCatName" class="auth-input" placeholder="Ex: Investimentos, Streaming"><div style="display: flex; gap:12px; margin-top:20px;"><button id="confirmCatBtn" class="auth-btn" style="background:var(--success);">Adicionar</button><button id="cancelCatBtn" class="auth-btn" style="background:#333;">Cancelar</button></div></div>
 </div>
@@ -869,8 +861,8 @@
         <p style="font-size: 13px; margin-bottom: 16px;">Digite sua senha para confirmar a exclusão da conta <strong id="deleteAccountName"></strong>:</p>
         <input type="password" id="deleteConfirmPassword" class="auth-input" placeholder="Sua senha">
         <div style="display: flex; gap:12px; margin-top:8px;">
-            <button id="confirmDeleteAccount" class="auth-btn" style="background:var(--danger);">Excluir Conta</button>
-            <button id="cancelDeleteAccount" class="auth-btn" style="background:#333;">Cancelar</button>
+            <button id="confirmDeleteAccountBtn" class="auth-btn" style="background:var(--danger);">Excluir Conta</button>
+            <button id="cancelDeleteAccountBtn" class="auth-btn" style="background:#333;">Cancelar</button>
         </div>
     </div>
 </div>
@@ -883,13 +875,14 @@
         <div class="edit-modal-field"><label>Confirmar nova senha</label><input type="password" id="confirmNewPassword" class="auth-input" placeholder="Confirmar nova senha"></div>
         <div id="changePwdError" style="color:var(--danger); font-size:12px; margin-bottom:12px;"></div>
         <div style="display: flex; gap:12px; margin-top:8px;">
-            <button id="confirmChangePassword" class="auth-btn" style="background:var(--success);">Alterar Senha</button>
-            <button id="cancelChangePassword" class="auth-btn" style="background:#333;">Cancelar</button>
+            <button id="confirmChangePasswordBtn" class="auth-btn" style="background:var(--success);">Alterar Senha</button>
+            <button id="cancelChangePasswordBtn" class="auth-btn" style="background:#333;">Cancelar</button>
         </div>
     </div>
 </div>
 
 <script>
+    // ==================== FUNÇÕES AUXILIARES ====================
     function parseMoneyValue(inputValue) {
         if (!inputValue && inputValue !== 0) return null;
         let str = String(inputValue).trim();
@@ -925,6 +918,7 @@
     function formatDateExtenso() { return new Date().toLocaleDateString('pt-BR', { day: '2-digit', month: 'long', year: 'numeric' }); }
     function escapeHtml(str) { if(!str) return ''; return str.replace(/[&<>]/g, m=>({'&':'&amp;','<':'&lt;','>':'&gt;'}[m])); }
 
+    // ==================== VALIDAÇÃO DE SENHA FORTE ====================
     function isStrongPassword(password) {
         const str = String(password);
         if (!/^\d+$/.test(str)) return false;
@@ -958,6 +952,7 @@
         return errors;
     }
 
+    // ==================== GERENCIAMENTO DE USUÁRIOS ====================
     function loadUsers() { return JSON.parse(localStorage.getItem("appUsersMobile") || "{}"); }
     function loadDeletedUsers() { return JSON.parse(localStorage.getItem("deletedUsers") || "{}"); }
     function saveDeletedUsers(deleted) { localStorage.setItem("deletedUsers", JSON.stringify(deleted)); }
@@ -990,11 +985,14 @@
         
         users[nome] = { senha, transacoes: [], catEntrada: categoriaEntradas, catSaida: categoriaSaidas };
         saveUsers(users);
+        return true;
     }
     
     function loginUser(nome, senha) {
         let users = loadUsers();
-        if(!users[nome] || users[nome].senha !== senha) throw new Error("Nome ou senha incorretos!");
+        if(!users[nome]) throw new Error("Usuário não encontrado!");
+        if(users[nome].senha !== senha) throw new Error("Senha incorreta!");
+        
         currentUser = nome;
         transacoes = users[nome].transacoes || [];
         if(users[nome].catEntrada) categoriaEntradas = users[nome].catEntrada;
@@ -1004,20 +1002,6 @@
             return { success: false, needStrongPassword: true };
         }
         return { success: true };
-    }
-    
-    function updateUserPassword(nome, newPassword) {
-        let users = loadUsers();
-        if(!users[nome]) return false;
-        
-        const passwordErrors = validatePasswordRequirements(newPassword);
-        if(passwordErrors.length > 0) {
-            throw new Error(passwordErrors[0]);
-        }
-        
-        users[nome].senha = newPassword;
-        saveUsers(users);
-        return true;
     }
     
     function saveCurrentUser() {
@@ -1048,6 +1032,21 @@
         return true;
     }
 
+    function updateUserPassword(nome, newPassword) {
+        let users = loadUsers();
+        if(!users[nome]) return false;
+        
+        const passwordErrors = validatePasswordRequirements(newPassword);
+        if(passwordErrors.length > 0) {
+            throw new Error(passwordErrors[0]);
+        }
+        
+        users[nome].senha = newPassword;
+        saveUsers(users);
+        return true;
+    }
+
+    // ==================== FUNÇÕES DO APP ====================
     function atualizarSelectCategorias(selectEl = null) {
         let cats = tipoSelecionadoMobile === 'entrada' ? categoriaEntradas : categoriaSaidas;
         if(selectEl) {
@@ -1065,6 +1064,8 @@
         const reqNoRepeat = document.getElementById('reqNoRepeat');
         const reqNoSequence = document.getElementById('reqNoSequence');
         
+        if(!reqLength) return;
+        
         const lengthOk = senha.length >= 4 && senha.length <= 6;
         const onlyNumbersOk = /^\d*$/.test(senha);
         const noRepeatOk = !/(\d)\1/.test(senha);
@@ -1078,10 +1079,10 @@
             if (senha.includes(seq)) { noSequenceOk = false; break; }
         }
         
-        if(reqLength) reqLength.classList.toggle('valid', lengthOk);
-        if(reqOnlyNumbers) reqOnlyNumbers.classList.toggle('valid', onlyNumbersOk);
-        if(reqNoRepeat) reqNoRepeat.classList.toggle('valid', noRepeatOk);
-        if(reqNoSequence) reqNoSequence.classList.toggle('valid', noSequenceOk);
+        reqLength.classList.toggle('valid', lengthOk);
+        reqOnlyNumbers.classList.toggle('valid', onlyNumbersOk);
+        reqNoRepeat.classList.toggle('valid', noRepeatOk);
+        reqNoSequence.classList.toggle('valid', noSequenceOk);
     }
 
     function calcularCards() {
@@ -1178,32 +1179,31 @@
     }
     
     function atualizarGraficos() {
+        if(!document.getElementById('chartEntradasCat')) return;
+        
         let entradasCat = {}; categoriaEntradas.forEach(c=>entradasCat[c]=0);
         transacoes.filter(t=>t.tipo==='entrada').forEach(t=>entradasCat[t.categoria]+=t.valor);
         let saidasCat = {}; categoriaSaidas.forEach(c=>saidasCat[c]=0);
         transacoes.filter(t=>t.tipo==='saida').forEach(t=>saidasCat[t.categoria]+=t.valor);
+        
         if(chart1) chart1.destroy();
-        if(document.getElementById('chartEntradasCat')) {
-            chart1 = new Chart(document.getElementById('chartEntradasCat'), { type:'pie', data:{ labels:Object.keys(entradasCat), datasets:[{ data:Object.values(entradasCat), backgroundColor:['#10b981','#34d399','#6ee7b7','#a7f3d0','#d1fae5'] }] }, options:{ responsive:true, plugins:{ legend:{ position:'bottom', labels:{ color: getComputedStyle(document.body).getPropertyValue('--text-primary') || '#1a1a2e' } } } } });
-        }
+        chart1 = new Chart(document.getElementById('chartEntradasCat'), { type:'pie', data:{ labels:Object.keys(entradasCat), datasets:[{ data:Object.values(entradasCat), backgroundColor:['#10b981','#34d399','#6ee7b7','#a7f3d0','#d1fae5'] }] }, options:{ responsive:true, plugins:{ legend:{ position:'bottom', labels:{ color: getComputedStyle(document.body).getPropertyValue('--text-primary') || '#1a1a2e' } } } } });
+        
         if(chart2) chart2.destroy();
-        if(document.getElementById('chartSaidasCat')) {
-            chart2 = new Chart(document.getElementById('chartSaidasCat'), { type:'pie', data:{ labels:Object.keys(saidasCat), datasets:[{ data:Object.values(saidasCat), backgroundColor:['#ef4444','#f87171','#fca5a5','#fecaca','#fee2e2','#ffc4c4'] }] }, options:{ responsive:true, plugins:{ legend:{ position:'bottom', labels:{ color: getComputedStyle(document.body).getPropertyValue('--text-primary') || '#1a1a2e' } } } } });
-        }
+        chart2 = new Chart(document.getElementById('chartSaidasCat'), { type:'pie', data:{ labels:Object.keys(saidasCat), datasets:[{ data:Object.values(saidasCat), backgroundColor:['#ef4444','#f87171','#fca5a5','#fecaca','#fee2e2','#ffc4c4'] }] }, options:{ responsive:true, plugins:{ legend:{ position:'bottom', labels:{ color: getComputedStyle(document.body).getPropertyValue('--text-primary') || '#1a1a2e' } } } } });
+        
         let diasMap = new Map();
         transacoes.forEach(t=>{ if(!diasMap.has(t.data)) diasMap.set(t.data,{entrada:0,saida:0}); let d=diasMap.get(t.data); if(t.tipo==='entrada') d.entrada+=t.valor; else d.saida+=t.valor; });
         let sorted = Array.from(diasMap.keys()).sort();
         let entradasDiarias = sorted.map(d=>diasMap.get(d).entrada);
         let saidasDiarias = sorted.map(d=>diasMap.get(d).saida);
         let labels = sorted.map(d=>formatDateBR(d));
+        
         if(chart3) chart3.destroy();
-        if(document.getElementById('chartEvolucaoEnt')) {
-            chart3 = new Chart(document.getElementById('chartEvolucaoEnt'), { type:'line', data:{ labels, datasets:[{ label:'Entradas', data:entradasDiarias, borderColor:'#10b981', backgroundColor:'rgba(16,185,129,0.1)', fill:true, tension:0.3 }] }, options:{ responsive:true, plugins:{ legend:{ labels:{ color: getComputedStyle(document.body).getPropertyValue('--text-primary') || '#1a1a2e' } } } } });
-        }
+        chart3 = new Chart(document.getElementById('chartEvolucaoEnt'), { type:'line', data:{ labels, datasets:[{ label:'Entradas', data:entradasDiarias, borderColor:'#10b981', backgroundColor:'rgba(16,185,129,0.1)', fill:true, tension:0.3 }] }, options:{ responsive:true, plugins:{ legend:{ labels:{ color: getComputedStyle(document.body).getPropertyValue('--text-primary') || '#1a1a2e' } } } } });
+        
         if(chart4) chart4.destroy();
-        if(document.getElementById('chartEvolucaoSai')) {
-            chart4 = new Chart(document.getElementById('chartEvolucaoSai'), { type:'line', data:{ labels, datasets:[{ label:'Saídas', data:saidasDiarias, borderColor:'#ef4444', backgroundColor:'rgba(239,68,68,0.1)', fill:true, tension:0.3 }] }, options:{ responsive:true, plugins:{ legend:{ labels:{ color: getComputedStyle(document.body).getPropertyValue('--text-primary') || '#1a1a2e' } } } } });
-        }
+        chart4 = new Chart(document.getElementById('chartEvolucaoSai'), { type:'line', data:{ labels, datasets:[{ label:'Saídas', data:saidasDiarias, borderColor:'#ef4444', backgroundColor:'rgba(239,68,68,0.1)', fill:true, tension:0.3 }] }, options:{ responsive:true, plugins:{ legend:{ labels:{ color: getComputedStyle(document.body).getPropertyValue('--text-primary') || '#1a1a2e' } } } } });
     }
     
     function renderResumoCat() {
@@ -1361,7 +1361,7 @@
         const agencia = "0001";
         const conta = currentUser.substring(0, 8).toUpperCase().padEnd(8, 'X');
         let html = `<!DOCTYPE html><html><head><meta charset="UTF-8"><title>Extrato - ${currentUser}</title><style>body{font-family:'Courier New', monospace; background:white; padding:20px; color:#000;} .header-banco{text-align:center; border-bottom:2px solid #000; padding-bottom:15px;} .info-conta{display:flex; justify-content:space-between; margin:15px 0; padding:10px; background:#f5f5f5; border:1px solid #000;} .resumo-extrato{display:flex; justify-content:space-between; margin:20px 0; padding:12px; background:#e8e8e8; border:1px solid #000;} table{width:100%; border-collapse:collapse;} th, td{padding:8px; border:1px solid #ccc; text-align:left;} th{background:#000; color:white;} .valor-credito{color:#006600; font-weight:bold;} .valor-debito{color:#cc0000; font-weight:bold;} </style></head><body><div class="header-banco"><h1>💰 EXTRATO FINANCEIRO</h1><p>Movimentações - ${formatDateExtenso()}</p></div><div class="info-conta"><span>Agência: ${agencia}</span><span>Conta: ${conta}</span><span>Cliente: ${currentUser}</span><span>Extrato: ${numeroExtrato}</span></div><div class="resumo-extrato"><div><strong>Total Créditos:</strong> ${formatMoney(totalEntradas)}</div><div><strong>Total Débitos:</strong> ${formatMoney(totalSaidas)}</div><div><strong>Saldo:</strong> ${formatMoney(saldoAtual)}</div></div></td><thead><tr><th>Data</th><th>Descrição</th><th>Categoria</th><th>Valor</th><th>Saldo</th></tr></thead><tbody>`;
-        for(let t of transacoesOrdenadas) { html += `<tr><td class="center">${formatDateBR(t.data)}</td><td>${escapeHtml(t.descricao)}</td><td>${escapeHtml(t.categoria)}</td><td class="${t.tipo === 'entrada' ? 'valor-credito' : 'valor-debito'}">${t.tipo === 'entrada' ? formatMoney(t.valor) : `- ${formatMoney(t.valor)}`}</td><td class="center">${formatMoney(saldosMap.get(t.id) || 0)}</td></tr>`; }
+        for(let t of transacoesOrdenadas) { html += `<tr><td>${formatDateBR(t.data)}</td><td>${escapeHtml(t.descricao)}</td><td>${escapeHtml(t.categoria)}</td><td class="${t.tipo === 'entrada' ? 'valor-credito' : 'valor-debito'}">${t.tipo === 'entrada' ? formatMoney(t.valor) : `- ${formatMoney(t.valor)}`}</td><td>${formatMoney(saldosMap.get(t.id) || 0)}</td></tr>`; }
         html += `</tbody></table><footer style="margin-top:20px; text-align:center; font-size:9px;">Gerado em ${new Date().toLocaleString('pt-BR')} - ${transacoes.length} lançamentos</footer></body></html>`;
         const div = document.createElement('div'); div.innerHTML = html; document.body.appendChild(div);
         const opt = { margin: [0.5,0.5,0.5,0.5], filename: `Extrato_${currentUser}_${new Date().toISOString().slice(0,10)}.pdf`, image: { type: 'jpeg', quality: 0.98 }, html2canvas: { scale: 2 }, jsPDF: { unit: 'in', format: 'a4', orientation: 'portrait' } };
@@ -1375,6 +1375,48 @@
             document.getElementById('loginScreen').style.display = 'flex';
             document.getElementById('loginNome').value = '';
             document.getElementById('loginSenha').value = '';
+        }
+    }
+
+    function showForceUpdateModal() {
+        document.getElementById('forceNewPassword').value = '';
+        document.getElementById('forceConfirmPassword').value = '';
+        document.getElementById('forceErrorMsg').innerText = '';
+        document.getElementById('forceUpdateModal').classList.add('active');
+        document.getElementById('mainApp').style.display = 'none';
+    }
+
+    function confirmForceUpdate() {
+        const newPassword = document.getElementById('forceNewPassword').value;
+        const confirmPassword = document.getElementById('forceConfirmPassword').value;
+        
+        if(!newPassword || !confirmPassword) {
+            document.getElementById('forceErrorMsg').innerText = "Preencha todos os campos!";
+            return;
+        }
+        
+        if(newPassword !== confirmPassword) {
+            document.getElementById('forceErrorMsg').innerText = "As senhas não coincidem!";
+            return;
+        }
+        
+        try {
+            const passwordErrors = validatePasswordRequirements(newPassword);
+            if(passwordErrors.length > 0) {
+                document.getElementById('forceErrorMsg').innerText = passwordErrors[0];
+                return;
+            }
+            
+            let users = loadUsers();
+            users[currentUser].senha = newPassword;
+            saveUsers(users);
+            
+            document.getElementById('forceUpdateModal').classList.remove('active');
+            document.getElementById('mainApp').style.display = 'block';
+            refreshAll();
+            alert("✅ Senha atualizada com sucesso!");
+        } catch(e) {
+            document.getElementById('forceErrorMsg').innerText = e.message;
         }
     }
 
@@ -1449,212 +1491,153 @@
         }
     }
 
-    function showForceUpdateModal() {
-        document.getElementById('forceNewPassword').value = '';
-        document.getElementById('forceConfirmPassword').value = '';
-        document.getElementById('forceErrorMsg').innerText = '';
-        document.getElementById('forceUpdateModal').classList.add('active');
-        document.getElementById('mainApp').style.display = 'none';
-    }
-
-    function confirmForceUpdate() {
-        const newPassword = document.getElementById('forceNewPassword').value;
-        const confirmPassword = document.getElementById('forceConfirmPassword').value;
-        
-        if(!newPassword || !confirmPassword) {
-            document.getElementById('forceErrorMsg').innerText = "Preencha todos os campos!";
-            return;
-        }
-        
-        if(newPassword !== confirmPassword) {
-            document.getElementById('forceErrorMsg').innerText = "As senhas não coincidem!";
-            return;
-        }
-        
-        try {
-            const passwordErrors = validatePasswordRequirements(newPassword);
-            if(passwordErrors.length > 0) {
-                document.getElementById('forceErrorMsg').innerText = passwordErrors[0];
-                return;
-            }
-            
-            let users = loadUsers();
-            users[currentUser].senha = newPassword;
-            saveUsers(users);
-            
-            document.getElementById('forceUpdateModal').classList.remove('active');
-            document.getElementById('mainApp').style.display = 'block';
-            refreshAll();
-            alert("✅ Senha atualizada com sucesso!");
-        } catch(e) {
-            document.getElementById('forceErrorMsg').innerText = e.message;
-        }
-    }
-    
-    // Eventos do menu
-    const menuBtn = document.getElementById('menuBtn');
-    if(menuBtn) {
-        menuBtn.onclick = (e) => {
-            e.stopPropagation();
-            document.getElementById('menuContent').classList.toggle('show-menu');
-        };
-    }
-    document.addEventListener('click', () => {
-        const menuContent = document.getElementById('menuContent');
-        if(menuContent) menuContent.classList.remove('show-menu');
-    });
-    
-    const menuBackup = document.getElementById('menuBackup');
-    if(menuBackup) menuBackup.onclick = () => { document.getElementById('backupModalMobile').classList.add('active'); };
-    
-    const menuRestore = document.getElementById('menuRestore');
-    if(menuRestore) menuRestore.onclick = restoreAction;
-    
-    const menuPdf = document.getElementById('menuPdf');
-    if(menuPdf) menuPdf.onclick = gerarPDF;
-    
-    const menuClearAll = document.getElementById('menuClearAll');
-    if(menuClearAll) menuClearAll.onclick = clearAllTransactions;
-    
-    const menuDeleteAccount = document.getElementById('menuDeleteAccount');
-    if(menuDeleteAccount) menuDeleteAccount.onclick = openDeleteAccountModal;
-    
-    const menuChangePassword = document.getElementById('menuChangePassword');
-    if(menuChangePassword) menuChangePassword.onclick = openChangePasswordModal;
-    
-    const menuTheme = document.getElementById('menuTheme');
-    if(menuTheme) menuTheme.onclick = toggleTheme;
-    
-    const menuLogout = document.getElementById('menuLogout');
-    if(menuLogout) menuLogout.onclick = logout;
-    
-    // Eventos principais
-    const loginBtn = document.getElementById('loginBtn');
-    if(loginBtn) {
-        loginBtn.onclick=()=>{ 
-            try{ 
-                const result = loginUser(document.getElementById('loginNome').value, document.getElementById('loginSenha').value);
+    // ==================== EVENTOS ====================
+    document.addEventListener('DOMContentLoaded', function() {
+        // Eventos de Login/Registro
+        document.getElementById('loginBtn').addEventListener('click', function() {
+            try {
+                const nome = document.getElementById('loginNome').value.trim();
+                const senha = document.getElementById('loginSenha').value;
+                
+                if(!nome || !senha) {
+                    document.getElementById('loginErrorMsg').innerText = "Preencha todos os campos!";
+                    return;
+                }
+                
+                const result = loginUser(nome, senha);
                 if(result && result.needStrongPassword) {
                     showForceUpdateModal();
                 } else {
-                    document.getElementById('loginScreen').style.display='none'; 
-                    document.getElementById('mainApp').style.display='block'; 
-                    document.getElementById('userNameDisplay').innerText=currentUser; 
-                    atualizarSelectCategorias(); 
-                    refreshAll(); 
+                    document.getElementById('loginScreen').style.display = 'none';
+                    document.getElementById('mainApp').style.display = 'block';
+                    document.getElementById('userNameDisplay').innerText = currentUser;
+                    atualizarSelectCategorias();
+                    refreshAll();
                     loadThemePreference();
                     applyHideValuesState();
                 }
-            }catch(e){ document.getElementById('loginErrorMsg').innerText=e.message; } 
-        };
-    }
-    
-    const registerBtn = document.getElementById('registerBtn');
-    if(registerBtn) {
-        registerBtn.onclick=()=>{ 
-            let n=document.getElementById('regNome').value, 
-               p=document.getElementById('regSenha').value, 
-               c=document.getElementById('regConfirm').value; 
-            if(!n||!p) return document.getElementById('regErrorMsg').innerText="Preencha todos os campos!"; 
-            if(p!==c) return document.getElementById('regErrorMsg').innerText="Senhas diferentes!"; 
-            try{ 
-                registerUser(n,p); 
-                alert("Conta criada! Faça login."); 
-                document.getElementById('regScreen').style.display='none'; 
-                document.getElementById('loginScreen').style.display='flex'; 
+            } catch(e) {
+                document.getElementById('loginErrorMsg').innerText = e.message;
+            }
+        });
+
+        document.getElementById('registerBtn').addEventListener('click', function() {
+            try {
+                const nome = document.getElementById('regNome').value.trim();
+                const senha = document.getElementById('regSenha').value;
+                const confirm = document.getElementById('regConfirm').value;
+                
+                if(!nome || !senha || !confirm) {
+                    document.getElementById('regErrorMsg').innerText = "Preencha todos os campos!";
+                    return;
+                }
+                
+                if(senha !== confirm) {
+                    document.getElementById('regErrorMsg').innerText = "As senhas não coincidem!";
+                    return;
+                }
+                
+                registerUser(nome, senha);
+                alert("Conta criada com sucesso! Faça login.");
+                document.getElementById('regScreen').style.display = 'none';
+                document.getElementById('loginScreen').style.display = 'flex';
                 document.getElementById('regNome').value = '';
                 document.getElementById('regSenha').value = '';
                 document.getElementById('regConfirm').value = '';
                 document.getElementById('regErrorMsg').innerText = '';
-            }catch(e){ 
-                document.getElementById('regErrorMsg').innerText=e.message; 
-            } 
-        };
-    }
-    
-    const showRegLink = document.getElementById('showRegLink');
-    if(showRegLink) {
-        showRegLink.onclick=()=>{ 
-            document.getElementById('loginScreen').style.display='none'; 
-            document.getElementById('regScreen').style.display='flex';
+            } catch(e) {
+                document.getElementById('regErrorMsg').innerText = e.message;
+            }
+        });
+
+        document.getElementById('showRegLink').addEventListener('click', function(e) {
+            e.preventDefault();
+            document.getElementById('loginScreen').style.display = 'none';
+            document.getElementById('regScreen').style.display = 'flex';
             document.getElementById('loginErrorMsg').innerText = '';
-        };
-    }
-    
-    const showLoginLink = document.getElementById('showLoginLink');
-    if(showLoginLink) {
-        showLoginLink.onclick=()=>{ 
-            document.getElementById('regScreen').style.display='none'; 
-            document.getElementById('loginScreen').style.display='flex';
+        });
+
+        document.getElementById('showLoginLink').addEventListener('click', function(e) {
+            e.preventDefault();
+            document.getElementById('regScreen').style.display = 'none';
+            document.getElementById('loginScreen').style.display = 'flex';
             document.getElementById('regErrorMsg').innerText = '';
-        };
-    }
-    
-    const hideValuesBtn = document.getElementById('hideValuesBtn');
-    if(hideValuesBtn) hideValuesBtn.onclick = toggleHideValues;
-    
-    const regSenha = document.getElementById('regSenha');
-    if(regSenha) {
-        regSenha.addEventListener('input', updatePasswordReqs);
-        regSenha.addEventListener('keyup', updatePasswordReqs);
-    }
-    
-    document.querySelectorAll('.mobile-tab').forEach(btn=>{ btn.onclick=()=>{ document.querySelectorAll('.mobile-tab').forEach(b=>b.classList.remove('active')); btn.classList.add('active'); let tabName=btn.dataset.tab; document.querySelectorAll('.tab-pane').forEach(p=>p.style.display='none'); if(tabName==='movements') document.getElementById('tabMovements').style.display='block'; if(tabName==='add') document.getElementById('tabAdd').style.display='block'; if(tabName==='charts'){ document.getElementById('tabCharts').style.display='block'; setTimeout(atualizarGraficos, 100); } if(tabName==='cats'){ document.getElementById('tabCats').style.display='block'; renderResumoCat(); } }; });
-    
-    document.querySelectorAll('.tipo-btn').forEach(btn=>{ btn.onclick=()=>{ document.querySelectorAll('.tipo-btn').forEach(b=>b.classList.remove('active')); btn.classList.add('active'); tipoSelecionadoMobile=btn.dataset.tipoMobile; atualizarSelectCategorias(); }; });
-    
-    const mobileAddTransacao = document.getElementById('mobileAddTransacao');
-    if(mobileAddTransacao) mobileAddTransacao.onclick = addTransacao;
-    
-    const mobileAddCatBtn = document.getElementById('mobileAddCatBtn');
-    if(mobileAddCatBtn) mobileAddCatBtn.onclick = () => { document.getElementById('catModal').classList.add('active'); };
-    
-    const confirmCatBtn = document.getElementById('confirmCatBtn');
-    if(confirmCatBtn) confirmCatBtn.onclick = novaCategoria;
-    
-    const cancelCatBtn = document.getElementById('cancelCatBtn');
-    if(cancelCatBtn) cancelCatBtn.onclick = () => { document.getElementById('catModal').classList.remove('active'); document.getElementById('newCatName').value = ''; };
-    
-    const filtroTipoMobile = document.getElementById('filtroTipoMobile');
-    if(filtroTipoMobile) filtroTipoMobile.onchange = renderMovements;
-    
-    const filtroCatMobile = document.getElementById('filtroCatMobile');
-    if(filtroCatMobile) filtroCatMobile.onchange = renderMovements;
-    
-    const saveEditBtn = document.getElementById('saveEditBtn');
-    if(saveEditBtn) saveEditBtn.onclick = saveEdit;
-    
-    const cancelEditBtn = document.getElementById('cancelEditBtn');
-    if(cancelEditBtn) cancelEditBtn.onclick = () => { document.getElementById('editModal').classList.remove('active'); };
-    
-    const confirmBackupMobile = document.getElementById('confirmBackupMobile');
-    if(confirmBackupMobile) confirmBackupMobile.onclick = backupAction;
-    
-    const cancelBackupMobile = document.getElementById('cancelBackupMobile');
-    if(cancelBackupMobile) cancelBackupMobile.onclick = () => { document.getElementById('backupModalMobile').classList.remove('active'); document.getElementById('backupPass').value = ''; };
-    
-    const confirmDeleteAccount = document.getElementById('confirmDeleteAccount');
-    if(confirmDeleteAccount) confirmDeleteAccount.onclick = confirmDeleteAccount;
-    
-    const cancelDeleteAccount = document.getElementById('cancelDeleteAccount');
-    if(cancelDeleteAccount) cancelDeleteAccount.onclick = () => { document.getElementById('deleteAccountModal').classList.remove('active'); };
-    
-    const confirmChangePassword = document.getElementById('confirmChangePassword');
-    if(confirmChangePassword) confirmChangePassword.onclick = confirmChangePassword;
-    
-    const cancelChangePassword = document.getElementById('cancelChangePassword');
-    if(cancelChangePassword) cancelChangePassword.onclick = () => { document.getElementById('changePasswordModal').classList.remove('active'); };
-    
-    const forceUpdateBtn = document.getElementById('forceUpdateBtn');
-    if(forceUpdateBtn) forceUpdateBtn.onclick = confirmForceUpdate;
-    
-    let today = new Date().toISOString().slice(0,10);
-    const mobileData = document.getElementById('mobileData');
-    if(mobileData) mobileData.value = today;
-    
-    atualizarSelectCategorias();
-    loadThemePreference();
-    applyHideValuesState();
+        });
+
+        // Validação de senha em tempo real
+        document.getElementById('regSenha').addEventListener('input', updatePasswordReqs);
+        document.getElementById('regSenha').addEventListener('keyup', updatePasswordReqs);
+
+        // Eventos do Menu
+        document.getElementById('menuBtn').addEventListener('click', function(e) {
+            e.stopPropagation();
+            document.getElementById('menuContent').classList.toggle('show-menu');
+        });
+
+        document.addEventListener('click', function() {
+            document.getElementById('menuContent').classList.remove('show-menu');
+        });
+
+        document.getElementById('menuPdf').addEventListener('click', gerarPDF);
+        document.getElementById('menuBackup').addEventListener('click', function() { document.getElementById('backupModalMobile').classList.add('active'); });
+        document.getElementById('menuRestore').addEventListener('click', restoreAction);
+        document.getElementById('menuChangePassword').addEventListener('click', openChangePasswordModal);
+        document.getElementById('menuTheme').addEventListener('click', toggleTheme);
+        document.getElementById('menuClearAll').addEventListener('click', clearAllTransactions);
+        document.getElementById('menuDeleteAccount').addEventListener('click', openDeleteAccountModal);
+        document.getElementById('menuLogout').addEventListener('click', logout);
+
+        // Eventos dos Modais
+        document.getElementById('hideValuesBtn').addEventListener('click', toggleHideValues);
+        document.getElementById('mobileAddTransacao').addEventListener('click', addTransacao);
+        document.getElementById('mobileAddCatBtn').addEventListener('click', function() { document.getElementById('catModal').classList.add('active'); });
+        document.getElementById('confirmCatBtn').addEventListener('click', novaCategoria);
+        document.getElementById('cancelCatBtn').addEventListener('click', function() { document.getElementById('catModal').classList.remove('active'); document.getElementById('newCatName').value = ''; });
+        document.getElementById('filtroTipoMobile').addEventListener('change', renderMovements);
+        document.getElementById('filtroCatMobile').addEventListener('change', renderMovements);
+        document.getElementById('saveEditBtn').addEventListener('click', saveEdit);
+        document.getElementById('cancelEditBtn').addEventListener('click', function() { document.getElementById('editModal').classList.remove('active'); });
+        document.getElementById('confirmBackupMobile').addEventListener('click', backupAction);
+        document.getElementById('cancelBackupMobile').addEventListener('click', function() { document.getElementById('backupModalMobile').classList.remove('active'); document.getElementById('backupPass').value = ''; });
+        document.getElementById('confirmDeleteAccountBtn').addEventListener('click', confirmDeleteAccount);
+        document.getElementById('cancelDeleteAccountBtn').addEventListener('click', function() { document.getElementById('deleteAccountModal').classList.remove('active'); });
+        document.getElementById('confirmChangePasswordBtn').addEventListener('click', confirmChangePassword);
+        document.getElementById('cancelChangePasswordBtn').addEventListener('click', function() { document.getElementById('changePasswordModal').classList.remove('active'); });
+        document.getElementById('forceUpdateBtn').addEventListener('click', confirmForceUpdate);
+
+        // Tabs
+        document.querySelectorAll('.mobile-tab').forEach(btn => {
+            btn.addEventListener('click', function() {
+                document.querySelectorAll('.mobile-tab').forEach(b => b.classList.remove('active'));
+                this.classList.add('active');
+                let tabName = this.dataset.tab;
+                document.querySelectorAll('.tab-pane').forEach(p => p.style.display = 'none');
+                if(tabName === 'movements') document.getElementById('tabMovements').style.display = 'block';
+                if(tabName === 'add') document.getElementById('tabAdd').style.display = 'block';
+                if(tabName === 'charts') { document.getElementById('tabCharts').style.display = 'block'; setTimeout(atualizarGraficos, 100); }
+                if(tabName === 'cats') { document.getElementById('tabCats').style.display = 'block'; renderResumoCat(); }
+            });
+        });
+
+        // Tipo de transação
+        document.querySelectorAll('.tipo-btn').forEach(btn => {
+            btn.addEventListener('click', function() {
+                document.querySelectorAll('.tipo-btn').forEach(b => b.classList.remove('active'));
+                this.classList.add('active');
+                tipoSelecionadoMobile = this.dataset.tipoMobile;
+                atualizarSelectCategorias();
+            });
+        });
+
+        // Data padrão
+        let today = new Date().toISOString().slice(0, 10);
+        if(document.getElementById('mobileData')) document.getElementById('mobileData').value = today;
+        
+        // Inicialização
+        atualizarSelectCategorias();
+        loadThemePreference();
+        applyHideValuesState();
+    });
 </script>
 </body>
 </html>
