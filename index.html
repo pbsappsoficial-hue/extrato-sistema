@@ -169,6 +169,73 @@
             text-decoration: none;
         }
 
+        .password-requirements {
+            background: var(--bg-elevated);
+            border-radius: 16px;
+            padding: 12px;
+            margin-bottom: 16px;
+            font-size: 12px;
+            border-left: 3px solid var(--warning);
+        }
+        .password-requirements p {
+            font-weight: 600;
+            margin-bottom: 8px;
+            color: var(--text-secondary);
+        }
+        .password-requirements ul {
+            margin-left: 20px;
+            color: var(--text-muted);
+        }
+        .password-requirements li {
+            margin: 4px 0;
+        }
+        .password-requirements li.valid {
+            color: var(--success);
+            text-decoration: line-through;
+        }
+        .req-error {
+            color: var(--danger);
+            font-size: 12px;
+            margin-top: -12px;
+            margin-bottom: 12px;
+            display: block;
+        }
+
+        .force-update-modal {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0,0,0,0.95);
+            z-index: 1200;
+            display: none;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+        .force-update-modal.active {
+            display: flex;
+        }
+        .force-update-card {
+            background: var(--bg-card);
+            border-radius: 40px;
+            padding: 28px;
+            width: 100%;
+            max-width: 320px;
+            border: 1px solid var(--border);
+            text-align: center;
+        }
+        .force-update-card h3 {
+            color: var(--danger);
+            margin-bottom: 16px;
+        }
+        .force-update-card p {
+            margin-bottom: 20px;
+            font-size: 14px;
+            color: var(--text-secondary);
+        }
+
         .app-container {
             display: none;
             padding: 16px 16px 80px 16px;
@@ -635,7 +702,7 @@
         <div class="sub">Controle total do que entra e sai</div>
         <div id="loginErrorMsg" style="color:#ef4444; font-size:13px; margin-bottom:12px;"></div>
         <input type="text" id="loginNome" class="auth-input" placeholder="Nome do usuário">
-        <input type="password" id="loginSenha" class="auth-input" placeholder="Senha">
+        <input type="password" id="loginSenha" class="auth-input" placeholder="Senha (4-6 números)">
         <button id="loginBtn" class="auth-btn">Entrar</button>
         <div class="auth-link">Não tem conta? <a id="showRegLink">Criar nova conta</a></div>
     </div>
@@ -647,10 +714,31 @@
         <div class="sub">Comece a organizar suas finanças</div>
         <div id="regErrorMsg" style="color:#ef4444; font-size:13px; margin-bottom:12px;"></div>
         <input type="text" id="regNome" class="auth-input" placeholder="Nome do usuário">
-        <input type="password" id="regSenha" class="auth-input" placeholder="Senha">
+        <input type="password" id="regSenha" class="auth-input" placeholder="Senha (4-6 números)">
         <input type="password" id="regConfirm" class="auth-input" placeholder="Confirmar senha">
+        <div class="password-requirements" id="passwordReqs">
+            <p>🔒 Requisitos da senha:</p>
+            <ul>
+                <li id="reqLength">✓ 4 a 6 caracteres</li>
+                <li id="reqOnlyNumbers">✓ Apenas números (0-9)</li>
+                <li id="reqNoRepeat">✓ Sem números repetidos (ex: 11, 22, 111)</li>
+                <li id="reqNoSequence">✓ Sem sequências (ex: 123, 321, 234)</li>
+            </ul>
+        </div>
         <button id="registerBtn" class="auth-btn">Criar Conta</button>
         <div class="auth-link">Já tem conta? <a id="showLoginLink">Fazer login</a></div>
+    </div>
+</div>
+
+<div id="forceUpdateModal" class="force-update-modal">
+    <div class="force-update-card">
+        <h3>⚠️ SENHA FRACA DETECTADA</h3>
+        <p>Sua senha atual não atende aos requisitos de segurança. Por segurança, você precisa criar uma nova senha forte.</p>
+        <p style="font-size:12px; margin-bottom:16px;">Requisitos: 4 a 6 números, sem repetições, sem sequências (ex: 123, 321, 11, 22, 111)</p>
+        <input type="password" id="forceNewPassword" class="auth-input" placeholder="Nova senha (4-6 números)">
+        <input type="password" id="forceConfirmPassword" class="auth-input" placeholder="Confirmar nova senha">
+        <button id="forceUpdateBtn" class="auth-btn" style="background:var(--danger);">Atualizar Senha</button>
+        <div id="forceErrorMsg" style="color:var(--danger); font-size:12px; margin-top:12px;"></div>
     </div>
 </div>
 
@@ -666,6 +754,8 @@
                     <button id="menuPdf">📄 Gerar Extrato PDF</button>
                     <button id="menuBackup">💾 Backup</button>
                     <button id="menuRestore">📥 Restaurar Backup</button>
+                    <div class="menu-divider"></div>
+                    <button id="menuChangePassword">🔐 Alterar Senha</button>
                     <div class="menu-divider"></div>
                     <button id="menuTheme">🌓 Alternar Tema</button>
                     <div class="menu-divider"></div>
@@ -785,6 +875,20 @@
     </div>
 </div>
 
+<div id="changePasswordModal" class="modal-mobile">
+    <div class="modal-card">
+        <h3>🔐 Alterar Senha</h3>
+        <div class="edit-modal-field"><label>Senha atual</label><input type="password" id="oldPassword" class="auth-input" placeholder="Senha atual"></div>
+        <div class="edit-modal-field"><label>Nova senha (4-6 números)</label><input type="password" id="newPassword" class="auth-input" placeholder="Nova senha"></div>
+        <div class="edit-modal-field"><label>Confirmar nova senha</label><input type="password" id="confirmNewPassword" class="auth-input" placeholder="Confirmar nova senha"></div>
+        <div id="changePwdError" style="color:var(--danger); font-size:12px; margin-bottom:12px;"></div>
+        <div style="display: flex; gap:12px; margin-top:8px;">
+            <button id="confirmChangePassword" class="auth-btn" style="background:var(--success);">Alterar Senha</button>
+            <button id="cancelChangePassword" class="auth-btn" style="background:#333;">Cancelar</button>
+        </div>
+    </div>
+</div>
+
 <script>
     function parseMoneyValue(inputValue) {
         if (!inputValue && inputValue !== 0) return null;
@@ -821,6 +925,39 @@
     function formatDateExtenso() { return new Date().toLocaleDateString('pt-BR', { day: '2-digit', month: 'long', year: 'numeric' }); }
     function escapeHtml(str) { if(!str) return ''; return str.replace(/[&<>]/g, m=>({'&':'&amp;','<':'&lt;','>':'&gt;'}[m])); }
 
+    function isStrongPassword(password) {
+        const str = String(password);
+        if (!/^\d+$/.test(str)) return false;
+        if (str.length < 4 || str.length > 6) return false;
+        if (/(\d)\1/.test(str)) return false;
+        const sequences = ['123', '234', '345', '456', '567', '678', '789', '012', '1234', '2345', '3456', '4567', '5678', '6789'];
+        for (let seq of sequences) {
+            if (str.includes(seq)) return false;
+        }
+        const reverseSequences = ['321', '432', '543', '654', '765', '876', '987', '3210', '4321', '5432', '6543', '7654', '8765', '9876'];
+        for (let seq of reverseSequences) {
+            if (str.includes(seq)) return false;
+        }
+        return true;
+    }
+
+    function validatePasswordRequirements(password) {
+        const errors = [];
+        const str = String(password);
+        if (str.length < 4 || str.length > 6) errors.push("A senha deve ter entre 4 e 6 dígitos");
+        if (!/^\d+$/.test(str)) errors.push("A senha deve conter apenas números");
+        if (/(\d)\1/.test(str)) errors.push("A senha não pode ter números repetidos (ex: 11, 22, 111)");
+        const sequences = ['123', '234', '345', '456', '567', '678', '789', '012', '1234', '2345', '3456', '4567', '5678', '6789'];
+        for (let seq of sequences) {
+            if (str.includes(seq)) errors.push("A senha não pode ter sequências crescentes (ex: 123, 234)");
+        }
+        const reverseSequences = ['321', '432', '543', '654', '765', '876', '987', '3210', '4321', '5432', '6543', '7654', '8765', '9876'];
+        for (let seq of reverseSequences) {
+            if (str.includes(seq)) errors.push("A senha não pode ter sequências decrescentes (ex: 321, 432)");
+        }
+        return errors;
+    }
+
     function loadUsers() { return JSON.parse(localStorage.getItem("appUsersMobile") || "{}"); }
     function loadDeletedUsers() { return JSON.parse(localStorage.getItem("deletedUsers") || "{}"); }
     function saveDeletedUsers(deleted) { localStorage.setItem("deletedUsers", JSON.stringify(deleted)); }
@@ -830,24 +967,27 @@
         let users = loadUsers();
         let deletedUsers = loadDeletedUsers();
         
-        // Verificar se o usuário foi excluído recentemente
         if(deletedUsers[nome]) {
             const deletionTime = deletedUsers[nome].deletedAt;
             const now = Date.now();
             const sevenDaysInMs = 7 * 24 * 60 * 60 * 1000;
             const timeLeft = sevenDaysInMs - (now - deletionTime);
-            
             if(timeLeft > 0) {
                 const daysLeft = Math.ceil(timeLeft / (24 * 60 * 60 * 1000));
                 throw new Error(`Este nome de usuário foi excluído há menos de 7 dias. Aguarde ${daysLeft} dia(s) para criar uma nova conta com este nome.`);
             } else {
-                // Passou dos 7 dias, pode remover do registro de excluídos
                 delete deletedUsers[nome];
                 saveDeletedUsers(deletedUsers);
             }
         }
         
         if(users[nome]) throw new Error("Usuário já existe!");
+        
+        const passwordErrors = validatePasswordRequirements(senha);
+        if(passwordErrors.length > 0) {
+            throw new Error(passwordErrors[0]);
+        }
+        
         users[nome] = { senha, transacoes: [], catEntrada: categoriaEntradas, catSaida: categoriaSaidas };
         saveUsers(users);
     }
@@ -859,6 +999,25 @@
         transacoes = users[nome].transacoes || [];
         if(users[nome].catEntrada) categoriaEntradas = users[nome].catEntrada;
         if(users[nome].catSaida) categoriaSaidas = users[nome].catSaida;
+        
+        if(!isStrongPassword(users[nome].senha)) {
+            return { success: false, needStrongPassword: true };
+        }
+        return { success: true };
+    }
+    
+    function updateUserPassword(nome, newPassword) {
+        let users = loadUsers();
+        if(!users[nome]) return false;
+        
+        const passwordErrors = validatePasswordRequirements(newPassword);
+        if(passwordErrors.length > 0) {
+            throw new Error(passwordErrors[0]);
+        }
+        
+        users[nome].senha = newPassword;
+        saveUsers(users);
+        return true;
     }
     
     function saveCurrentUser() {
@@ -877,7 +1036,6 @@
         if(!users[currentUser]) return false;
         if(users[currentUser].senha !== password) return false;
         
-        // Registrar usuário excluído com timestamp
         let deletedUsers = loadDeletedUsers();
         deletedUsers[currentUser] = {
             deletedAt: Date.now(),
@@ -885,7 +1043,6 @@
         };
         saveDeletedUsers(deletedUsers);
         
-        // Remover usuário
         delete users[currentUser];
         saveUsers(users);
         return true;
@@ -899,6 +1056,32 @@
             let select = document.getElementById('mobileCategoria');
             if(select) select.innerHTML = cats.map(c => `<option value="${c}">${c}</option>`).join('');
         }
+    }
+
+    function updatePasswordReqs() {
+        const senha = document.getElementById('regSenha').value;
+        const reqLength = document.getElementById('reqLength');
+        const reqOnlyNumbers = document.getElementById('reqOnlyNumbers');
+        const reqNoRepeat = document.getElementById('reqNoRepeat');
+        const reqNoSequence = document.getElementById('reqNoSequence');
+        
+        const lengthOk = senha.length >= 4 && senha.length <= 6;
+        const onlyNumbersOk = /^\d*$/.test(senha);
+        const noRepeatOk = !/(\d)\1/.test(senha);
+        let noSequenceOk = true;
+        const sequences = ['123', '234', '345', '456', '567', '678', '789', '012', '1234', '2345', '3456', '4567', '5678', '6789'];
+        const reverseSequences = ['321', '432', '543', '654', '765', '876', '987', '3210', '4321', '5432', '6543', '7654', '8765', '9876'];
+        for (let seq of sequences) {
+            if (senha.includes(seq)) { noSequenceOk = false; break; }
+        }
+        for (let seq of reverseSequences) {
+            if (senha.includes(seq)) { noSequenceOk = false; break; }
+        }
+        
+        if(reqLength) reqLength.classList.toggle('valid', lengthOk);
+        if(reqOnlyNumbers) reqOnlyNumbers.classList.toggle('valid', onlyNumbersOk);
+        if(reqNoRepeat) reqNoRepeat.classList.toggle('valid', noRepeatOk);
+        if(reqNoSequence) reqNoSequence.classList.toggle('valid', noSequenceOk);
     }
 
     function calcularCards() {
@@ -1000,9 +1183,13 @@
         let saidasCat = {}; categoriaSaidas.forEach(c=>saidasCat[c]=0);
         transacoes.filter(t=>t.tipo==='saida').forEach(t=>saidasCat[t.categoria]+=t.valor);
         if(chart1) chart1.destroy();
-        chart1 = new Chart(document.getElementById('chartEntradasCat'), { type:'pie', data:{ labels:Object.keys(entradasCat), datasets:[{ data:Object.values(entradasCat), backgroundColor:['#10b981','#34d399','#6ee7b7','#a7f3d0','#d1fae5'] }] }, options:{ responsive:true, plugins:{ legend:{ position:'bottom', labels:{ color: getComputedStyle(document.body).getPropertyValue('--text-primary') || '#1a1a2e' } } } } });
+        if(document.getElementById('chartEntradasCat')) {
+            chart1 = new Chart(document.getElementById('chartEntradasCat'), { type:'pie', data:{ labels:Object.keys(entradasCat), datasets:[{ data:Object.values(entradasCat), backgroundColor:['#10b981','#34d399','#6ee7b7','#a7f3d0','#d1fae5'] }] }, options:{ responsive:true, plugins:{ legend:{ position:'bottom', labels:{ color: getComputedStyle(document.body).getPropertyValue('--text-primary') || '#1a1a2e' } } } } });
+        }
         if(chart2) chart2.destroy();
-        chart2 = new Chart(document.getElementById('chartSaidasCat'), { type:'pie', data:{ labels:Object.keys(saidasCat), datasets:[{ data:Object.values(saidasCat), backgroundColor:['#ef4444','#f87171','#fca5a5','#fecaca','#fee2e2','#ffc4c4'] }] }, options:{ responsive:true, plugins:{ legend:{ position:'bottom', labels:{ color: getComputedStyle(document.body).getPropertyValue('--text-primary') || '#1a1a2e' } } } } });
+        if(document.getElementById('chartSaidasCat')) {
+            chart2 = new Chart(document.getElementById('chartSaidasCat'), { type:'pie', data:{ labels:Object.keys(saidasCat), datasets:[{ data:Object.values(saidasCat), backgroundColor:['#ef4444','#f87171','#fca5a5','#fecaca','#fee2e2','#ffc4c4'] }] }, options:{ responsive:true, plugins:{ legend:{ position:'bottom', labels:{ color: getComputedStyle(document.body).getPropertyValue('--text-primary') || '#1a1a2e' } } } } });
+        }
         let diasMap = new Map();
         transacoes.forEach(t=>{ if(!diasMap.has(t.data)) diasMap.set(t.data,{entrada:0,saida:0}); let d=diasMap.get(t.data); if(t.tipo==='entrada') d.entrada+=t.valor; else d.saida+=t.valor; });
         let sorted = Array.from(diasMap.keys()).sort();
@@ -1010,9 +1197,13 @@
         let saidasDiarias = sorted.map(d=>diasMap.get(d).saida);
         let labels = sorted.map(d=>formatDateBR(d));
         if(chart3) chart3.destroy();
-        chart3 = new Chart(document.getElementById('chartEvolucaoEnt'), { type:'line', data:{ labels, datasets:[{ label:'Entradas', data:entradasDiarias, borderColor:'#10b981', backgroundColor:'rgba(16,185,129,0.1)', fill:true, tension:0.3 }] }, options:{ responsive:true, plugins:{ legend:{ labels:{ color: getComputedStyle(document.body).getPropertyValue('--text-primary') || '#1a1a2e' } } } } });
+        if(document.getElementById('chartEvolucaoEnt')) {
+            chart3 = new Chart(document.getElementById('chartEvolucaoEnt'), { type:'line', data:{ labels, datasets:[{ label:'Entradas', data:entradasDiarias, borderColor:'#10b981', backgroundColor:'rgba(16,185,129,0.1)', fill:true, tension:0.3 }] }, options:{ responsive:true, plugins:{ legend:{ labels:{ color: getComputedStyle(document.body).getPropertyValue('--text-primary') || '#1a1a2e' } } } } });
+        }
         if(chart4) chart4.destroy();
-        chart4 = new Chart(document.getElementById('chartEvolucaoSai'), { type:'line', data:{ labels, datasets:[{ label:'Saídas', data:saidasDiarias, borderColor:'#ef4444', backgroundColor:'rgba(239,68,68,0.1)', fill:true, tension:0.3 }] }, options:{ responsive:true, plugins:{ legend:{ labels:{ color: getComputedStyle(document.body).getPropertyValue('--text-primary') || '#1a1a2e' } } } } });
+        if(document.getElementById('chartEvolucaoSai')) {
+            chart4 = new Chart(document.getElementById('chartEvolucaoSai'), { type:'line', data:{ labels, datasets:[{ label:'Saídas', data:saidasDiarias, borderColor:'#ef4444', backgroundColor:'rgba(239,68,68,0.1)', fill:true, tension:0.3 }] }, options:{ responsive:true, plugins:{ legend:{ labels:{ color: getComputedStyle(document.body).getPropertyValue('--text-primary') || '#1a1a2e' } } } } });
+        }
     }
     
     function renderResumoCat() {
@@ -1029,7 +1220,7 @@
     function atualizarFiltroCategorias() {
         let catsUnicas = [...new Set(transacoes.map(t=>t.categoria))];
         let select = document.getElementById('filtroCatMobile');
-        select.innerHTML = '<option value="todas">📋 Todas categorias</option>' + catsUnicas.map(c=>`<option value="${c}">🏷️ ${c}</option>`).join('');
+        if(select) select.innerHTML = '<option value="todas">📋 Todas categorias</option>' + catsUnicas.map(c=>`<option value="${c}">🏷️ ${c}</option>`).join('');
     }
     
     function toggleHideValues() {
@@ -1058,12 +1249,10 @@
         
         if(shouldHide) {
             body.classList.add('value-hidden');
-            hideBtn.innerHTML = '🔓 Mostrar';
-            hideBtn.style.borderColor = 'var(--warning)';
+            if(hideBtn) hideBtn.innerHTML = '🔓 Mostrar';
         } else {
             body.classList.remove('value-hidden');
-            hideBtn.innerHTML = '🔒 Ocultar';
-            hideBtn.style.borderColor = 'var(--success)';
+            if(hideBtn) hideBtn.innerHTML = '🔒 Ocultar';
         }
     }
     
@@ -1171,11 +1360,11 @@
         const numeroExtrato = Math.floor(Math.random() * 1000000).toString().padStart(6, '0');
         const agencia = "0001";
         const conta = currentUser.substring(0, 8).toUpperCase().padEnd(8, 'X');
-        let html = `<!DOCTYPE html><html><head><meta charset="UTF-8"><title>Extrato - ${currentUser}</title><style>body{font-family:'Courier New', monospace; background:white; padding:20px; color:#000;} .header-banco{text-align:center; border-bottom:2px solid #000; padding-bottom:15px;} .info-conta{display:flex; justify-content:space-between; margin:15px 0; padding:10px; background:#f5f5f5; border:1px solid #000;} .resumo-extrato{display:flex; justify-content:space-between; margin:20px 0; padding:12px; background:#e8e8e8; border:1px solid #000;} table{width:100%; border-collapse:collapse;} th, td{padding:8px; border:1px solid #ccc; text-align:left;} th{background:#000; color:white;} .valor-credito{color:#006600; font-weight:bold;} .valor-debito{color:#cc0000; font-weight:bold;} </style></head><body><div class="header-banco"><h1>💰 EXTRATO FINANCEIRO</h1><p>Movimentações - ${formatDateExtenso()}</p></div><div class="info-conta"><span>Agência: ${agencia}</span><span>Conta: ${conta}</span><span>Cliente: ${currentUser}</span><span>Extrato: ${numeroExtrato}</span></div><div class="resumo-extrato"><div><strong>Total Créditos:</strong> ${formatMoney(totalEntradas)}</div><div><strong>Total Débitos:</strong> ${formatMoney(totalSaidas)}</div><div><strong>Saldo:</strong> ${formatMoney(saldoAtual)}</div></div><table><thead><tr><th>Data</th><th>Descrição</th><th>Categoria</th><th>Valor</th><th>Saldo</th></tr></thead><tbody>`;
-        for(let t of transacoesOrdenadas) { html += `<tr><td>${formatDateBR(t.data)}</td><td>${escapeHtml(t.descricao)}</td><td>${escapeHtml(t.categoria)}</td><td class="${t.tipo === 'entrada' ? 'valor-credito' : 'valor-debito'}">${t.tipo === 'entrada' ? formatMoney(t.valor) : `- ${formatMoney(t.valor)}`}</td><td>${formatMoney(saldosMap.get(t.id) || 0)}</td></tr>`; }
-        html += `</tbody><table><footer style="margin-top:20px; text-align:center; font-size:9px;">Gerado em ${new Date().toLocaleString('pt-BR')} - ${transacoes.length} lançamentos</footer></body></html>`;
+        let html = `<!DOCTYPE html><html><head><meta charset="UTF-8"><title>Extrato - ${currentUser}</title><style>body{font-family:'Courier New', monospace; background:white; padding:20px; color:#000;} .header-banco{text-align:center; border-bottom:2px solid #000; padding-bottom:15px;} .info-conta{display:flex; justify-content:space-between; margin:15px 0; padding:10px; background:#f5f5f5; border:1px solid #000;} .resumo-extrato{display:flex; justify-content:space-between; margin:20px 0; padding:12px; background:#e8e8e8; border:1px solid #000;} table{width:100%; border-collapse:collapse;} th, td{padding:8px; border:1px solid #ccc; text-align:left;} th{background:#000; color:white;} .valor-credito{color:#006600; font-weight:bold;} .valor-debito{color:#cc0000; font-weight:bold;} </style></head><body><div class="header-banco"><h1>💰 EXTRATO FINANCEIRO</h1><p>Movimentações - ${formatDateExtenso()}</p></div><div class="info-conta"><span>Agência: ${agencia}</span><span>Conta: ${conta}</span><span>Cliente: ${currentUser}</span><span>Extrato: ${numeroExtrato}</span></div><div class="resumo-extrato"><div><strong>Total Créditos:</strong> ${formatMoney(totalEntradas)}</div><div><strong>Total Débitos:</strong> ${formatMoney(totalSaidas)}</div><div><strong>Saldo:</strong> ${formatMoney(saldoAtual)}</div></div></td><thead><tr><th>Data</th><th>Descrição</th><th>Categoria</th><th>Valor</th><th>Saldo</th></tr></thead><tbody>`;
+        for(let t of transacoesOrdenadas) { html += `<tr><td class="center">${formatDateBR(t.data)}</td><td>${escapeHtml(t.descricao)}</td><td>${escapeHtml(t.categoria)}</td><td class="${t.tipo === 'entrada' ? 'valor-credito' : 'valor-debito'}">${t.tipo === 'entrada' ? formatMoney(t.valor) : `- ${formatMoney(t.valor)}`}</td><td class="center">${formatMoney(saldosMap.get(t.id) || 0)}</td></tr>`; }
+        html += `</tbody></table><footer style="margin-top:20px; text-align:center; font-size:9px;">Gerado em ${new Date().toLocaleString('pt-BR')} - ${transacoes.length} lançamentos</footer></body></html>`;
         const div = document.createElement('div'); div.innerHTML = html; document.body.appendChild(div);
-        const opt = { margin: [0.5,0.5,0.5,0.5], filename: `Extrato_${currentUser}_${new Date().toISOString().slice(0,10)}.pdf`, image: { type: 'jpeg', quality: 0.98 }, html2canvas: { scale: 2, backgroundColor: '#ffffff' }, jsPDF: { unit: 'in', format: 'a4', orientation: 'portrait' } };
+        const opt = { margin: [0.5,0.5,0.5,0.5], filename: `Extrato_${currentUser}_${new Date().toISOString().slice(0,10)}.pdf`, image: { type: 'jpeg', quality: 0.98 }, html2canvas: { scale: 2 }, jsPDF: { unit: 'in', format: 'a4', orientation: 'portrait' } };
         try { await html2pdf().set(opt).from(div).save(); alert("✅ PDF gerado!"); } catch(e) { alert("❌ Erro: " + e.message); } finally { document.body.removeChild(div); }
     }
     
@@ -1214,77 +1403,258 @@
             alert("❌ Senha incorreta! A conta NÃO foi excluída.");
         }
     }
+
+    function openChangePasswordModal() {
+        document.getElementById('oldPassword').value = '';
+        document.getElementById('newPassword').value = '';
+        document.getElementById('confirmNewPassword').value = '';
+        document.getElementById('changePwdError').innerText = '';
+        document.getElementById('changePasswordModal').classList.add('active');
+    }
+
+    function confirmChangePassword() {
+        const oldPassword = document.getElementById('oldPassword').value;
+        const newPassword = document.getElementById('newPassword').value;
+        const confirmPassword = document.getElementById('confirmNewPassword').value;
+        
+        if(!oldPassword || !newPassword || !confirmPassword) {
+            document.getElementById('changePwdError').innerText = "Preencha todos os campos!";
+            return;
+        }
+        
+        let users = loadUsers();
+        if(!users[currentUser] || users[currentUser].senha !== oldPassword) {
+            document.getElementById('changePwdError').innerText = "Senha atual incorreta!";
+            return;
+        }
+        
+        if(newPassword !== confirmPassword) {
+            document.getElementById('changePwdError').innerText = "As novas senhas não coincidem!";
+            return;
+        }
+        
+        try {
+            const passwordErrors = validatePasswordRequirements(newPassword);
+            if(passwordErrors.length > 0) {
+                document.getElementById('changePwdError').innerText = passwordErrors[0];
+                return;
+            }
+            
+            users[currentUser].senha = newPassword;
+            saveUsers(users);
+            document.getElementById('changePasswordModal').classList.remove('active');
+            alert("✅ Senha alterada com sucesso!");
+        } catch(e) {
+            document.getElementById('changePwdError').innerText = e.message;
+        }
+    }
+
+    function showForceUpdateModal() {
+        document.getElementById('forceNewPassword').value = '';
+        document.getElementById('forceConfirmPassword').value = '';
+        document.getElementById('forceErrorMsg').innerText = '';
+        document.getElementById('forceUpdateModal').classList.add('active');
+        document.getElementById('mainApp').style.display = 'none';
+    }
+
+    function confirmForceUpdate() {
+        const newPassword = document.getElementById('forceNewPassword').value;
+        const confirmPassword = document.getElementById('forceConfirmPassword').value;
+        
+        if(!newPassword || !confirmPassword) {
+            document.getElementById('forceErrorMsg').innerText = "Preencha todos os campos!";
+            return;
+        }
+        
+        if(newPassword !== confirmPassword) {
+            document.getElementById('forceErrorMsg').innerText = "As senhas não coincidem!";
+            return;
+        }
+        
+        try {
+            const passwordErrors = validatePasswordRequirements(newPassword);
+            if(passwordErrors.length > 0) {
+                document.getElementById('forceErrorMsg').innerText = passwordErrors[0];
+                return;
+            }
+            
+            let users = loadUsers();
+            users[currentUser].senha = newPassword;
+            saveUsers(users);
+            
+            document.getElementById('forceUpdateModal').classList.remove('active');
+            document.getElementById('mainApp').style.display = 'block';
+            refreshAll();
+            alert("✅ Senha atualizada com sucesso!");
+        } catch(e) {
+            document.getElementById('forceErrorMsg').innerText = e.message;
+        }
+    }
     
     // Eventos do menu
-    document.getElementById('menuBtn').onclick = (e) => {
-        e.stopPropagation();
-        document.getElementById('menuContent').classList.toggle('show-menu');
-    };
+    const menuBtn = document.getElementById('menuBtn');
+    if(menuBtn) {
+        menuBtn.onclick = (e) => {
+            e.stopPropagation();
+            document.getElementById('menuContent').classList.toggle('show-menu');
+        };
+    }
     document.addEventListener('click', () => {
-        document.getElementById('menuContent').classList.remove('show-menu');
+        const menuContent = document.getElementById('menuContent');
+        if(menuContent) menuContent.classList.remove('show-menu');
     });
     
-    document.getElementById('menuBackup').onclick = () => { document.getElementById('backupModalMobile').classList.add('active'); };
-    document.getElementById('menuRestore').onclick = restoreAction;
-    document.getElementById('menuPdf').onclick = gerarPDF;
-    document.getElementById('menuClearAll').onclick = clearAllTransactions;
-    document.getElementById('menuDeleteAccount').onclick = openDeleteAccountModal;
-    document.getElementById('menuTheme').onclick = toggleTheme;
-    document.getElementById('menuLogout').onclick = logout;
+    const menuBackup = document.getElementById('menuBackup');
+    if(menuBackup) menuBackup.onclick = () => { document.getElementById('backupModalMobile').classList.add('active'); };
+    
+    const menuRestore = document.getElementById('menuRestore');
+    if(menuRestore) menuRestore.onclick = restoreAction;
+    
+    const menuPdf = document.getElementById('menuPdf');
+    if(menuPdf) menuPdf.onclick = gerarPDF;
+    
+    const menuClearAll = document.getElementById('menuClearAll');
+    if(menuClearAll) menuClearAll.onclick = clearAllTransactions;
+    
+    const menuDeleteAccount = document.getElementById('menuDeleteAccount');
+    if(menuDeleteAccount) menuDeleteAccount.onclick = openDeleteAccountModal;
+    
+    const menuChangePassword = document.getElementById('menuChangePassword');
+    if(menuChangePassword) menuChangePassword.onclick = openChangePasswordModal;
+    
+    const menuTheme = document.getElementById('menuTheme');
+    if(menuTheme) menuTheme.onclick = toggleTheme;
+    
+    const menuLogout = document.getElementById('menuLogout');
+    if(menuLogout) menuLogout.onclick = logout;
     
     // Eventos principais
-    document.getElementById('loginBtn').onclick=()=>{ 
-        try{ 
-            loginUser(document.getElementById('loginNome').value, document.getElementById('loginSenha').value); 
+    const loginBtn = document.getElementById('loginBtn');
+    if(loginBtn) {
+        loginBtn.onclick=()=>{ 
+            try{ 
+                const result = loginUser(document.getElementById('loginNome').value, document.getElementById('loginSenha').value);
+                if(result && result.needStrongPassword) {
+                    showForceUpdateModal();
+                } else {
+                    document.getElementById('loginScreen').style.display='none'; 
+                    document.getElementById('mainApp').style.display='block'; 
+                    document.getElementById('userNameDisplay').innerText=currentUser; 
+                    atualizarSelectCategorias(); 
+                    refreshAll(); 
+                    loadThemePreference();
+                    applyHideValuesState();
+                }
+            }catch(e){ document.getElementById('loginErrorMsg').innerText=e.message; } 
+        };
+    }
+    
+    const registerBtn = document.getElementById('registerBtn');
+    if(registerBtn) {
+        registerBtn.onclick=()=>{ 
+            let n=document.getElementById('regNome').value, 
+               p=document.getElementById('regSenha').value, 
+               c=document.getElementById('regConfirm').value; 
+            if(!n||!p) return document.getElementById('regErrorMsg').innerText="Preencha todos os campos!"; 
+            if(p!==c) return document.getElementById('regErrorMsg').innerText="Senhas diferentes!"; 
+            try{ 
+                registerUser(n,p); 
+                alert("Conta criada! Faça login."); 
+                document.getElementById('regScreen').style.display='none'; 
+                document.getElementById('loginScreen').style.display='flex'; 
+                document.getElementById('regNome').value = '';
+                document.getElementById('regSenha').value = '';
+                document.getElementById('regConfirm').value = '';
+                document.getElementById('regErrorMsg').innerText = '';
+            }catch(e){ 
+                document.getElementById('regErrorMsg').innerText=e.message; 
+            } 
+        };
+    }
+    
+    const showRegLink = document.getElementById('showRegLink');
+    if(showRegLink) {
+        showRegLink.onclick=()=>{ 
             document.getElementById('loginScreen').style.display='none'; 
-            document.getElementById('mainApp').style.display='block'; 
-            document.getElementById('userNameDisplay').innerText=currentUser; 
-            atualizarSelectCategorias(); 
-            refreshAll(); 
-            loadThemePreference();
-            applyHideValuesState();
-        }catch(e){ document.getElementById('loginErrorMsg').innerText=e.message; } 
-    };
-    document.getElementById('registerBtn').onclick=()=>{ 
-        let n=document.getElementById('regNome').value, 
-           p=document.getElementById('regSenha').value, 
-           c=document.getElementById('regConfirm').value; 
-        if(!n||!p) return document.getElementById('regErrorMsg').innerText="Preencha todos os campos!"; 
-        if(p!==c) return document.getElementById('regErrorMsg').innerText="Senhas diferentes!"; 
-        try{ 
-            registerUser(n,p); 
-            alert("Conta criada! Faça login."); 
+            document.getElementById('regScreen').style.display='flex';
+            document.getElementById('loginErrorMsg').innerText = '';
+        };
+    }
+    
+    const showLoginLink = document.getElementById('showLoginLink');
+    if(showLoginLink) {
+        showLoginLink.onclick=()=>{ 
             document.getElementById('regScreen').style.display='none'; 
-            document.getElementById('loginScreen').style.display='flex'; 
-        }catch(e){ 
-            document.getElementById('regErrorMsg').innerText=e.message; 
-        } 
-    };
-    document.getElementById('showRegLink').onclick=()=>{ document.getElementById('loginScreen').style.display='none'; document.getElementById('regScreen').style.display='flex'; };
-    document.getElementById('showLoginLink').onclick=()=>{ document.getElementById('regScreen').style.display='none'; document.getElementById('loginScreen').style.display='flex'; };
-    document.getElementById('hideValuesBtn').onclick=toggleHideValues;
+            document.getElementById('loginScreen').style.display='flex';
+            document.getElementById('regErrorMsg').innerText = '';
+        };
+    }
+    
+    const hideValuesBtn = document.getElementById('hideValuesBtn');
+    if(hideValuesBtn) hideValuesBtn.onclick = toggleHideValues;
+    
+    const regSenha = document.getElementById('regSenha');
+    if(regSenha) {
+        regSenha.addEventListener('input', updatePasswordReqs);
+        regSenha.addEventListener('keyup', updatePasswordReqs);
+    }
     
     document.querySelectorAll('.mobile-tab').forEach(btn=>{ btn.onclick=()=>{ document.querySelectorAll('.mobile-tab').forEach(b=>b.classList.remove('active')); btn.classList.add('active'); let tabName=btn.dataset.tab; document.querySelectorAll('.tab-pane').forEach(p=>p.style.display='none'); if(tabName==='movements') document.getElementById('tabMovements').style.display='block'; if(tabName==='add') document.getElementById('tabAdd').style.display='block'; if(tabName==='charts'){ document.getElementById('tabCharts').style.display='block'; setTimeout(atualizarGraficos, 100); } if(tabName==='cats'){ document.getElementById('tabCats').style.display='block'; renderResumoCat(); } }; });
     
     document.querySelectorAll('.tipo-btn').forEach(btn=>{ btn.onclick=()=>{ document.querySelectorAll('.tipo-btn').forEach(b=>b.classList.remove('active')); btn.classList.add('active'); tipoSelecionadoMobile=btn.dataset.tipoMobile; atualizarSelectCategorias(); }; });
-    document.getElementById('mobileAddTransacao').onclick=addTransacao;
-    document.getElementById('mobileAddCatBtn').onclick=()=>{ document.getElementById('catModal').classList.add('active'); };
-    document.getElementById('confirmCatBtn').onclick=novaCategoria;
-    document.getElementById('cancelCatBtn').onclick=()=>{ document.getElementById('catModal').classList.remove('active'); document.getElementById('newCatName').value=''; };
-    document.getElementById('filtroTipoMobile').onchange=renderMovements;
-    document.getElementById('filtroCatMobile').onchange=renderMovements;
-    document.getElementById('saveEditBtn').onclick=saveEdit;
-    document.getElementById('cancelEditBtn').onclick=()=>{ document.getElementById('editModal').classList.remove('active'); };
-    document.getElementById('confirmBackupMobile').onclick=backupAction;
-    document.getElementById('cancelBackupMobile').onclick=()=>{ document.getElementById('backupModalMobile').classList.remove('active'); document.getElementById('backupPass').value=''; };
-    document.getElementById('confirmDeleteAccount').onclick=confirmDeleteAccount;
-    document.getElementById('cancelDeleteAccount').onclick=()=>{ document.getElementById('deleteAccountModal').classList.remove('active'); };
     
-    let today=new Date().toISOString().slice(0,10);
-    if(document.getElementById('mobileData')) document.getElementById('mobileData').value=today;
+    const mobileAddTransacao = document.getElementById('mobileAddTransacao');
+    if(mobileAddTransacao) mobileAddTransacao.onclick = addTransacao;
+    
+    const mobileAddCatBtn = document.getElementById('mobileAddCatBtn');
+    if(mobileAddCatBtn) mobileAddCatBtn.onclick = () => { document.getElementById('catModal').classList.add('active'); };
+    
+    const confirmCatBtn = document.getElementById('confirmCatBtn');
+    if(confirmCatBtn) confirmCatBtn.onclick = novaCategoria;
+    
+    const cancelCatBtn = document.getElementById('cancelCatBtn');
+    if(cancelCatBtn) cancelCatBtn.onclick = () => { document.getElementById('catModal').classList.remove('active'); document.getElementById('newCatName').value = ''; };
+    
+    const filtroTipoMobile = document.getElementById('filtroTipoMobile');
+    if(filtroTipoMobile) filtroTipoMobile.onchange = renderMovements;
+    
+    const filtroCatMobile = document.getElementById('filtroCatMobile');
+    if(filtroCatMobile) filtroCatMobile.onchange = renderMovements;
+    
+    const saveEditBtn = document.getElementById('saveEditBtn');
+    if(saveEditBtn) saveEditBtn.onclick = saveEdit;
+    
+    const cancelEditBtn = document.getElementById('cancelEditBtn');
+    if(cancelEditBtn) cancelEditBtn.onclick = () => { document.getElementById('editModal').classList.remove('active'); };
+    
+    const confirmBackupMobile = document.getElementById('confirmBackupMobile');
+    if(confirmBackupMobile) confirmBackupMobile.onclick = backupAction;
+    
+    const cancelBackupMobile = document.getElementById('cancelBackupMobile');
+    if(cancelBackupMobile) cancelBackupMobile.onclick = () => { document.getElementById('backupModalMobile').classList.remove('active'); document.getElementById('backupPass').value = ''; };
+    
+    const confirmDeleteAccount = document.getElementById('confirmDeleteAccount');
+    if(confirmDeleteAccount) confirmDeleteAccount.onclick = confirmDeleteAccount;
+    
+    const cancelDeleteAccount = document.getElementById('cancelDeleteAccount');
+    if(cancelDeleteAccount) cancelDeleteAccount.onclick = () => { document.getElementById('deleteAccountModal').classList.remove('active'); };
+    
+    const confirmChangePassword = document.getElementById('confirmChangePassword');
+    if(confirmChangePassword) confirmChangePassword.onclick = confirmChangePassword;
+    
+    const cancelChangePassword = document.getElementById('cancelChangePassword');
+    if(cancelChangePassword) cancelChangePassword.onclick = () => { document.getElementById('changePasswordModal').classList.remove('active'); };
+    
+    const forceUpdateBtn = document.getElementById('forceUpdateBtn');
+    if(forceUpdateBtn) forceUpdateBtn.onclick = confirmForceUpdate;
+    
+    let today = new Date().toISOString().slice(0,10);
+    const mobileData = document.getElementById('mobileData');
+    if(mobileData) mobileData.value = today;
+    
     atualizarSelectCategorias();
     loadThemePreference();
     applyHideValuesState();
 </script>
 </body>
-                                                               </html>
+</html>
