@@ -764,8 +764,30 @@
         
         .produto-acoes {
             display: flex;
-            gap: 12px;
+            gap: 8px;
+            flex-wrap: wrap;
         }
+        
+        .produto-acoes button {
+            font-size: 16px;
+            padding: 4px 8px;
+            border-radius: 16px;
+            border: none;
+            cursor: pointer;
+            background: var(--bg-card);
+            color: var(--text-primary);
+            border: 1px solid var(--border);
+            transition: all 0.2s;
+        }
+        
+        .produto-acoes button:hover {
+            background: var(--hover-bg);
+        }
+        
+        .produto-acoes .btn-add { color: var(--success); }
+        .produto-acoes .btn-remove { color: var(--danger); }
+        .produto-acoes .btn-edit { color: var(--warning); }
+        .produto-acoes .btn-delete { color: var(--danger); }
         
         .produto-detalhes-lista {
             display: flex;
@@ -875,6 +897,23 @@
         .botao-editar-estoque:hover {
             opacity: 0.8;
         }
+        
+        .codigo-editavel {
+            background: var(--bg-elevated);
+            border: 1px solid var(--border);
+            border-radius: 16px;
+            padding: 6px 12px;
+            font-family: monospace;
+            font-size: 14px;
+            color: var(--text-primary);
+            width: 100%;
+            max-width: 200px;
+        }
+        
+        .codigo-editavel:focus {
+            outline: none;
+            border-color: var(--success);
+        }
     </style>
 </head>
 <body class="value-hidden">
@@ -927,6 +966,7 @@
                 <button id="menuBtn" class="menu-btn">⋮</button>
                 <div id="menuContent" class="menu-content">
                     <button id="menuPdf">📄 Extrato PDF</button>
+                    <button id="menuEstoquePdf">📦 Estoque PDF</button>
                     <button id="menuBackup">💾 Backup</button>
                     <button id="menuRestore">📥 Restaurar</button>
                     <div class="menu-divider"></div>
@@ -1020,11 +1060,11 @@
         </div>
         
         <div class="form-mobile" id="formNovoLote" style="display: none;">
-            <h3 style="margin-bottom: 16px;">➕ ADICIONAR NOVO PRODUTO</h3>
-            <div class="input-field"><label>📷 CÓDIGO</label><input type="text" id="produtoCodigo" placeholder="Código do produto" readonly style="background: var(--bg-elevated);"></div>
+            <h3 style="margin-bottom: 16px;">➕ ADICIONAR/EDITAR PRODUTO</h3>
+            <div class="input-field"><label>📷 CÓDIGO DO PRODUTO *</label><input type="text" id="produtoCodigo" placeholder="Digite ou escaneie o código"></div>
             <div class="input-field"><label>📦 NOME DO PRODUTO *</label><input type="text" id="produtoNome" placeholder="Ex: Leite, Arroz, Camiseta"></div>
             <div class="input-field"><label>💰 PREÇO UNITÁRIO (R$) - Opcional</label><input type="text" id="produtoPreco" placeholder="Deixe em branco se não tiver preço"></div>
-            <div class="input-field"><label>🔢 QUANTIDADE INICIAL</label><input type="number" id="produtoQuantidade" placeholder="Quantidade" value="1"></div>
+            <div class="input-field"><label>🔢 QUANTIDADE</label><input type="number" id="produtoQuantidade" placeholder="Quantidade" value="1"></div>
             <div class="input-field"><label>📅 DATA DE VALIDADE</label><input type="date" id="produtoValidade"></div>
             <div class="input-field"><label>🏷️ NÚMERO DO LOTE (opcional)</label><input type="text" id="produtoLote" placeholder="Identificador do lote"></div>
             <div class="input-field"><label>📝 DESCRIÇÃO (opcional)</label><textarea id="produtoDescricao" rows="2" placeholder="Descrição do produto"></textarea></div>
@@ -1036,7 +1076,7 @@
         
         <div style="display: flex; justify-content: space-between; align-items: center; margin: 20px 0 12px 0;">
             <h3 style="margin: 0;">📋 PRODUTOS EM ESTOQUE</h3>
-            <button id="editarEstoqueBtn" class="botao-editar-estoque">✏️ Editar Estoque</button>
+            <button id="editarEstoqueBtn" class="botao-editar-estoque">✏️ Adicionar Manual</button>
         </div>
         <div id="estoqueList" class="estoque-lista"></div>
     </div>
@@ -1087,7 +1127,8 @@
     let ultimoCodigoLido = "";
     let ultimoTempoLeitura = 0;
     let aguardandoCadastro = false;
-    let modoScanner = 'adicionar'; // 'adicionar' ou 'remover'
+    let modoScanner = 'adicionar';
+    let editandoProduto = null;
 
     function formatMoney(val) { return val.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' }); }
     function formatDateBR(dateStr) { if(!dateStr) return ''; const [y,m,d]=dateStr.split('-'); return `${d}/${m}/${y}`; }
@@ -1162,7 +1203,7 @@
     function destacarProdutoNaLista(codigo) {
         const produtosLista = document.querySelectorAll('.produto-lista-item');
         for(let item of produtosLista) {
-            const editBtn = item.querySelector('.edit-produto');
+            const editBtn = item.querySelector('.btn-edit');
             if(editBtn && editBtn.dataset.codigo === codigo) {
                 item.classList.add('atualizando');
                 setTimeout(() => {
@@ -1329,7 +1370,6 @@
             
             produtos[produtoIndex].quantidade -= quantidade;
             
-            // Se quantidade for 0, remover o produto? Não, mantém com 0
             saveCurrentUser();
             renderEstoque();
             destacarProdutoNaLista(codigo);
@@ -1344,12 +1384,14 @@
         let codigo = document.getElementById('produtoCodigo').value.trim();
         let nome = document.getElementById('produtoNome').value.trim();
         let precoRaw = document.getElementById('produtoPreco').value.trim();
-        let quantidade = parseInt(document.getElementById('produtoQuantidade').value) || 1;
+        let quantidade = parseInt(document.getElementById('produtoQuantidade').value) || 0;
         let validade = document.getElementById('produtoValidade').value;
         let numeroLote = document.getElementById('produtoLote').value.trim();
         let descricao = document.getElementById('produtoDescricao').value.trim();
         
+        if(!codigo) return alert("❌ Digite o código do produto!");
         if(!nome) return alert("❌ Digite o nome do produto!");
+        if(quantidade < 0) return alert("❌ Quantidade não pode ser negativa!");
         
         let preco = null;
         if(precoRaw !== '') {
@@ -1359,13 +1401,23 @@
             }
         }
         
-        if(quantidade <= 0) return alert("❌ Quantidade deve ser maior que zero!");
+        // Verificar se já existe produto com este código
+        const existeIndex = produtos.findIndex(p => p.codigo === codigo);
         
-        const existe = produtos.find(p => p.codigo === codigo);
-        if(existe) {
-            adicionarQuantidadePorCodigo(codigo, quantidade);
-            alert(`✅ Adicionado +${quantidade} ao estoque de "${nome}"!`);
+        if(existeIndex !== -1) {
+            // Atualizar produto existente
+            produtos[existeIndex] = {
+                ...produtos[existeIndex],
+                nome: nome,
+                preco: preco,
+                quantidade: quantidade,
+                validade: validade || null,
+                numeroLote: numeroLote || null,
+                descricao: descricao || null
+            };
+            alert(`✅ Produto "${nome}" atualizado com sucesso!`);
         } else {
+            // Criar novo produto
             produtos.push({
                 codigo: codigo,
                 nome: nome,
@@ -1390,6 +1442,7 @@
         saveCurrentUser();
         renderEstoque();
         aguardandoCadastro = false;
+        editandoProduto = null;
     }
 
     function cancelarNovoLote() {
@@ -1402,6 +1455,7 @@
         document.getElementById('produtoLote').value = '';
         document.getElementById('produtoDescricao').value = '';
         aguardandoCadastro = false;
+        editandoProduto = null;
     }
 
     function renderEstoque() {
@@ -1453,10 +1507,10 @@
                         📦 ${escapeHtml(p.nome)} ${alertaEstoque} ${esgotado} ${statusBadge}
                     </div>
                     <div class="produto-acoes">
-                        <button class="action-icon edit-produto" data-codigo="${escapeHtml(p.codigo)}" title="Editar">✏️</button>
-                        <button class="action-icon del-produto" data-codigo="${escapeHtml(p.codigo)}" title="Excluir">🗑️</button>
-                        <button class="action-icon add-produto" data-codigo="${escapeHtml(p.codigo)}" title="Adicionar +1">➕</button>
-                        <button class="action-icon remove-produto" data-codigo="${escapeHtml(p.codigo)}" title="Remover 1">➖</button>
+                        <button class="btn-edit" data-codigo="${escapeHtml(p.codigo)}" title="Editar">✏️</button>
+                        <button class="btn-delete" data-codigo="${escapeHtml(p.codigo)}" title="Excluir">🗑️</button>
+                        <button class="btn-add" data-codigo="${escapeHtml(p.codigo)}" title="Adicionar +1">➕</button>
+                        <button class="btn-remove" data-codigo="${escapeHtml(p.codigo)}" title="Remover 1">➖</button>
                     </div>
                 </div>
                 <div class="produto-detalhes-lista">
@@ -1490,20 +1544,19 @@
             </div>`;
         }).join('');
         
-        document.querySelectorAll('.edit-produto').forEach(btn => {
+        document.querySelectorAll('.btn-edit').forEach(btn => {
             btn.addEventListener('click', () => editarProduto(btn.dataset.codigo));
         });
-        document.querySelectorAll('.del-produto').forEach(btn => {
+        document.querySelectorAll('.btn-delete').forEach(btn => {
             btn.addEventListener('click', () => deletarProduto(btn.dataset.codigo));
         });
-        document.querySelectorAll('.add-produto').forEach(btn => {
+        document.querySelectorAll('.btn-add').forEach(btn => {
             btn.addEventListener('click', () => {
                 const codigo = btn.dataset.codigo;
                 adicionarQuantidadePorCodigo(codigo, 1);
-                mostrarAnimacaoAdicao(window.innerWidth / 2, window.innerHeight / 2, 'Item', 1, 'adicionar');
             });
         });
-        document.querySelectorAll('.remove-produto').forEach(btn => {
+        document.querySelectorAll('.btn-remove').forEach(btn => {
             btn.addEventListener('click', () => {
                 const codigo = btn.dataset.codigo;
                 removerQuantidadePorCodigo(codigo, 1);
@@ -1533,13 +1586,9 @@
         document.getElementById('produtoLote').value = produto.numeroLote || '';
         document.getElementById('produtoDescricao').value = produto.descricao || '';
         
-        const index = produtos.findIndex(p => p.codigo === codigo);
-        if(index !== -1) produtos.splice(index, 1);
-        
         document.getElementById('formNovoLote').style.display = 'block';
         document.getElementById('produtoNome').focus();
-        saveCurrentUser();
-        renderEstoque();
+        editandoProduto = codigo;
     }
     
     function deletarProduto(codigo) {
@@ -1849,6 +1898,78 @@
         html2pdf().set({ margin: 0.5, filename: `Extrato_${currentUser}.pdf`, image: { type: 'jpeg', quality: 0.98 }, html2canvas: { scale: 2 }, jsPDF: { unit: 'in', format: 'a4', orientation: 'portrait' } }).from(div).save().then(() => { document.body.removeChild(div); alert("✅ PDF gerado!"); }).catch(() => { document.body.removeChild(div); alert("❌ Erro"); });
     }
 
+    function gerarEstoquePDF() {
+        if(produtos.length === 0) { alert("Nenhum produto no estoque!"); return; }
+        
+        let totalValor = produtos.reduce((sum, p) => sum + (p.preco ? p.preco * p.quantidade : 0), 0);
+        let totalItens = produtos.reduce((sum, p) => sum + p.quantidade, 0);
+        
+        let html = `<!DOCTYPE html><html><head><meta charset="UTF-8"><title>Estoque - ${currentUser}</title><style>
+            body{font-family:Arial;padding:20px;}
+            h1{color:#10b981;}
+            .resumo{background:#f5f5f5;padding:15px;border-radius:10px;margin-bottom:20px;display:flex;gap:30px;flex-wrap:wrap;}
+            .resumo-item{font-size:14px;}
+            .resumo-item strong{color:#333;}
+            table{width:100%;border-collapse:collapse;margin-top:10px;}
+            th,td{border:1px solid #ddd;padding:10px;text-align:left;font-size:13px;}
+            th{background:#10b981;color:white;}
+            .vencido{color:#ef4444;font-weight:bold;}
+            .vencendo{color:#f59e0b;font-weight:bold;}
+            .ok{color:#10b981;}
+            footer{margin-top:20px;font-size:11px;color:#999;text-align:center;}
+        </style></head><body>
+        <h1>📦 Relatório de Estoque</h1>
+        <p>Usuário: ${currentUser} | Gerado em: ${new Date().toLocaleString('pt-BR')}</p>
+        <div class="resumo">
+            <div class="resumo-item"><strong>📦 Total de Itens:</strong> ${totalItens} unidades</div>
+            <div class="resumo-item"><strong>💰 Valor Total:</strong> ${formatMoney(totalValor)}</div>
+            <div class="resumo-item"><strong>📦 Produtos:</strong> ${produtos.length}</div>
+        </div>
+        <table>
+            <thead><tr>
+                <th>Código</th>
+                <th>Produto</th>
+                <th>Quantidade</th>
+                <th>Preço Unit.</th>
+                <th>Valor Total</th>
+                <th>Validade</th>
+                <th>Status</th>
+                <th>Lote</th>
+            </tr></thead>
+            <tbody>`;
+        
+        for(let p of produtos.sort((a,b) => a.nome.localeCompare(b.nome))) {
+            let status = 'OK';
+            let statusClass = 'ok';
+            if(isVencido(p.validade)) { status = 'VENCIDO'; statusClass = 'vencido'; }
+            else if(isVencendo(p.validade)) { status = 'Vencendo em ' + diasAteVencimento(p.validade) + ' dia(s)'; statusClass = 'vencendo'; }
+            
+            html += `<tr>
+                <td>${escapeHtml(p.codigo || '---')}</td>
+                <td>${escapeHtml(p.nome)}</td>
+                <td>${p.quantidade}</td>
+                <td>${p.preco ? formatMoney(p.preco) : '---'}</td>
+                <td>${p.preco ? formatMoney(p.preco * p.quantidade) : '---'}</td>
+                <td>${p.validade ? formatDateBR(p.validade) : '---'}</td>
+                <td class="${statusClass}">${status}</td>
+                <td>${escapeHtml(p.numeroLote || '---')}</td>
+            </tr>`;
+        }
+        
+        html += `</tbody></table>
+        <footer>Relatório gerado automaticamente pelo Sistema Integrado</footer>
+        </body></html>`;
+        
+        let div = document.createElement('div'); div.innerHTML = html; document.body.appendChild(div);
+        html2pdf().set({ 
+            margin: 0.5, 
+            filename: `Estoque_${currentUser}_${new Date().toISOString().slice(0,10)}.pdf`, 
+            image: { type: 'jpeg', quality: 0.98 }, 
+            html2canvas: { scale: 2 }, 
+            jsPDF: { unit: 'in', format: 'a4', orientation: 'landscape' } 
+        }).from(div).save().then(() => { document.body.removeChild(div); alert("✅ PDF do estoque gerado!"); }).catch(() => { document.body.removeChild(div); alert("❌ Erro ao gerar PDF"); });
+    }
+
     // ==================== EVENTOS ====================
     document.addEventListener('DOMContentLoaded', function() {
         document.getElementById('loginBtn').onclick = () => { try { loginUser(document.getElementById('loginNome').value.trim(), document.getElementById('loginSenha').value); document.getElementById('loginScreen').style.display = 'none'; document.getElementById('mainApp').style.display = 'block'; document.getElementById('userNameDisplay').innerText = currentUser; atualizarSelectCaixas(); atualizarSelectCategorias(); refreshAll(); loadThemePreference(); applyHideValuesState(); } catch(e) { document.getElementById('loginErrorMsg').innerText = e.message; } };
@@ -1862,6 +1983,7 @@
         document.getElementById('menuLogout').onclick = logout;
         document.getElementById('menuClearAll').onclick = clearAllTransactions;
         document.getElementById('menuPdf').onclick = gerarPDF;
+        document.getElementById('menuEstoquePdf').onclick = gerarEstoquePDF;
         document.getElementById('menuBackup').onclick = () => document.getElementById('backupModalMobile').classList.add('active');
         document.getElementById('menuRestore').onclick = restoreAction;
         document.getElementById('menuDeleteAccount').onclick = () => document.getElementById('deleteAccountModal').classList.add('active');
@@ -1905,7 +2027,8 @@
             document.getElementById('produtoValidade').value = '';
             document.getElementById('produtoLote').value = '';
             document.getElementById('produtoDescricao').value = '';
-            document.getElementById('produtoNome').focus();
+            document.getElementById('produtoCodigo').focus();
+            editandoProduto = null;
         };
         
         document.getElementById('modoAdicionar').onclick = () => {
@@ -1940,4 +2063,4 @@
     });
 </script>
 </body>
-</html>
+    </html>
