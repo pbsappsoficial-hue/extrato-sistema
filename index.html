@@ -601,6 +601,10 @@
             margin-top: 8px;
         }
         
+        .scan-btn.remover {
+            background: var(--danger);
+        }
+        
         .estoque-resumo {
             background: var(--bg-card);
             border-radius: 20px;
@@ -651,6 +655,10 @@
             box-shadow: 0 4px 15px rgba(0,0,0,0.3);
             text-align: center;
             white-space: nowrap;
+        }
+
+        .scan-animation.remover {
+            background: var(--danger);
         }
 
         .warning-animation {
@@ -822,6 +830,51 @@
             font-size: 12px;
             color: var(--text-muted);
         }
+        
+        .modo-scanner {
+            display: flex;
+            gap: 8px;
+            margin-bottom: 8px;
+        }
+        
+        .modo-scanner button {
+            flex: 1;
+            padding: 8px;
+            border-radius: 20px;
+            border: 2px solid var(--border);
+            background: var(--bg-elevated);
+            cursor: pointer;
+            font-weight: 600;
+            font-size: 12px;
+            transition: all 0.2s;
+        }
+        
+        .modo-scanner button.active-adicionar {
+            border-color: var(--success);
+            background: var(--success);
+            color: white;
+        }
+        
+        .modo-scanner button.active-remover {
+            border-color: var(--danger);
+            background: var(--danger);
+            color: white;
+        }
+        
+        .botao-editar-estoque {
+            background: var(--warning);
+            color: white;
+            border: none;
+            padding: 6px 12px;
+            border-radius: 20px;
+            font-size: 12px;
+            cursor: pointer;
+            font-weight: 600;
+        }
+        
+        .botao-editar-estoque:hover {
+            opacity: 0.8;
+        }
     </style>
 </head>
 <body class="value-hidden">
@@ -957,13 +1010,17 @@
         </div>
         
         <div class="scanner-container">
+            <div class="modo-scanner">
+                <button id="modoAdicionar" class="active-adicionar">➕ ADICIONAR</button>
+                <button id="modoRemover">➖ REMOVER</button>
+            </div>
             <button id="startScannerBtn" class="scan-btn">📷 INICIAR LEITURA CONTÍNUA</button>
             <div id="reader" style="width:100%; display:none;"></div>
             <div class="scan-status-text" id="scanStatus" style="display: none;">🔍 Câmera ativa - Aponte para o código</div>
         </div>
         
         <div class="form-mobile" id="formNovoLote" style="display: none;">
-            <h3 style="margin-bottom: 16px;">➕ ADICIONAR NOVO LOTE</h3>
+            <h3 style="margin-bottom: 16px;">➕ ADICIONAR NOVO PRODUTO</h3>
             <div class="input-field"><label>📷 CÓDIGO</label><input type="text" id="produtoCodigo" placeholder="Código do produto" readonly style="background: var(--bg-elevated);"></div>
             <div class="input-field"><label>📦 NOME DO PRODUTO *</label><input type="text" id="produtoNome" placeholder="Ex: Leite, Arroz, Camiseta"></div>
             <div class="input-field"><label>💰 PREÇO UNITÁRIO (R$) - Opcional</label><input type="text" id="produtoPreco" placeholder="Deixe em branco se não tiver preço"></div>
@@ -972,12 +1029,15 @@
             <div class="input-field"><label>🏷️ NÚMERO DO LOTE (opcional)</label><input type="text" id="produtoLote" placeholder="Identificador do lote"></div>
             <div class="input-field"><label>📝 DESCRIÇÃO (opcional)</label><textarea id="produtoDescricao" rows="2" placeholder="Descrição do produto"></textarea></div>
             <div style="display: flex; gap: 12px;">
-                <button id="salvarNovoLoteBtn" class="full-btn" style="flex:1;">💾 SALVAR LOTE</button>
+                <button id="salvarNovoLoteBtn" class="full-btn" style="flex:1;">💾 SALVAR</button>
                 <button id="cancelarNovoLoteBtn" class="full-btn" style="flex:1; background:var(--danger);">❌ CANCELAR</button>
             </div>
         </div>
         
-        <h3 style="margin: 20px 0 12px 0;">📋 PRODUTOS EM ESTOQUE</h3>
+        <div style="display: flex; justify-content: space-between; align-items: center; margin: 20px 0 12px 0;">
+            <h3 style="margin: 0;">📋 PRODUTOS EM ESTOQUE</h3>
+            <button id="editarEstoqueBtn" class="botao-editar-estoque">✏️ Editar Estoque</button>
+        </div>
         <div id="estoqueList" class="estoque-lista"></div>
     </div>
 
@@ -998,7 +1058,7 @@
         </div>
     </div>
 
-    <footer>✔️ Sistema com validade por lote - Escaneie para adicionar +1 automaticamente!</footer>
+    <footer>✔️ Sistema com validade - Escaneie para adicionar ou remover itens</footer>
 </div>
 
 <!-- Modais -->
@@ -1027,6 +1087,7 @@
     let ultimoCodigoLido = "";
     let ultimoTempoLeitura = 0;
     let aguardandoCadastro = false;
+    let modoScanner = 'adicionar'; // 'adicionar' ou 'remover'
 
     function formatMoney(val) { return val.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' }); }
     function formatDateBR(dateStr) { if(!dateStr) return ''; const [y,m,d]=dateStr.split('-'); return `${d}/${m}/${y}`; }
@@ -1085,10 +1146,10 @@
         }, 3000);
     }
 
-    function mostrarAnimacaoAdicao(x, y, produtoNome, quantidade) {
+    function mostrarAnimacaoAdicao(x, y, produtoNome, quantidade, tipo = 'adicionar') {
         const animationDiv = document.createElement('div');
-        animationDiv.className = 'scan-animation';
-        animationDiv.innerHTML = `+${quantidade} ${produtoNome}`;
+        animationDiv.className = 'scan-animation' + (tipo === 'remover' ? ' remover' : '');
+        animationDiv.innerHTML = tipo === 'adicionar' ? `+${quantidade} ${produtoNome}` : `-${quantidade} ${produtoNome}`;
         animationDiv.style.left = (x - 60) + 'px';
         animationDiv.style.top = (y - 50) + 'px';
         document.body.appendChild(animationDiv);
@@ -1246,11 +1307,33 @@
             saveCurrentUser();
             renderEstoque();
             destacarProdutoNaLista(codigo);
-            mostrarAnimacaoAdicao(window.innerWidth / 2, window.innerHeight / 2, produtos[produtoIndex].nome, quantidade);
+            mostrarAnimacaoAdicao(window.innerWidth / 2, window.innerHeight / 2, produtos[produtoIndex].nome, quantidade, 'adicionar');
             
             if(isVencendo(produtos[produtoIndex].validade)) {
                 mostrarAlertaVencimento(produtos[produtoIndex]);
             }
+            
+            return true;
+        }
+        return false;
+    }
+    
+    function removerQuantidadePorCodigo(codigo, quantidade = 1) {
+        const produtoIndex = produtos.findIndex(p => p.codigo === codigo);
+        
+        if(produtoIndex !== -1) {
+            if(produtos[produtoIndex].quantidade < quantidade) {
+                alert(`❌ Estoque insuficiente! ${produtos[produtoIndex].nome} tem apenas ${produtos[produtoIndex].quantidade} unidade(s).`);
+                return false;
+            }
+            
+            produtos[produtoIndex].quantidade -= quantidade;
+            
+            // Se quantidade for 0, remover o produto? Não, mantém com 0
+            saveCurrentUser();
+            renderEstoque();
+            destacarProdutoNaLista(codigo);
+            mostrarAnimacaoAdicao(window.innerWidth / 2, window.innerHeight / 2, produtos[produtoIndex].nome, quantidade, 'remover');
             
             return true;
         }
@@ -1360,17 +1443,20 @@
             
             let validadeDisplay = p.validade ? formatDateBR(p.validade) : 'Sem validade';
             let loteDisplay = p.numeroLote ? `Lote: ${escapeHtml(p.numeroLote)}` : '';
-            let alertaEstoque = p.quantidade < 5 ? '<span class="estoque-alerta">⚠️ Estoque baixo</span>' : '';
+            let alertaEstoque = p.quantidade < 5 && p.quantidade > 0 ? '<span class="estoque-alerta">⚠️ Estoque baixo</span>' : '';
+            let esgotado = p.quantidade === 0 ? '<span class="estoque-alerta" style="background:var(--danger);">❌ ESGOTADO</span>' : '';
             
             return `
             <div class="produto-lista-item ${statusClass}" data-produto-codigo="${escapeHtml(p.codigo)}">
                 <div class="produto-linha-principal">
                     <div class="produto-nome-lista">
-                        📦 ${escapeHtml(p.nome)} ${alertaEstoque} ${statusBadge}
+                        📦 ${escapeHtml(p.nome)} ${alertaEstoque} ${esgotado} ${statusBadge}
                     </div>
                     <div class="produto-acoes">
                         <button class="action-icon edit-produto" data-codigo="${escapeHtml(p.codigo)}" title="Editar">✏️</button>
                         <button class="action-icon del-produto" data-codigo="${escapeHtml(p.codigo)}" title="Excluir">🗑️</button>
+                        <button class="action-icon add-produto" data-codigo="${escapeHtml(p.codigo)}" title="Adicionar +1">➕</button>
+                        <button class="action-icon remove-produto" data-codigo="${escapeHtml(p.codigo)}" title="Remover 1">➖</button>
                     </div>
                 </div>
                 <div class="produto-detalhes-lista">
@@ -1410,10 +1496,23 @@
         document.querySelectorAll('.del-produto').forEach(btn => {
             btn.addEventListener('click', () => deletarProduto(btn.dataset.codigo));
         });
+        document.querySelectorAll('.add-produto').forEach(btn => {
+            btn.addEventListener('click', () => {
+                const codigo = btn.dataset.codigo;
+                adicionarQuantidadePorCodigo(codigo, 1);
+                mostrarAnimacaoAdicao(window.innerWidth / 2, window.innerHeight / 2, 'Item', 1, 'adicionar');
+            });
+        });
+        document.querySelectorAll('.remove-produto').forEach(btn => {
+            btn.addEventListener('click', () => {
+                const codigo = btn.dataset.codigo;
+                removerQuantidadePorCodigo(codigo, 1);
+            });
+        });
         
         let totalProdutos = produtos.reduce((sum, p) => sum + p.quantidade, 0);
         let valorTotalEstoque = produtos.reduce((sum, p) => sum + (p.preco ? p.preco * p.quantidade : 0), 0);
-        let produtosBaixo = produtos.filter(p => p.quantidade < 5).length;
+        let produtosBaixo = produtos.filter(p => p.quantidade < 5 && p.quantidade > 0).length;
         let produtosVencendo = produtos.filter(p => p.validade && isVencendo(p.validade)).length;
         
         document.getElementById('totalProdutos').innerText = totalProdutos;
@@ -1464,7 +1563,7 @@
                     readerDiv.style.display = 'none';
                     scanStatus.style.display = 'none';
                     startBtn.innerHTML = '📷 INICIAR LEITURA CONTÍNUA';
-                    startBtn.style.background = 'var(--info)';
+                    startBtn.className = 'scan-btn';
                     scannerAtivo = false;
                     html5QrCode = null;
                 }).catch(err => console.log(err));
@@ -1475,7 +1574,7 @@
         readerDiv.style.display = 'block';
         scanStatus.style.display = 'block';
         startBtn.innerHTML = '🛑 PARAR LEITURA';
-        startBtn.style.background = 'var(--danger)';
+        startBtn.className = 'scan-btn';
         
         html5QrCode = new Html5Qrcode("reader");
         const config = { fps: 10, qrbox: { width: 250, height: 250 } };
@@ -1493,7 +1592,11 @@
             const produtoExistente = produtos.find(p => p.codigo === decodedText);
             
             if(produtoExistente) {
-                adicionarQuantidadePorCodigo(decodedText, 1);
+                if(modoScanner === 'adicionar') {
+                    adicionarQuantidadePorCodigo(decodedText, 1);
+                } else {
+                    removerQuantidadePorCodigo(decodedText, 1);
+                }
                 try {
                     const audioContext = new (window.AudioContext || window.webkitAudioContext)();
                     const oscillator = audioContext.createOscillator();
@@ -1507,7 +1610,7 @@
                     oscillator.stop(audioContext.currentTime + 0.1);
                 } catch(e) {}
             } else {
-                if(!aguardandoCadastro) {
+                if(!aguardandoCadastro && modoScanner === 'adicionar') {
                     aguardandoCadastro = true;
                     document.getElementById('produtoCodigo').value = decodedText;
                     document.getElementById('formNovoLote').style.display = 'block';
@@ -1516,6 +1619,15 @@
                     const alertDiv = document.createElement('div');
                     alertDiv.className = 'warning-animation';
                     alertDiv.innerHTML = `📷 Código lido: ${decodedText}<br>Preencha os dados para cadastrar o produto`;
+                    alertDiv.style.left = '10%';
+                    alertDiv.style.width = '80%';
+                    alertDiv.style.top = '40%';
+                    document.body.appendChild(alertDiv);
+                    setTimeout(() => alertDiv.remove(), 3000);
+                } else if(modoScanner === 'remover') {
+                    const alertDiv = document.createElement('div');
+                    alertDiv.className = 'warning-animation';
+                    alertDiv.innerHTML = `❌ Produto não encontrado!<br>Código: ${decodedText}`;
                     alertDiv.style.left = '10%';
                     alertDiv.style.width = '80%';
                     alertDiv.style.top = '40%';
@@ -1784,6 +1896,35 @@
         document.getElementById('startScannerBtn').onclick = iniciarScanner;
         document.getElementById('salvarNovoLoteBtn').onclick = salvarNovoLote;
         document.getElementById('cancelarNovoLoteBtn').onclick = cancelarNovoLote;
+        document.getElementById('editarEstoqueBtn').onclick = () => {
+            document.getElementById('formNovoLote').style.display = 'block';
+            document.getElementById('produtoCodigo').value = '';
+            document.getElementById('produtoNome').value = '';
+            document.getElementById('produtoPreco').value = '';
+            document.getElementById('produtoQuantidade').value = '1';
+            document.getElementById('produtoValidade').value = '';
+            document.getElementById('produtoLote').value = '';
+            document.getElementById('produtoDescricao').value = '';
+            document.getElementById('produtoNome').focus();
+        };
+        
+        document.getElementById('modoAdicionar').onclick = () => {
+            modoScanner = 'adicionar';
+            document.getElementById('modoAdicionar').className = 'active-adicionar';
+            document.getElementById('modoRemover').className = '';
+            const startBtn = document.getElementById('startScannerBtn');
+            startBtn.className = 'scan-btn';
+            startBtn.innerHTML = scannerAtivo ? '🛑 PARAR LEITURA' : '📷 INICIAR LEITURA CONTÍNUA';
+        };
+        
+        document.getElementById('modoRemover').onclick = () => {
+            modoScanner = 'remover';
+            document.getElementById('modoRemover').className = 'active-remover';
+            document.getElementById('modoAdicionar').className = '';
+            const startBtn = document.getElementById('startScannerBtn');
+            startBtn.className = 'scan-btn remover';
+            startBtn.innerHTML = scannerAtivo ? '🛑 PARAR LEITURA' : '📷 INICIAR LEITURA CONTÍNUA';
+        };
         
         document.querySelectorAll('.tipo-btn').forEach(btn => { btn.onclick = function() { document.querySelectorAll('.tipo-btn').forEach(b=>b.classList.remove('active')); this.classList.add('active'); tipoSelecionadoMobile = this.dataset.tipoMobile; atualizarSelectCategorias(); }; });
         
