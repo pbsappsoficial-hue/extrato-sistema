@@ -897,23 +897,6 @@
         .botao-editar-estoque:hover {
             opacity: 0.8;
         }
-        
-        .codigo-editavel {
-            background: var(--bg-elevated);
-            border: 1px solid var(--border);
-            border-radius: 16px;
-            padding: 6px 12px;
-            font-family: monospace;
-            font-size: 14px;
-            color: var(--text-primary);
-            width: 100%;
-            max-width: 200px;
-        }
-        
-        .codigo-editavel:focus {
-            outline: none;
-            border-color: var(--success);
-        }
     </style>
 </head>
 <body class="value-hidden">
@@ -1029,13 +1012,6 @@
                     <button id="mobileAddCaixaBtn" class="mini-btn">➕</button>
                 </div>
             </div>
-            <div class="input-field">
-                <label>🏷️ CATEGORIA</label>
-                <div class="categoria-row">
-                    <select id="mobileCategoria"></select>
-                    <button id="mobileAddCatBtn" class="mini-btn">➕</button>
-                </div>
-            </div>
             <div class="input-field"><label>📅 DATA</label><input type="date" id="mobileData"></div>
             <button id="mobileAddTransacao" class="full-btn">➕ ADICIONAR</button>
         </div>
@@ -1102,8 +1078,7 @@
 </div>
 
 <!-- Modais -->
-<div id="catModal" class="modal-mobile"><div class="modal-card"><h3>➕ Nova Categoria</h3><input type="text" id="newCatName" class="auth-input" placeholder="Nome da categoria"><div style="display: flex; gap:12px; margin-top:20px;"><button id="confirmCatBtn" class="auth-btn">Adicionar</button><button id="cancelCatBtn" class="auth-btn" style="background:#333;">Cancelar</button></div></div></div>
-<div id="editModal" class="modal-mobile"><div class="modal-card"><h3>✏️ Editar Movimentação</h3><input type="hidden" id="editId"><div class="edit-modal-field"><label>Descrição</label><input type="text" id="editDesc" class="auth-input"></div><div class="edit-modal-field"><label>Valor</label><input type="text" id="editValor" class="auth-input"></div><div class="edit-modal-field"><label>Categoria</label><select id="editCategoria" class="auth-input"></select></div><div class="edit-modal-field"><label>Caixa</label><select id="editCaixa" class="auth-input"></select></div><div class="edit-modal-field"><label>Data</label><input type="date" id="editData" class="auth-input"></div><div class="edit-modal-field"><label>Tipo</label><select id="editTipo" class="auth-input"><option value="entrada">Entrada</option><option value="saida">Saída</option></select></div><div style="display: flex; gap:12px; margin-top:20px;"><button id="saveEditBtn" class="auth-btn">Salvar</button><button id="cancelEditBtn" class="auth-btn" style="background:#333;">Cancelar</button></div></div></div>
+<div id="editModal" class="modal-mobile"><div class="modal-card"><h3>✏️ Editar Movimentação</h3><input type="hidden" id="editId"><div class="edit-modal-field"><label>Descrição</label><input type="text" id="editDesc" class="auth-input"></div><div class="edit-modal-field"><label>Valor</label><input type="text" id="editValor" class="auth-input"></div><div class="edit-modal-field"><label>Caixa</label><select id="editCaixa" class="auth-input"></select></div><div class="edit-modal-field"><label>Data</label><input type="date" id="editData" class="auth-input"></div><div class="edit-modal-field"><label>Tipo</label><select id="editTipo" class="auth-input"><option value="entrada">Entrada</option><option value="saida">Saída</option></select></div><div style="display: flex; gap:12px; margin-top:20px;"><button id="saveEditBtn" class="auth-btn">Salvar</button><button id="cancelEditBtn" class="auth-btn" style="background:#333;">Cancelar</button></div></div></div>
 <div id="backupModalMobile" class="modal-mobile"><div class="modal-card"><h3>🔐 Backup Criptografado</h3><input type="password" id="backupPass" class="auth-input" placeholder="Senha do backup"><div style="display: flex; gap:12px; margin-top:20px;"><button id="confirmBackupMobile" class="auth-btn">Confirmar</button><button id="cancelBackupMobile" class="auth-btn" style="background:#333;">Cancelar</button></div></div></div>
 <div id="deleteAccountModal" class="modal-mobile"><div class="modal-card"><h3 style="color: var(--danger);">⚠️ EXCLUIR CONTA</h3><p>Digite sua senha para confirmar:</p><input type="password" id="deleteConfirmPassword" class="auth-input"><div style="display: flex; gap:12px; margin-top:20px;"><button id="confirmDeleteAccountBtn" class="auth-btn" style="background:var(--danger);">Excluir</button><button id="cancelDeleteAccountBtn" class="auth-btn" style="background:#333;">Cancelar</button></div></div></div>
 
@@ -1120,8 +1095,6 @@
     let transacoes = [];
     let caixas = [];
     let produtos = [];
-    let categoriaEntradas = [];
-    let categoriaSaidas = [];
     let html5QrCode = null;
     let scannerAtivo = false;
     let ultimoCodigoLido = "";
@@ -1226,9 +1199,7 @@
             senha, 
             transacoes: [], 
             produtos: [],
-            caixas: ["Carteira", "Banco do Brasil", "PicPay", "Nubank"],
-            catEntrada: ["Salário", "Freela", "Vendas", "Investimentos", "Outros"],
-            catSaida: ["Alimentação", "Moradia", "Transporte", "Lazer", "Saúde", "Educação", "Outros"]
+            caixas: ["Carteira", "Banco do Brasil", "PicPay", "Nubank"]
         };
         saveUsers(users);
         return true;
@@ -1242,8 +1213,6 @@
         transacoes = users[nome].transacoes || [];
         produtos = users[nome].produtos || [];
         caixas = users[nome].caixas || ["Carteira", "Banco do Brasil", "PicPay", "Nubank"];
-        categoriaEntradas = users[nome].catEntrada || ["Salário", "Freela", "Vendas", "Investimentos", "Outros"];
-        categoriaSaidas = users[nome].catSaida || ["Alimentação", "Moradia", "Transporte", "Lazer", "Saúde", "Educação", "Outros"];
         return true;
     }
     
@@ -1254,8 +1223,6 @@
             users[currentUser].transacoes = transacoes;
             users[currentUser].produtos = produtos;
             users[currentUser].caixas = caixas;
-            users[currentUser].catEntrada = categoriaEntradas;
-            users[currentUser].catSaida = categoriaSaidas;
             saveUsers(users);
         }
     }
@@ -1290,15 +1257,6 @@
     }
 
     let tipoSelecionadoMobile = 'entrada';
-
-    function atualizarSelectCategorias() {
-        let cats = tipoSelecionadoMobile === 'entrada' ? categoriaEntradas : categoriaSaidas;
-        let options = cats.map(c => `<option value="${escapeHtml(c)}">${escapeHtml(c)}</option>`).join('');
-        let select = document.getElementById('mobileCategoria');
-        if(select) select.innerHTML = options;
-        let selectEdit = document.getElementById('editCategoria');
-        if(selectEdit) selectEdit.innerHTML = options;
-    }
 
     function renderCaixas() {
         let saldos = getSaldoPorCaixa();
@@ -1712,7 +1670,6 @@
                     <div class="transaction-desc">${escapeHtml(t.descricao)}</div>
                     <div class="transaction-meta">
                         <span>📅 ${formatDateBR(t.data)}</span>
-                        <span>🏷️ ${escapeHtml(t.categoria)}</span>
                         <span class="caixa-badge">🏦 ${escapeHtml(t.caixa)}</span>
                     </div>
                 </div>
@@ -1736,10 +1693,6 @@
         document.getElementById('editData').value = t.data;
         document.getElementById('editTipo').value = t.tipo;
         
-        let catsEdit = t.tipo === 'entrada' ? categoriaEntradas : categoriaSaidas;
-        let catSelect = document.getElementById('editCategoria');
-        catSelect.innerHTML = catsEdit.map(c => `<option value="${escapeHtml(c)}" ${c === t.categoria ? 'selected' : ''}>${escapeHtml(c)}</option>`).join('');
-        
         let caixaSelect = document.getElementById('editCaixa');
         caixaSelect.innerHTML = caixas.map(c => `<option value="${escapeHtml(c)}" ${c === t.caixa ? 'selected' : ''}>${escapeHtml(c)}</option>`).join('');
         
@@ -1752,7 +1705,6 @@
         if(index === -1) return;
         let newDesc = document.getElementById('editDesc').value.trim();
         let newValorRaw = document.getElementById('editValor').value.trim();
-        let newCategoria = document.getElementById('editCategoria').value;
         let newCaixa = document.getElementById('editCaixa').value;
         let newData = document.getElementById('editData').value;
         let newTipo = document.getElementById('editTipo').value;
@@ -1760,7 +1712,7 @@
         let newValor = parseMoneyValue(newValorRaw);
         if(newValor === null) return alert("❌ Valor inválido");
         if(!newData) newData = new Date().toISOString().slice(0,10);
-        transacoes[index] = { ...transacoes[index], descricao: newDesc, valor: newValor, categoria: newCategoria, caixa: newCaixa, data: newData, tipo: newTipo };
+        transacoes[index] = { ...transacoes[index], descricao: newDesc, valor: newValor, caixa: newCaixa, data: newData, tipo: newTipo };
         document.getElementById('editModal').classList.remove('active');
         refreshAll();
     }
@@ -1772,14 +1724,13 @@
     function addTransacao() {
         let desc = document.getElementById('mobileDesc').value.trim();
         let valorInput = document.getElementById('mobileValor').value.trim();
-        let categoria = document.getElementById('mobileCategoria').value;
         let caixa = document.getElementById('mobileCaixa').value;
         let data = document.getElementById('mobileData').value;
         if(!desc) return alert("❌ Informe uma descrição");
         let valor = parseMoneyValue(valorInput);
         if(valor === null) return alert("❌ Valor inválido! Digite um valor positivo.");
         if(!data) { let hoje=new Date(); data=`${hoje.getFullYear()}-${String(hoje.getMonth()+1).padStart(2,'0')}-${String(hoje.getDate()).padStart(2,'0')}`; }
-        transacoes.push({ id: Date.now()+Math.random(), tipo: tipoSelecionadoMobile, descricao: desc, categoria, caixa, valor, data });
+        transacoes.push({ id: Date.now()+Math.random(), tipo: tipoSelecionadoMobile, descricao: desc, caixa, valor, data });
         document.getElementById('mobileDesc').value = '';
         document.getElementById('mobileValor').value = '';
         refreshAll();
@@ -1842,7 +1793,7 @@
     function backupAction() { 
         let pass = document.getElementById('backupPass').value; 
         if(!pass) return alert("Digite uma senha"); 
-        let dataToBackup = { transacoes, produtos, caixas, categoriaEntradas, categoriaSaidas };
+        let dataToBackup = { transacoes, produtos, caixas };
         let enc = encrypt(dataToBackup, pass); 
         let blob = new Blob([enc], {type:"application/octet-stream"}); 
         let a = document.createElement('a'); 
@@ -1870,8 +1821,6 @@
                         transacoes = dec.transacoes || [];
                         produtos = dec.produtos || [];
                         caixas = dec.caixas || ["Carteira", "Banco do Brasil", "PicPay", "Nubank"];
-                        categoriaEntradas = dec.categoriaEntradas || ["Salário", "Freela", "Vendas", "Investimentos", "Outros"];
-                        categoriaSaidas = dec.categoriaSaidas || ["Alimentação", "Moradia", "Transporte", "Lazer", "Saúde", "Educação", "Outros"];
                         refreshAll(); 
                         alert("Restaurado com sucesso!"); 
                     } 
@@ -1886,9 +1835,9 @@
         if(transacoes.length === 0) { alert("Nenhuma movimentação"); return; }
         let totalEntradas = transacoes.filter(t=>t.tipo==='entrada').reduce((s,t)=>s+t.valor,0);
         let totalSaidas = transacoes.filter(t=>t.tipo==='saida').reduce((s,t)=>s+t.valor,0);
-        let html = `<!DOCTYPE html><html><head><meta charset="UTF-8"><title>Extrato</title><style>body{font-family:Arial;padding:20px;}table{width:100%;border-collapse:collapse;}th,td{border:1px solid #ddd;padding:8px;}th{background:#10b981;color:white;}</style></head><body><h1>💰 Extrato Financeiro</h1><p>Usuário: ${currentUser}</p><p>Total Entradas: ${formatMoney(totalEntradas)}</p><p>Total Saídas: ${formatMoney(totalSaidas)}</p><p>Saldo: ${formatMoney(totalEntradas - totalSaidas)}</p><table><thead><tr><th>Data</th><th>Descrição</th><th>Categoria</th><th>Caixa</th><th>Valor</th></tr></thead><tbody>`;
+        let html = `<!DOCTYPE html><html><head><meta charset="UTF-8"><title>Extrato</title><style>body{font-family:Arial;padding:20px;}table{width:100%;border-collapse:collapse;}th,td{border:1px solid #ddd;padding:8px;}th{background:#10b981;color:white;}</style></head><body><h1>💰 Extrato Financeiro</h1><p>Usuário: ${currentUser}</p><p>Total Entradas: ${formatMoney(totalEntradas)}</p><p>Total Saídas: ${formatMoney(totalSaidas)}</p><p>Saldo: ${formatMoney(totalEntradas - totalSaidas)}</p><table><thead><tr><th>Data</th><th>Descrição</th><th>Caixa</th><th>Valor</th></tr></thead><tbody>`;
         for(let t of transacoes.sort((a,b)=>b.data.localeCompare(a.data))) {
-            html += `<tr><td>${formatDateBR(t.data)}</td><td>${escapeHtml(t.descricao)}</td><td>${escapeHtml(t.categoria)}</td><td>${escapeHtml(t.caixa)}</td><td style="color:${t.tipo==='entrada'?'green':'red'}">${t.tipo==='entrada'?formatMoney(t.valor):'- '+formatMoney(t.valor)}</td></tr>`;
+            html += `<tr><td>${formatDateBR(t.data)}</td><td>${escapeHtml(t.descricao)}</td><td>${escapeHtml(t.caixa)}</td><td style="color:${t.tipo==='entrada'?'green':'red'}">${t.tipo==='entrada'?formatMoney(t.valor):'- '+formatMoney(t.valor)}</td></tr>`;
         }
         html += `</tbody></table><footer>Gerado em ${new Date().toLocaleString('pt-BR')}</footer></body></html>`;
         let div = document.createElement('div'); div.innerHTML = html; document.body.appendChild(div);
@@ -1898,7 +1847,6 @@
     function gerarEstoquePDF() {
         if(produtos.length === 0) { alert("Nenhum produto no estoque!"); return; }
         
-        // Calcular totais
         let totalValor = produtos.reduce((sum, p) => sum + (p.preco ? p.preco * p.quantidade : 0), 0);
         let totalItens = produtos.reduce((sum, p) => sum + p.quantidade, 0);
         let totalProdutos = produtos.length;
@@ -2040,7 +1988,6 @@
                 </thead>
                 <tbody>`;
         
-        // Ordenar produtos: vencidos primeiro, depois vencendo, depois normais
         const produtosOrdenados = [...produtos].sort((a, b) => {
             const aVencido = isVencido(a.validade);
             const bVencido = isVencido(b.validade);
@@ -2112,7 +2059,7 @@
 
     // ==================== EVENTOS ====================
     document.addEventListener('DOMContentLoaded', function() {
-        document.getElementById('loginBtn').onclick = () => { try { loginUser(document.getElementById('loginNome').value.trim(), document.getElementById('loginSenha').value); document.getElementById('loginScreen').style.display = 'none'; document.getElementById('mainApp').style.display = 'block'; document.getElementById('userNameDisplay').innerText = currentUser; atualizarSelectCaixas(); atualizarSelectCategorias(); refreshAll(); loadThemePreference(); applyHideValuesState(); } catch(e) { document.getElementById('loginErrorMsg').innerText = e.message; } };
+        document.getElementById('loginBtn').onclick = () => { try { loginUser(document.getElementById('loginNome').value.trim(), document.getElementById('loginSenha').value); document.getElementById('loginScreen').style.display = 'none'; document.getElementById('mainApp').style.display = 'block'; document.getElementById('userNameDisplay').innerText = currentUser; atualizarSelectCaixas(); refreshAll(); loadThemePreference(); applyHideValuesState(); } catch(e) { document.getElementById('loginErrorMsg').innerText = e.message; } };
         document.getElementById('registerBtn').onclick = () => { try { registerUser(document.getElementById('regNome').value.trim(), document.getElementById('regSenha').value); alert("Conta criada!"); document.getElementById('regScreen').style.display = 'none'; document.getElementById('loginScreen').style.display = 'flex'; } catch(e) { document.getElementById('regErrorMsg').innerText = e.message; } };
         document.getElementById('showRegLink').onclick = () => { document.getElementById('loginScreen').style.display = 'none'; document.getElementById('regScreen').style.display = 'flex'; };
         document.getElementById('showLoginLink').onclick = () => { document.getElementById('regScreen').style.display = 'none'; document.getElementById('loginScreen').style.display = 'flex'; };
@@ -2129,11 +2076,8 @@
         document.getElementById('menuDeleteAccount').onclick = () => document.getElementById('deleteAccountModal').classList.add('active');
         document.getElementById('hideValuesBtn').onclick = toggleHideValues;
         document.getElementById('mobileAddTransacao').onclick = addTransacao;
-        document.getElementById('mobileAddCatBtn').onclick = () => document.getElementById('catModal').classList.add('active');
         document.getElementById('mobileAddCaixaBtn').onclick = () => { let nome = prompt("Nome do novo caixa:"); if(nome) criarCaixa(nome); };
         document.getElementById('createCaixaBtn').onclick = () => criarCaixa(document.getElementById('newCaixaName').value);
-        document.getElementById('confirmCatBtn').onclick = () => { let nome = document.getElementById('newCatName').value.trim(); if(nome) { if(tipoSelecionadoMobile==='entrada') categoriaEntradas.push(nome); else categoriaSaidas.push(nome); atualizarSelectCategorias(); saveCurrentUser(); document.getElementById('catModal').classList.remove('active'); refreshAll(); } };
-        document.getElementById('cancelCatBtn').onclick = () => document.getElementById('catModal').classList.remove('active');
         document.getElementById('saveEditBtn').onclick = saveEdit;
         document.getElementById('cancelEditBtn').onclick = () => document.getElementById('editModal').classList.remove('active');
         document.getElementById('confirmBackupMobile').onclick = backupAction;
@@ -2189,7 +2133,7 @@
             startBtn.innerHTML = scannerAtivo ? '🛑 PARAR LEITURA' : '📷 INICIAR LEITURA CONTÍNUA';
         };
         
-        document.querySelectorAll('.tipo-btn').forEach(btn => { btn.onclick = function() { document.querySelectorAll('.tipo-btn').forEach(b=>b.classList.remove('active')); this.classList.add('active'); tipoSelecionadoMobile = this.dataset.tipoMobile; atualizarSelectCategorias(); }; });
+        document.querySelectorAll('.tipo-btn').forEach(btn => { btn.onclick = function() { document.querySelectorAll('.tipo-btn').forEach(b=>b.classList.remove('active')); this.classList.add('active'); tipoSelecionadoMobile = this.dataset.tipoMobile; }; });
         
         document.querySelectorAll('.mobile-tab').forEach(btn => { btn.onclick = function() { document.querySelectorAll('.mobile-tab').forEach(b=>b.classList.remove('active')); this.classList.add('active'); let tabName = this.dataset.tab; document.querySelectorAll('.tab-pane').forEach(p=>p.style.display='none'); if(tabName==='movements') document.getElementById('tabMovements').style.display='block'; if(tabName==='add') document.getElementById('tabAdd').style.display='block'; if(tabName==='estoque') { document.getElementById('tabEstoque').style.display='block'; renderEstoque(); } if(tabName==='caixas') { document.getElementById('tabCaixas').style.display='block'; renderCaixas(); } }; });
         
@@ -2198,7 +2142,6 @@
         let today = new Date().toISOString().slice(0,10);
         if(document.getElementById('mobileData')) document.getElementById('mobileData').value = today;
         
-        atualizarSelectCategorias();
         atualizarSelectCaixas();
     });
 </script>
