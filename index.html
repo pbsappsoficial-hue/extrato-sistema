@@ -605,6 +605,17 @@
             background: var(--danger);
         }
         
+        .scan-btn.scanning {
+            background: var(--warning);
+            animation: pulseScan 1s infinite;
+        }
+        
+        @keyframes pulseScan {
+            0% { opacity: 1; }
+            50% { opacity: 0.6; }
+            100% { opacity: 1; }
+        }
+        
         .estoque-resumo {
             background: var(--bg-card);
             border-radius: 20px;
@@ -897,6 +908,74 @@
         .botao-editar-estoque:hover {
             opacity: 0.8;
         }
+
+        /* Modal de Validade */
+        .validade-modal .modal-card {
+            max-width: 380px;
+        }
+        
+        .validade-modal .produto-info-display {
+            background: var(--bg-elevated);
+            border-radius: 16px;
+            padding: 12px;
+            margin-bottom: 16px;
+            border: 1px solid var(--border);
+        }
+        
+        .validade-modal .produto-info-display .nome {
+            font-size: 18px;
+            font-weight: 700;
+        }
+        
+        .validade-modal .produto-info-display .codigo {
+            font-size: 12px;
+            color: var(--text-muted);
+            font-family: monospace;
+        }
+        
+        .validade-modal .produto-info-display .detalhes {
+            font-size: 13px;
+            color: var(--text-muted);
+            margin-top: 4px;
+        }
+        
+        .validade-modal .btn-group {
+            display: flex;
+            gap: 12px;
+            margin-top: 16px;
+        }
+        
+        .validade-modal .btn-group button {
+            flex: 1;
+        }
+        
+        .validade-modal .btn-group .btn-cancelar {
+            background: var(--danger);
+        }
+        
+        .scan-duplo-status {
+            text-align: center;
+            padding: 8px;
+            font-size: 13px;
+            font-weight: 600;
+            border-radius: 16px;
+            margin-top: 8px;
+        }
+        
+        .scan-duplo-status.aguardando {
+            background: var(--warning);
+            color: white;
+        }
+        
+        .scan-duplo-status.lido {
+            background: var(--success);
+            color: white;
+        }
+        
+        .scan-duplo-status.erro {
+            background: var(--danger);
+            color: white;
+        }
     </style>
 </head>
 <body class="value-hidden">
@@ -1025,14 +1104,21 @@
             <div class="estoque-resumo-item"><strong>⏰ Produtos próximos ao vencimento (≤7 dias):</strong> <span id="produtosVencendo">0</span></div>
         </div>
         
+        <!-- Scanner de Validade -->
         <div class="scanner-container">
+            <button id="startScannerValidade" class="scan-btn">📷 SCANEAR PRODUTO + VALIDADE</button>
+            <div id="reader" style="width:100%; display:none;"></div>
+            <div class="scan-status-text" id="scanStatus" style="display: none;">🔍 Câmera ativa - Aponte para o código</div>
+            <div id="scanDuploStatus" class="scan-duplo-status" style="display: none;"></div>
+        </div>
+        
+        <!-- Scanner para adicionar/remover -->
+        <div style="margin-top: 8px;">
             <div class="modo-scanner">
                 <button id="modoAdicionar" class="active-adicionar">➕ ADICIONAR</button>
                 <button id="modoRemover">➖ REMOVER</button>
             </div>
-            <button id="startScannerBtn" class="scan-btn">📷 INICIAR LEITURA CONTÍNUA</button>
-            <div id="reader" style="width:100%; display:none;"></div>
-            <div class="scan-status-text" id="scanStatus" style="display: none;">🔍 Câmera ativa - Aponte para o código</div>
+            <button id="startScannerBtn" class="scan-btn">📷 SCANEAR CÓDIGO (Adicionar/Remover)</button>
         </div>
         
         <div class="form-mobile" id="formNovoLote" style="display: none;">
@@ -1074,13 +1160,39 @@
         </div>
     </div>
 
-    <footer>✔️ Sistema com validade - Escaneie para adicionar ou remover itens</footer>
+    <footer>✔️ Escaneie o código do produto e a validade em sequência para adicionar rapidamente!</footer>
 </div>
 
 <!-- Modais -->
 <div id="editModal" class="modal-mobile"><div class="modal-card"><h3>✏️ Editar Movimentação</h3><input type="hidden" id="editId"><div class="edit-modal-field"><label>Descrição</label><input type="text" id="editDesc" class="auth-input"></div><div class="edit-modal-field"><label>Valor</label><input type="text" id="editValor" class="auth-input"></div><div class="edit-modal-field"><label>Caixa</label><select id="editCaixa" class="auth-input"></select></div><div class="edit-modal-field"><label>Data</label><input type="date" id="editData" class="auth-input"></div><div class="edit-modal-field"><label>Tipo</label><select id="editTipo" class="auth-input"><option value="entrada">Entrada</option><option value="saida">Saída</option></select></div><div style="display: flex; gap:12px; margin-top:20px;"><button id="saveEditBtn" class="auth-btn">Salvar</button><button id="cancelEditBtn" class="auth-btn" style="background:#333;">Cancelar</button></div></div></div>
 <div id="backupModalMobile" class="modal-mobile"><div class="modal-card"><h3>🔐 Backup Criptografado</h3><input type="password" id="backupPass" class="auth-input" placeholder="Senha do backup"><div style="display: flex; gap:12px; margin-top:20px;"><button id="confirmBackupMobile" class="auth-btn">Confirmar</button><button id="cancelBackupMobile" class="auth-btn" style="background:#333;">Cancelar</button></div></div></div>
 <div id="deleteAccountModal" class="modal-mobile"><div class="modal-card"><h3 style="color: var(--danger);">⚠️ EXCLUIR CONTA</h3><p>Digite sua senha para confirmar:</p><input type="password" id="deleteConfirmPassword" class="auth-input"><div style="display: flex; gap:12px; margin-top:20px;"><button id="confirmDeleteAccountBtn" class="auth-btn" style="background:var(--danger);">Excluir</button><button id="cancelDeleteAccountBtn" class="auth-btn" style="background:#333;">Cancelar</button></div></div></div>
+<div id="validadeModal" class="modal-mobile validade-modal">
+    <div class="modal-card">
+        <h3>📦 Adicionar ao Estoque</h3>
+        <div class="produto-info-display" id="produtoInfoDisplay">
+            <div class="nome" id="validadeProdutoNome">Produto</div>
+            <div class="codigo" id="validadeProdutoCodigo">Código: ---</div>
+            <div class="detalhes" id="validadeProdutoDetalhes">Quantidade: 0 | Validade: ---</div>
+        </div>
+        <div class="input-field">
+            <label>📅 DATA DE VALIDADE</label>
+            <input type="date" id="validadeDataInput">
+        </div>
+        <div class="input-field">
+            <label>🔢 QUANTIDADE</label>
+            <input type="number" id="validadeQuantidade" value="1" min="1">
+        </div>
+        <div class="input-field">
+            <label>🏷️ LOTE (opcional)</label>
+            <input type="text" id="validadeLote" placeholder="Número do lote">
+        </div>
+        <div class="btn-group">
+            <button id="confirmarValidadeBtn" class="auth-btn">✅ ADICIONAR</button>
+            <button id="cancelarValidadeBtn" class="auth-btn btn-cancelar">❌ CANCELAR</button>
+        </div>
+    </div>
+</div>
 
 <script>
     // ==================== FUNÇÕES AUXILIARES ====================
@@ -1102,6 +1214,11 @@
     let aguardandoCadastro = false;
     let modoScanner = 'adicionar';
     let editandoProduto = null;
+    
+    // Variáveis para scanner duplo (produto + validade)
+    let scanDuploAtivo = false;
+    let scanDuploProduto = null;
+    let scanDuploAguardandoValidade = false;
 
     function formatMoney(val) { return val.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' }); }
     function formatDateBR(dateStr) { if(!dateStr) return ''; const [y,m,d]=dateStr.split('-'); return `${d}/${m}/${y}`; }
@@ -1338,6 +1455,31 @@
         return false;
     }
 
+    function adicionarProdutoComValidade(codigo, validade, quantidade, lote) {
+        const produtoIndex = produtos.findIndex(p => p.codigo === codigo);
+        
+        if(produtoIndex !== -1) {
+            // Atualizar produto existente
+            produtos[produtoIndex].quantidade += quantidade;
+            produtos[produtoIndex].validade = validade;
+            if(lote) produtos[produtoIndex].numeroLote = lote;
+            saveCurrentUser();
+            renderEstoque();
+            mostrarAnimacaoAdicao(window.innerWidth / 2, window.innerHeight / 2, produtos[produtoIndex].nome, quantidade, 'adicionar');
+            alert(`✅ ${quantidade} unidade(s) de "${produtos[produtoIndex].nome}" adicionadas com validade ${formatDateBR(validade)}!`);
+            return true;
+        } else {
+            // Produto não existe - abrir formulário
+            document.getElementById('produtoCodigo').value = codigo;
+            document.getElementById('produtoValidade').value = validade;
+            document.getElementById('produtoQuantidade').value = quantidade;
+            if(lote) document.getElementById('produtoLote').value = lote;
+            document.getElementById('formNovoLote').style.display = 'block';
+            document.getElementById('produtoNome').focus();
+            return false;
+        }
+    }
+
     function salvarNovoLote() {
         let codigo = document.getElementById('produtoCodigo').value.trim();
         let nome = document.getElementById('produtoNome').value.trim();
@@ -1411,6 +1553,8 @@
         document.getElementById('produtoDescricao').value = '';
         aguardandoCadastro = false;
         editandoProduto = null;
+        scanDuploProduto = null;
+        scanDuploAguardandoValidade = false;
     }
 
     function renderEstoque() {
@@ -1555,21 +1699,203 @@
         }
     }
     
-    // ==================== SCANNER ====================
-    function iniciarScanner() {
+    // ==================== SCANNER DUPLO (PRODUTO + VALIDADE) ====================
+    function iniciarScannerValidade() {
         const readerDiv = document.getElementById('reader');
-        const startBtn = document.getElementById('startScannerBtn');
+        const startBtn = document.getElementById('startScannerValidade');
         const scanStatus = document.getElementById('scanStatus');
+        const scanDuploStatus = document.getElementById('scanDuploStatus');
         
         if(scannerAtivo) {
             if(html5QrCode) {
                 html5QrCode.stop().then(() => {
                     readerDiv.style.display = 'none';
                     scanStatus.style.display = 'none';
-                    startBtn.innerHTML = '📷 INICIAR LEITURA CONTÍNUA';
+                    scanDuploStatus.style.display = 'none';
+                    startBtn.innerHTML = '📷 SCANEAR PRODUTO + VALIDADE';
                     startBtn.className = 'scan-btn';
                     scannerAtivo = false;
                     html5QrCode = null;
+                    scanDuploAtivo = false;
+                    scanDuploProduto = null;
+                    scanDuploAguardandoValidade = false;
+                }).catch(err => console.log(err));
+            }
+            return;
+        }
+        
+        readerDiv.style.display = 'block';
+        scanStatus.style.display = 'block';
+        scanDuploStatus.style.display = 'block';
+        scanDuploStatus.className = 'scan-duplo-status aguardando';
+        scanDuploStatus.innerHTML = '📷 Aguardando código do produto...';
+        startBtn.innerHTML = '🛑 PARAR LEITURA';
+        startBtn.className = 'scan-btn scanning';
+        
+        scanDuploAtivo = true;
+        scanDuploProduto = null;
+        scanDuploAguardandoValidade = false;
+        
+        html5QrCode = new Html5Qrcode("reader");
+        const config = { fps: 10, qrbox: { width: 250, height: 250 } };
+        
+        html5QrCode.start({ facingMode: "environment" }, config, (decodedText) => {
+            const agora = Date.now();
+            
+            if(decodedText === ultimoCodigoLido && (agora - ultimoTempoLeitura) < 1500) {
+                return;
+            }
+            
+            ultimoCodigoLido = decodedText;
+            ultimoTempoLeitura = agora;
+            
+            // Verificar se o código parece ser uma data (formato YYYY-MM-DD)
+            const dataRegex = /^\d{4}-\d{2}-\d{2}$/;
+            const isData = dataRegex.test(decodedText);
+            
+            if(!scanDuploAguardandoValidade) {
+                // Primeiro scan: código do produto
+                const produtoExistente = produtos.find(p => p.codigo === decodedText);
+                
+                if(produtoExistente) {
+                    scanDuploProduto = produtoExistente;
+                    scanDuploAguardandoValidade = true;
+                    scanDuploStatus.className = 'scan-duplo-status lido';
+                    scanDuploStatus.innerHTML = `✅ Produto: ${produtoExistente.nome}<br>📷 Aguardando data de validade...`;
+                    
+                    // Abrir modal com informações do produto
+                    document.getElementById('validadeProdutoNome').innerText = produtoExistente.nome;
+                    document.getElementById('validadeProdutoCodigo').innerHTML = `Código: ${produtoExistente.codigo}`;
+                    document.getElementById('validadeProdutoDetalhes').innerHTML = `Quantidade atual: ${produtoExistente.quantidade} | Validade: ${produtoExistente.validade ? formatDateBR(produtoExistente.validade) : 'Não definida'}`;
+                    document.getElementById('validadeDataInput').value = '';
+                    document.getElementById('validadeQuantidade').value = '1';
+                    document.getElementById('validadeLote').value = produtoExistente.numeroLote || '';
+                    
+                    document.getElementById('validadeModal').classList.add('active');
+                    
+                    try {
+                        const audioContext = new (window.AudioContext || window.webkitAudioContext)();
+                        const oscillator = audioContext.createOscillator();
+                        const gainNode = audioContext.createGain();
+                        oscillator.connect(gainNode);
+                        gainNode.connect(audioContext.destination);
+                        oscillator.frequency.value = 880;
+                        gainNode.gain.value = 0.1;
+                        oscillator.start();
+                        gainNode.gain.exponentialRampToValueAtTime(0.00001, audioContext.currentTime + 0.1);
+                        oscillator.stop(audioContext.currentTime + 0.1);
+                    } catch(e) {}
+                    
+                } else {
+                    // Produto não encontrado - oferecer para cadastrar
+                    scanDuploStatus.className = 'scan-duplo-status erro';
+                    scanDuploStatus.innerHTML = `❌ Produto não encontrado!<br>Código: ${decodedText}`;
+                    
+                    if(confirm(`📷 Código lido: ${decodedText}\n\nProduto não encontrado!\nDeseja cadastrar um novo produto?`)) {
+                        document.getElementById('produtoCodigo').value = decodedText;
+                        document.getElementById('formNovoLote').style.display = 'block';
+                        document.getElementById('produtoNome').focus();
+                        scanDuploAtivo = false;
+                        // Parar scanner
+                        if(html5QrCode) {
+                            html5QrCode.stop().then(() => {
+                                readerDiv.style.display = 'none';
+                                scanStatus.style.display = 'none';
+                                scanDuploStatus.style.display = 'none';
+                                startBtn.innerHTML = '📷 SCANEAR PRODUTO + VALIDADE';
+                                startBtn.className = 'scan-btn';
+                                scannerAtivo = false;
+                                html5QrCode = null;
+                                scanDuploAtivo = false;
+                            }).catch(err => console.log(err));
+                        }
+                    } else {
+                        // Voltar a aguardar código
+                        scanDuploAguardandoValidade = false;
+                        scanDuploStatus.className = 'scan-duplo-status aguardando';
+                        scanDuploStatus.innerHTML = '📷 Aguardando código do produto...';
+                    }
+                }
+            } else if(isData) {
+                // Segundo scan: data de validade
+                const dataValidade = decodedText;
+                
+                // Verificar se a data é válida
+                const dataObj = new Date(dataValidade);
+                if(!isNaN(dataObj.getTime())) {
+                    document.getElementById('validadeDataInput').value = dataValidade;
+                    
+                    // Preencher e confirmar automaticamente
+                    const quantidade = parseInt(document.getElementById('validadeQuantidade').value) || 1;
+                    const lote = document.getElementById('validadeLote').value.trim() || null;
+                    
+                    if(scanDuploProduto) {
+                        adicionarProdutoComValidade(scanDuploProduto.codigo, dataValidade, quantidade, lote);
+                        document.getElementById('validadeModal').classList.remove('active');
+                        
+                        scanDuploProduto = null;
+                        scanDuploAguardandoValidade = false;
+                        scanDuploStatus.className = 'scan-duplo-status aguardando';
+                        scanDuploStatus.innerHTML = '📷 Aguardando próximo código de produto...';
+                        
+                        try {
+                            const audioContext = new (window.AudioContext || window.webkitAudioContext)();
+                            const oscillator = audioContext.createOscillator();
+                            const gainNode = audioContext.createGain();
+                            oscillator.connect(gainNode);
+                            gainNode.connect(audioContext.destination);
+                            oscillator.frequency.value = 1100;
+                            gainNode.gain.value = 0.1;
+                            oscillator.start();
+                            gainNode.gain.exponentialRampToValueAtTime(0.00001, audioContext.currentTime + 0.15);
+                            oscillator.stop(audioContext.currentTime + 0.15);
+                        } catch(e) {}
+                    }
+                } else {
+                    scanDuploStatus.className = 'scan-duplo-status erro';
+                    scanDuploStatus.innerHTML = `❌ Data inválida: ${decodedText}<br>Aguardando data válida (formato YYYY-MM-DD)...`;
+                    setTimeout(() => {
+                        if(scanDuploAguardandoValidade) {
+                            scanDuploStatus.className = 'scan-duplo-status lido';
+                            scanDuploStatus.innerHTML = `✅ Produto: ${scanDuploProduto ? scanDuploProduto.nome : ''}<br>📷 Aguardando data de validade...`;
+                        }
+                    }, 2000);
+                }
+            } else {
+                // Código lido não é uma data válida e já estamos aguardando validade
+                scanDuploStatus.className = 'scan-duplo-status erro';
+                scanDuploStatus.innerHTML = `❌ Código lido não é uma data válida: ${decodedText}<br>Aguardando data no formato YYYY-MM-DD...`;
+                setTimeout(() => {
+                    if(scanDuploAguardandoValidade) {
+                        scanDuploStatus.className = 'scan-duplo-status lido';
+                        scanDuploStatus.innerHTML = `✅ Produto: ${scanDuploProduto ? scanDuploProduto.nome : ''}<br>📷 Aguardando data de validade...`;
+                    }
+                }, 2000);
+            }
+        }, (error) => {});
+        
+        scannerAtivo = true;
+    }
+
+    // ==================== SCANNER NORMAL ====================
+    function iniciarScannerNormal() {
+        const readerDiv = document.getElementById('reader');
+        const startBtn = document.getElementById('startScannerBtn');
+        const scanStatus = document.getElementById('scanStatus');
+        
+        // Se o scanner de validade está ativo, parar primeiro
+        if(scannerAtivo) {
+            if(html5QrCode) {
+                html5QrCode.stop().then(() => {
+                    readerDiv.style.display = 'none';
+                    scanStatus.style.display = 'none';
+                    startBtn.innerHTML = '📷 SCANEAR CÓDIGO (Adicionar/Remover)';
+                    startBtn.className = 'scan-btn';
+                    scannerAtivo = false;
+                    html5QrCode = null;
+                    scanDuploAtivo = false;
+                    document.getElementById('startScannerValidade').innerHTML = '📷 SCANEAR PRODUTO + VALIDADE';
+                    document.getElementById('startScannerValidade').className = 'scan-btn';
                 }).catch(err => console.log(err));
             }
             return;
@@ -1578,7 +1904,7 @@
         readerDiv.style.display = 'block';
         scanStatus.style.display = 'block';
         startBtn.innerHTML = '🛑 PARAR LEITURA';
-        startBtn.className = 'scan-btn';
+        startBtn.className = 'scan-btn scanning';
         
         html5QrCode = new Html5Qrcode("reader");
         const config = { fps: 10, qrbox: { width: 250, height: 250 } };
@@ -1614,21 +1940,24 @@
                     oscillator.stop(audioContext.currentTime + 0.1);
                 } catch(e) {}
             } else {
-                if(!aguardandoCadastro && modoScanner === 'adicionar') {
-                    aguardandoCadastro = true;
-                    document.getElementById('produtoCodigo').value = decodedText;
-                    document.getElementById('formNovoLote').style.display = 'block';
-                    document.getElementById('produtoNome').focus();
-                    
-                    const alertDiv = document.createElement('div');
-                    alertDiv.className = 'warning-animation';
-                    alertDiv.innerHTML = `📷 Código lido: ${decodedText}<br>Preencha os dados para cadastrar o produto`;
-                    alertDiv.style.left = '10%';
-                    alertDiv.style.width = '80%';
-                    alertDiv.style.top = '40%';
-                    document.body.appendChild(alertDiv);
-                    setTimeout(() => alertDiv.remove(), 3000);
-                } else if(modoScanner === 'remover') {
+                if(modoScanner === 'adicionar') {
+                    if(confirm(`📷 Código lido: ${decodedText}\n\nProduto não encontrado!\nDeseja cadastrar um novo produto?`)) {
+                        document.getElementById('produtoCodigo').value = decodedText;
+                        document.getElementById('formNovoLote').style.display = 'block';
+                        document.getElementById('produtoNome').focus();
+                        // Parar scanner
+                        if(html5QrCode) {
+                            html5QrCode.stop().then(() => {
+                                readerDiv.style.display = 'none';
+                                scanStatus.style.display = 'none';
+                                startBtn.innerHTML = '📷 SCANEAR CÓDIGO (Adicionar/Remover)';
+                                startBtn.className = 'scan-btn';
+                                scannerAtivo = false;
+                                html5QrCode = null;
+                            }).catch(err => console.log(err));
+                        }
+                    }
+                } else {
                     const alertDiv = document.createElement('div');
                     alertDiv.className = 'warning-animation';
                     alertDiv.innerHTML = `❌ Produto não encontrado!<br>Código: ${decodedText}`;
@@ -1642,6 +1971,34 @@
         }, (error) => {});
         
         scannerAtivo = true;
+    }
+
+    function pararScanner() {
+        if(html5QrCode && scannerAtivo) {
+            html5QrCode.stop().then(() => {
+                document.getElementById('reader').style.display = 'none';
+                document.getElementById('scanStatus').style.display = 'none';
+                document.getElementById('scanDuploStatus').style.display = 'none';
+                document.getElementById('startScannerBtn').innerHTML = '📷 SCANEAR CÓDIGO (Adicionar/Remover)';
+                document.getElementById('startScannerBtn').className = 'scan-btn';
+                document.getElementById('startScannerValidade').innerHTML = '📷 SCANEAR PRODUTO + VALIDADE';
+                document.getElementById('startScannerValidade').className = 'scan-btn';
+                scannerAtivo = false;
+                html5QrCode = null;
+                scanDuploAtivo = false;
+                scanDuploProduto = null;
+                scanDuploAguardandoValidade = false;
+            }).catch(err => console.log(err));
+        } else {
+            document.getElementById('reader').style.display = 'none';
+            document.getElementById('scanStatus').style.display = 'none';
+            document.getElementById('scanDuploStatus').style.display = 'none';
+            document.getElementById('startScannerBtn').innerHTML = '📷 SCANEAR CÓDIGO (Adicionar/Remover)';
+            document.getElementById('startScannerBtn').className = 'scan-btn';
+            document.getElementById('startScannerValidade').innerHTML = '📷 SCANEAR PRODUTO + VALIDADE';
+            document.getElementById('startScannerValidade').className = 'scan-btn';
+            scannerAtivo = false;
+        }
     }
 
     // ==================== FUNÇÕES FINANCEIRAS ====================
@@ -1778,9 +2135,7 @@
     
     function logout() {
         if(confirm("Deseja sair da sua conta?")) { 
-            if(scannerAtivo && html5QrCode) { 
-                html5QrCode.stop().catch(e=>{}); 
-            }
+            pararScanner();
             currentUser = null; 
             document.getElementById('mainApp').style.display = 'none'; 
             document.getElementById('loginScreen').style.display = 'flex';
@@ -1858,79 +2213,27 @@
             <title>Relatório de Estoque - ${currentUser}</title>
             <style>
                 * { margin: 0; padding: 0; box-sizing: border-box; }
-                body { 
-                    font-family: 'Segoe UI', Arial, sans-serif; 
-                    padding: 30px; 
-                    background: #f8f9fa;
-                    color: #1a1a2e;
-                }
-                .header {
-                    background: linear-gradient(135deg, #10b981, #059669);
-                    color: white;
-                    padding: 25px 30px;
-                    border-radius: 15px;
-                    margin-bottom: 25px;
-                }
+                body { font-family: 'Segoe UI', Arial, sans-serif; padding: 30px; background: #f8f9fa; color: #1a1a2e; }
+                .header { background: linear-gradient(135deg, #10b981, #059669); color: white; padding: 25px 30px; border-radius: 15px; margin-bottom: 25px; }
                 .header h1 { font-size: 28px; margin-bottom: 5px; }
                 .header p { opacity: 0.9; font-size: 14px; }
-                .resumo-grid {
-                    display: grid;
-                    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-                    gap: 15px;
-                    margin-bottom: 25px;
-                }
-                .resumo-card {
-                    background: white;
-                    padding: 18px 20px;
-                    border-radius: 12px;
-                    box-shadow: 0 2px 8px rgba(0,0,0,0.08);
-                    border-left: 4px solid #10b981;
-                }
+                .resumo-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 15px; margin-bottom: 25px; }
+                .resumo-card { background: white; padding: 18px 20px; border-radius: 12px; box-shadow: 0 2px 8px rgba(0,0,0,0.08); border-left: 4px solid #10b981; }
                 .resumo-card .label { font-size: 12px; color: #6c757d; text-transform: uppercase; letter-spacing: 0.5px; }
                 .resumo-card .value { font-size: 22px; font-weight: 700; color: #1a1a2e; margin-top: 4px; }
                 .resumo-card.danger { border-left-color: #ef4444; }
                 .resumo-card.warning { border-left-color: #f59e0b; }
                 .resumo-card.info { border-left-color: #3b82f6; }
-                
-                table { 
-                    width: 100%; 
-                    border-collapse: collapse; 
-                    background: white;
-                    border-radius: 12px;
-                    overflow: hidden;
-                    box-shadow: 0 2px 8px rgba(0,0,0,0.08);
-                }
-                th { 
-                    background: #1a1a2e; 
-                    color: white; 
-                    padding: 12px 15px; 
-                    text-align: left; 
-                    font-size: 13px;
-                    text-transform: uppercase;
-                    letter-spacing: 0.5px;
-                }
-                td { 
-                    padding: 10px 15px; 
-                    border-bottom: 1px solid #e9ecef; 
-                    font-size: 13px;
-                }
+                table { width: 100%; border-collapse: collapse; background: white; border-radius: 12px; overflow: hidden; box-shadow: 0 2px 8px rgba(0,0,0,0.08); }
+                th { background: #1a1a2e; color: white; padding: 12px 15px; text-align: left; font-size: 13px; text-transform: uppercase; letter-spacing: 0.5px; }
+                td { padding: 10px 15px; border-bottom: 1px solid #e9ecef; font-size: 13px; }
                 tr:last-child td { border-bottom: none; }
                 tr:hover td { background: #f8f9fa; }
-                
                 .status-ok { color: #10b981; font-weight: 600; }
                 .status-warning { color: #f59e0b; font-weight: 600; }
                 .status-danger { color: #ef4444; font-weight: 600; }
-                
-                .footer {
-                    margin-top: 25px;
-                    text-align: center;
-                    font-size: 11px;
-                    color: #6c757d;
-                    border-top: 1px solid #dee2e6;
-                    padding-top: 20px;
-                }
+                .footer { margin-top: 25px; text-align: center; font-size: 11px; color: #6c757d; border-top: 1px solid #dee2e6; padding-top: 20px; }
                 .footer span { display: inline-block; margin: 0 15px; }
-                
                 @media print {
                     body { padding: 15px; background: white; }
                     .header { background: #10b981 !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
@@ -1945,34 +2248,14 @@
                 <h1>📦 Relatório de Estoque</h1>
                 <p>Usuário: <strong>${escapeHtml(currentUser)}</strong> | Gerado em: ${new Date().toLocaleString('pt-BR')}</p>
             </div>
-            
             <div class="resumo-grid">
-                <div class="resumo-card">
-                    <div class="label">📦 Total de Produtos</div>
-                    <div class="value">${totalProdutos}</div>
-                </div>
-                <div class="resumo-card">
-                    <div class="label">📦 Total de Itens</div>
-                    <div class="value">${totalItens} unidades</div>
-                </div>
-                <div class="resumo-card info">
-                    <div class="label">💰 Valor Total do Estoque</div>
-                    <div class="value">${formatMoney(totalValor)}</div>
-                </div>
-                <div class="resumo-card warning">
-                    <div class="label">⚠️ Produtos com Estoque Baixo (&lt;5)</div>
-                    <div class="value">${produtos.filter(p => p.quantidade < 5 && p.quantidade > 0).length}</div>
-                </div>
-                <div class="resumo-card danger">
-                    <div class="label">⏰ Produtos Próximos ao Vencimento (≤7 dias)</div>
-                    <div class="value">${produtos.filter(p => p.validade && isVencendo(p.validade)).length}</div>
-                </div>
-                <div class="resumo-card danger">
-                    <div class="label">❌ Produtos Vencidos</div>
-                    <div class="value">${produtos.filter(p => p.validade && isVencido(p.validade)).length}</div>
-                </div>
+                <div class="resumo-card"><div class="label">📦 Total de Produtos</div><div class="value">${totalProdutos}</div></div>
+                <div class="resumo-card"><div class="label">📦 Total de Itens</div><div class="value">${totalItens} unidades</div></div>
+                <div class="resumo-card info"><div class="label">💰 Valor Total do Estoque</div><div class="value">${formatMoney(totalValor)}</div></div>
+                <div class="resumo-card warning"><div class="label">⚠️ Produtos com Estoque Baixo (&lt;5)</div><div class="value">${produtos.filter(p => p.quantidade < 5 && p.quantidade > 0).length}</div></div>
+                <div class="resumo-card danger"><div class="label">⏰ Produtos Próximos ao Vencimento (≤7 dias)</div><div class="value">${produtos.filter(p => p.validade && isVencendo(p.validade)).length}</div></div>
+                <div class="resumo-card danger"><div class="label">❌ Produtos Vencidos</div><div class="value">${produtos.filter(p => p.validade && isVencido(p.validade)).length}</div></div>
             </div>
-            
             <table>
                 <thead>
                     <tr>
@@ -1993,7 +2276,6 @@
             const bVencido = isVencido(b.validade);
             const aVencendo = isVencendo(a.validade);
             const bVencendo = isVencendo(b.validade);
-            
             if(aVencido && !bVencido) return -1;
             if(!aVencido && bVencido) return 1;
             if(aVencendo && !bVencendo && !bVencido) return -1;
@@ -2005,18 +2287,10 @@
             let status = 'OK';
             let statusClass = 'status-ok';
             let validadeDisplay = p.validade ? formatDateBR(p.validade) : '---';
-            
-            if(isVencido(p.validade)) { 
-                status = 'VENCIDO'; 
-                statusClass = 'status-danger'; 
-            } else if(isVencendo(p.validade)) { 
-                status = 'Vence em ' + diasAteVencimento(p.validade) + ' dia(s)'; 
-                statusClass = 'status-warning'; 
-            }
-            
+            if(isVencido(p.validade)) { status = 'VENCIDO'; statusClass = 'status-danger'; } 
+            else if(isVencendo(p.validade)) { status = 'Vence em ' + diasAteVencimento(p.validade) + ' dia(s)'; statusClass = 'status-warning'; }
             let precoDisplay = p.preco ? formatMoney(p.preco) : '---';
             let valorTotalDisplay = p.preco ? formatMoney(p.preco * p.quantidade) : '---';
-            
             html += `<tr>
                 <td><code style="background:#f1f3f5;padding:2px 8px;border-radius:4px;font-size:11px;">${escapeHtml(p.codigo || '---')}</code></td>
                 <td><strong>${escapeHtml(p.nome)}</strong></td>
@@ -2099,9 +2373,17 @@
             alert("✅ Senha atualizada!");
         };
         
-        document.getElementById('startScannerBtn').onclick = iniciarScanner;
+        // Scanner de Validade
+        document.getElementById('startScannerValidade').onclick = iniciarScannerValidade;
+        
+        // Scanner Normal
+        document.getElementById('startScannerBtn').onclick = iniciarScannerNormal;
+        
+        // Salvar e Cancelar Lote
         document.getElementById('salvarNovoLoteBtn').onclick = salvarNovoLote;
         document.getElementById('cancelarNovoLoteBtn').onclick = cancelarNovoLote;
+        
+        // Botão Adicionar Manual
         document.getElementById('editarEstoqueBtn').onclick = () => {
             document.getElementById('formNovoLote').style.display = 'block';
             document.getElementById('produtoCodigo').value = '';
@@ -2115,13 +2397,14 @@
             editandoProduto = null;
         };
         
+        // Modos do Scanner
         document.getElementById('modoAdicionar').onclick = () => {
             modoScanner = 'adicionar';
             document.getElementById('modoAdicionar').className = 'active-adicionar';
             document.getElementById('modoRemover').className = '';
             const startBtn = document.getElementById('startScannerBtn');
             startBtn.className = 'scan-btn';
-            startBtn.innerHTML = scannerAtivo ? '🛑 PARAR LEITURA' : '📷 INICIAR LEITURA CONTÍNUA';
+            startBtn.innerHTML = '📷 SCANEAR CÓDIGO (Adicionar/Remover)';
         };
         
         document.getElementById('modoRemover').onclick = () => {
@@ -2130,7 +2413,39 @@
             document.getElementById('modoAdicionar').className = '';
             const startBtn = document.getElementById('startScannerBtn');
             startBtn.className = 'scan-btn remover';
-            startBtn.innerHTML = scannerAtivo ? '🛑 PARAR LEITURA' : '📷 INICIAR LEITURA CONTÍNUA';
+            startBtn.innerHTML = '📷 SCANEAR CÓDIGO (Adicionar/Remover)';
+        };
+        
+        // Modal de Validade
+        document.getElementById('confirmarValidadeBtn').onclick = () => {
+            const validade = document.getElementById('validadeDataInput').value;
+            const quantidade = parseInt(document.getElementById('validadeQuantidade').value) || 1;
+            const lote = document.getElementById('validadeLote').value.trim() || null;
+            
+            if(!validade) return alert("❌ Selecione uma data de validade!");
+            if(quantidade < 1) return alert("❌ Quantidade deve ser maior que zero!");
+            
+            if(scanDuploProduto) {
+                adicionarProdutoComValidade(scanDuploProduto.codigo, validade, quantidade, lote);
+                document.getElementById('validadeModal').classList.remove('active');
+                
+                scanDuploProduto = null;
+                scanDuploAguardandoValidade = false;
+                if(document.getElementById('scanDuploStatus')) {
+                    document.getElementById('scanDuploStatus').className = 'scan-duplo-status aguardando';
+                    document.getElementById('scanDuploStatus').innerHTML = '📷 Aguardando próximo código de produto...';
+                }
+            }
+        };
+        
+        document.getElementById('cancelarValidadeBtn').onclick = () => {
+            document.getElementById('validadeModal').classList.remove('active');
+            scanDuploProduto = null;
+            scanDuploAguardandoValidade = false;
+            if(document.getElementById('scanDuploStatus')) {
+                document.getElementById('scanDuploStatus').className = 'scan-duplo-status aguardando';
+                document.getElementById('scanDuploStatus').innerHTML = '📷 Aguardando código do produto...';
+            }
         };
         
         document.querySelectorAll('.tipo-btn').forEach(btn => { btn.onclick = function() { document.querySelectorAll('.tipo-btn').forEach(b=>b.classList.remove('active')); this.classList.add('active'); tipoSelecionadoMobile = this.dataset.tipoMobile; }; });
