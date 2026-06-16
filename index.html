@@ -58,55 +58,6 @@
             transition: background-color 0.2s, color 0.2s;
         }
 
-        /* Tela cheia para o scanner */
-        .fullscreen-scanner {
-            position: fixed;
-            top: 0;
-            left: 0;
-            right: 0;
-            bottom: 0;
-            background: #000;
-            z-index: 9999;
-            display: none;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-        }
-        .fullscreen-scanner.active {
-            display: flex;
-        }
-        .fullscreen-scanner #reader-full {
-            width: 100%;
-            height: 100%;
-            object-fit: cover;
-        }
-        .fullscreen-scanner .close-scanner {
-            position: absolute;
-            top: 20px;
-            right: 20px;
-            background: rgba(0,0,0,0.7);
-            color: white;
-            border: none;
-            width: 50px;
-            height: 50px;
-            border-radius: 25px;
-            font-size: 24px;
-            cursor: pointer;
-            z-index: 10000;
-        }
-        .fullscreen-scanner .scan-status {
-            position: absolute;
-            bottom: 30px;
-            left: 20px;
-            right: 20px;
-            background: rgba(0,0,0,0.7);
-            color: white;
-            text-align: center;
-            padding: 12px;
-            border-radius: 30px;
-            font-size: 14px;
-        }
-
         .value-hidden .resumo-valor,
         .value-hidden .transaction-value,
         .value-hidden .caixa-item span:last-child {
@@ -626,19 +577,28 @@
         }
 
         .scanner-container {
+            background: var(--bg-card);
+            border-radius: 20px;
+            overflow: hidden;
             margin-bottom: 16px;
+            position: relative;
+        }
+        
+        #reader {
+            width: 100%;
+            border: none;
         }
         
         .scan-btn {
             background: var(--info);
             color: white;
             border: none;
-            padding: 16px;
+            padding: 12px;
             border-radius: 30px;
             font-weight: 700;
             cursor: pointer;
             width: 100%;
-            font-size: 16px;
+            margin-top: 8px;
         }
         
         .estoque-resumo {
@@ -856,26 +816,15 @@
             align-items: center;
         }
         
-        .cat-list {
-            display: flex;
-            flex-direction: column;
-            gap: 8px;
-        }
-        
-        .cat-item {
-            display: flex;
-            justify-content: space-between;
+        .scan-status-text {
+            text-align: center;
+            padding: 8px;
+            font-size: 12px;
+            color: var(--text-muted);
         }
     </style>
 </head>
 <body class="value-hidden">
-
-<!-- Tela cheia do Scanner -->
-<div id="fullscreenScanner" class="fullscreen-scanner">
-    <button class="close-scanner" id="closeScannerBtn">✕</button>
-    <div id="reader-full" style="width: 100%; height: 100%;"></div>
-    <div class="scan-status" id="scanStatusFull">🔍 Câmera ativa - Aponte para o código</div>
-</div>
 
 <!-- Telas de Autenticação -->
 <div id="loginScreen" class="auth-screen">
@@ -1008,7 +957,9 @@
         </div>
         
         <div class="scanner-container">
-            <button id="startScannerBtn" class="scan-btn">📷 SCANEAR PRODUTO (TELA CHEIA)</button>
+            <button id="startScannerBtn" class="scan-btn">📷 INICIAR LEITURA CONTÍNUA</button>
+            <div id="reader" style="width:100%; display:none;"></div>
+            <div class="scan-status-text" id="scanStatus" style="display: none;">🔍 Câmera ativa - Aponte para o código</div>
         </div>
         
         <div class="form-mobile" id="formNovoLote" style="display: none;">
@@ -1047,7 +998,7 @@
         </div>
     </div>
 
-    <footer>✔️ Sistema com validade por lote - Escaneie em tela cheia para adicionar +1</footer>
+    <footer>✔️ Sistema com validade por lote - Escaneie para adicionar +1 automaticamente!</footer>
 </div>
 
 <!-- Modais -->
@@ -1501,15 +1452,33 @@
         }
     }
     
-    // ==================== SCANNER EM TELA CHEIA ====================
-    function iniciarScannerFullscreen() {
-        const scannerDiv = document.getElementById('fullscreenScanner');
-        const readerDiv = document.getElementById('reader-full');
+    // ==================== SCANNER ====================
+    function iniciarScanner() {
+        const readerDiv = document.getElementById('reader');
+        const startBtn = document.getElementById('startScannerBtn');
+        const scanStatus = document.getElementById('scanStatus');
         
-        scannerDiv.classList.add('active');
+        if(scannerAtivo) {
+            if(html5QrCode) {
+                html5QrCode.stop().then(() => {
+                    readerDiv.style.display = 'none';
+                    scanStatus.style.display = 'none';
+                    startBtn.innerHTML = '📷 INICIAR LEITURA CONTÍNUA';
+                    startBtn.style.background = 'var(--info)';
+                    scannerAtivo = false;
+                    html5QrCode = null;
+                }).catch(err => console.log(err));
+            }
+            return;
+        }
         
-        html5QrCode = new Html5Qrcode("reader-full");
-        const config = { fps: 10, qrbox: { width: 300, height: 300 } };
+        readerDiv.style.display = 'block';
+        scanStatus.style.display = 'block';
+        startBtn.innerHTML = '🛑 PARAR LEITURA';
+        startBtn.style.background = 'var(--danger)';
+        
+        html5QrCode = new Html5Qrcode("reader");
+        const config = { fps: 10, qrbox: { width: 250, height: 250 } };
         
         html5QrCode.start({ facingMode: "environment" }, config, (decodedText) => {
             const agora = Date.now();
@@ -1557,18 +1526,6 @@
         }, (error) => {});
         
         scannerAtivo = true;
-    }
-    
-    function fecharScanner() {
-        if(html5QrCode && scannerAtivo) {
-            html5QrCode.stop().then(() => {
-                document.getElementById('fullscreenScanner').classList.remove('active');
-                scannerAtivo = false;
-                html5QrCode = null;
-            }).catch(err => console.log(err));
-        } else {
-            document.getElementById('fullscreenScanner').classList.remove('active');
-        }
     }
 
     // ==================== FUNÇÕES FINANCEIRAS ====================
@@ -1824,8 +1781,7 @@
             alert("✅ Senha atualizada!");
         };
         
-        document.getElementById('startScannerBtn').onclick = iniciarScannerFullscreen;
-        document.getElementById('closeScannerBtn').onclick = fecharScanner;
+        document.getElementById('startScannerBtn').onclick = iniciarScanner;
         document.getElementById('salvarNovoLoteBtn').onclick = salvarNovoLote;
         document.getElementById('cancelarNovoLoteBtn').onclick = cancelarNovoLote;
         
