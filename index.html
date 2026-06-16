@@ -1401,11 +1401,9 @@
             }
         }
         
-        // Verificar se já existe produto com este código
         const existeIndex = produtos.findIndex(p => p.codigo === codigo);
         
         if(existeIndex !== -1) {
-            // Atualizar produto existente
             produtos[existeIndex] = {
                 ...produtos[existeIndex],
                 nome: nome,
@@ -1417,7 +1415,6 @@
             };
             alert(`✅ Produto "${nome}" atualizado com sucesso!`);
         } else {
-            // Criar novo produto
             produtos.push({
                 codigo: codigo,
                 nome: nome,
@@ -1901,73 +1898,216 @@
     function gerarEstoquePDF() {
         if(produtos.length === 0) { alert("Nenhum produto no estoque!"); return; }
         
+        // Calcular totais
         let totalValor = produtos.reduce((sum, p) => sum + (p.preco ? p.preco * p.quantidade : 0), 0);
         let totalItens = produtos.reduce((sum, p) => sum + p.quantidade, 0);
+        let totalProdutos = produtos.length;
         
-        let html = `<!DOCTYPE html><html><head><meta charset="UTF-8"><title>Estoque - ${currentUser}</title><style>
-            body{font-family:Arial;padding:20px;}
-            h1{color:#10b981;}
-            .resumo{background:#f5f5f5;padding:15px;border-radius:10px;margin-bottom:20px;display:flex;gap:30px;flex-wrap:wrap;}
-            .resumo-item{font-size:14px;}
-            .resumo-item strong{color:#333;}
-            table{width:100%;border-collapse:collapse;margin-top:10px;}
-            th,td{border:1px solid #ddd;padding:10px;text-align:left;font-size:13px;}
-            th{background:#10b981;color:white;}
-            .vencido{color:#ef4444;font-weight:bold;}
-            .vencendo{color:#f59e0b;font-weight:bold;}
-            .ok{color:#10b981;}
-            footer{margin-top:20px;font-size:11px;color:#999;text-align:center;}
-        </style></head><body>
-        <h1>📦 Relatório de Estoque</h1>
-        <p>Usuário: ${currentUser} | Gerado em: ${new Date().toLocaleString('pt-BR')}</p>
-        <div class="resumo">
-            <div class="resumo-item"><strong>📦 Total de Itens:</strong> ${totalItens} unidades</div>
-            <div class="resumo-item"><strong>💰 Valor Total:</strong> ${formatMoney(totalValor)}</div>
-            <div class="resumo-item"><strong>📦 Produtos:</strong> ${produtos.length}</div>
-        </div>
-        <table>
-            <thead><tr>
-                <th>Código</th>
-                <th>Produto</th>
-                <th>Quantidade</th>
-                <th>Preço Unit.</th>
-                <th>Valor Total</th>
-                <th>Validade</th>
-                <th>Status</th>
-                <th>Lote</th>
-            </tr></thead>
-            <tbody>`;
+        let html = `<!DOCTYPE html>
+        <html>
+        <head>
+            <meta charset="UTF-8">
+            <title>Relatório de Estoque - ${currentUser}</title>
+            <style>
+                * { margin: 0; padding: 0; box-sizing: border-box; }
+                body { 
+                    font-family: 'Segoe UI', Arial, sans-serif; 
+                    padding: 30px; 
+                    background: #f8f9fa;
+                    color: #1a1a2e;
+                }
+                .header {
+                    background: linear-gradient(135deg, #10b981, #059669);
+                    color: white;
+                    padding: 25px 30px;
+                    border-radius: 15px;
+                    margin-bottom: 25px;
+                }
+                .header h1 { font-size: 28px; margin-bottom: 5px; }
+                .header p { opacity: 0.9; font-size: 14px; }
+                .resumo-grid {
+                    display: grid;
+                    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+                    gap: 15px;
+                    margin-bottom: 25px;
+                }
+                .resumo-card {
+                    background: white;
+                    padding: 18px 20px;
+                    border-radius: 12px;
+                    box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+                    border-left: 4px solid #10b981;
+                }
+                .resumo-card .label { font-size: 12px; color: #6c757d; text-transform: uppercase; letter-spacing: 0.5px; }
+                .resumo-card .value { font-size: 22px; font-weight: 700; color: #1a1a2e; margin-top: 4px; }
+                .resumo-card.danger { border-left-color: #ef4444; }
+                .resumo-card.warning { border-left-color: #f59e0b; }
+                .resumo-card.info { border-left-color: #3b82f6; }
+                
+                table { 
+                    width: 100%; 
+                    border-collapse: collapse; 
+                    background: white;
+                    border-radius: 12px;
+                    overflow: hidden;
+                    box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+                }
+                th { 
+                    background: #1a1a2e; 
+                    color: white; 
+                    padding: 12px 15px; 
+                    text-align: left; 
+                    font-size: 13px;
+                    text-transform: uppercase;
+                    letter-spacing: 0.5px;
+                }
+                td { 
+                    padding: 10px 15px; 
+                    border-bottom: 1px solid #e9ecef; 
+                    font-size: 13px;
+                }
+                tr:last-child td { border-bottom: none; }
+                tr:hover td { background: #f8f9fa; }
+                
+                .status-ok { color: #10b981; font-weight: 600; }
+                .status-warning { color: #f59e0b; font-weight: 600; }
+                .status-danger { color: #ef4444; font-weight: 600; }
+                
+                .footer {
+                    margin-top: 25px;
+                    text-align: center;
+                    font-size: 11px;
+                    color: #6c757d;
+                    border-top: 1px solid #dee2e6;
+                    padding-top: 20px;
+                }
+                .footer span { display: inline-block; margin: 0 15px; }
+                
+                @media print {
+                    body { padding: 15px; background: white; }
+                    .header { background: #10b981 !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+                    th { background: #1a1a2e !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+                    .resumo-card { box-shadow: none; border: 1px solid #dee2e6; }
+                    table { box-shadow: none; border: 1px solid #dee2e6; }
+                }
+            </style>
+        </head>
+        <body>
+            <div class="header">
+                <h1>📦 Relatório de Estoque</h1>
+                <p>Usuário: <strong>${escapeHtml(currentUser)}</strong> | Gerado em: ${new Date().toLocaleString('pt-BR')}</p>
+            </div>
+            
+            <div class="resumo-grid">
+                <div class="resumo-card">
+                    <div class="label">📦 Total de Produtos</div>
+                    <div class="value">${totalProdutos}</div>
+                </div>
+                <div class="resumo-card">
+                    <div class="label">📦 Total de Itens</div>
+                    <div class="value">${totalItens} unidades</div>
+                </div>
+                <div class="resumo-card info">
+                    <div class="label">💰 Valor Total do Estoque</div>
+                    <div class="value">${formatMoney(totalValor)}</div>
+                </div>
+                <div class="resumo-card warning">
+                    <div class="label">⚠️ Produtos com Estoque Baixo (&lt;5)</div>
+                    <div class="value">${produtos.filter(p => p.quantidade < 5 && p.quantidade > 0).length}</div>
+                </div>
+                <div class="resumo-card danger">
+                    <div class="label">⏰ Produtos Próximos ao Vencimento (≤7 dias)</div>
+                    <div class="value">${produtos.filter(p => p.validade && isVencendo(p.validade)).length}</div>
+                </div>
+                <div class="resumo-card danger">
+                    <div class="label">❌ Produtos Vencidos</div>
+                    <div class="value">${produtos.filter(p => p.validade && isVencido(p.validade)).length}</div>
+                </div>
+            </div>
+            
+            <table>
+                <thead>
+                    <tr>
+                        <th>Código</th>
+                        <th>Produto</th>
+                        <th style="text-align:center;">Quantidade</th>
+                        <th style="text-align:right;">Preço Unit.</th>
+                        <th style="text-align:right;">Valor Total</th>
+                        <th>Validade</th>
+                        <th>Status</th>
+                        <th>Lote</th>
+                    </tr>
+                </thead>
+                <tbody>`;
         
-        for(let p of produtos.sort((a,b) => a.nome.localeCompare(b.nome))) {
+        // Ordenar produtos: vencidos primeiro, depois vencendo, depois normais
+        const produtosOrdenados = [...produtos].sort((a, b) => {
+            const aVencido = isVencido(a.validade);
+            const bVencido = isVencido(b.validade);
+            const aVencendo = isVencendo(a.validade);
+            const bVencendo = isVencendo(b.validade);
+            
+            if(aVencido && !bVencido) return -1;
+            if(!aVencido && bVencido) return 1;
+            if(aVencendo && !bVencendo && !bVencido) return -1;
+            if(!aVencendo && bVencendo && !aVencido) return 1;
+            return a.nome.localeCompare(b.nome);
+        });
+        
+        for(let p of produtosOrdenados) {
             let status = 'OK';
-            let statusClass = 'ok';
-            if(isVencido(p.validade)) { status = 'VENCIDO'; statusClass = 'vencido'; }
-            else if(isVencendo(p.validade)) { status = 'Vencendo em ' + diasAteVencimento(p.validade) + ' dia(s)'; statusClass = 'vencendo'; }
+            let statusClass = 'status-ok';
+            let validadeDisplay = p.validade ? formatDateBR(p.validade) : '---';
+            
+            if(isVencido(p.validade)) { 
+                status = 'VENCIDO'; 
+                statusClass = 'status-danger'; 
+            } else if(isVencendo(p.validade)) { 
+                status = 'Vence em ' + diasAteVencimento(p.validade) + ' dia(s)'; 
+                statusClass = 'status-warning'; 
+            }
+            
+            let precoDisplay = p.preco ? formatMoney(p.preco) : '---';
+            let valorTotalDisplay = p.preco ? formatMoney(p.preco * p.quantidade) : '---';
             
             html += `<tr>
-                <td>${escapeHtml(p.codigo || '---')}</td>
-                <td>${escapeHtml(p.nome)}</td>
-                <td>${p.quantidade}</td>
-                <td>${p.preco ? formatMoney(p.preco) : '---'}</td>
-                <td>${p.preco ? formatMoney(p.preco * p.quantidade) : '---'}</td>
-                <td>${p.validade ? formatDateBR(p.validade) : '---'}</td>
-                <td class="${statusClass}">${status}</td>
-                <td>${escapeHtml(p.numeroLote || '---')}</td>
+                <td><code style="background:#f1f3f5;padding:2px 8px;border-radius:4px;font-size:11px;">${escapeHtml(p.codigo || '---')}</code></td>
+                <td><strong>${escapeHtml(p.nome)}</strong></td>
+                <td style="text-align:center;font-weight:600;">${p.quantidade}</td>
+                <td style="text-align:right;">${precoDisplay}</td>
+                <td style="text-align:right;">${valorTotalDisplay}</td>
+                <td>${validadeDisplay}</td>
+                <td><span class="${statusClass}">${status}</span></td>
+                <td style="font-size:12px;color:#6c757d;">${escapeHtml(p.numeroLote || '---')}</td>
             </tr>`;
         }
         
         html += `</tbody></table>
-        <footer>Relatório gerado automaticamente pelo Sistema Integrado</footer>
+            <div class="footer">
+                <span>📅 Gerado em ${new Date().toLocaleString('pt-BR')}</span>
+                <span>📦 ${totalProdutos} produtos cadastrados</span>
+                <span>📊 ${totalItens} unidades em estoque</span>
+                <span>💰 ${formatMoney(totalValor)}</span>
+            </div>
         </body></html>`;
         
-        let div = document.createElement('div'); div.innerHTML = html; document.body.appendChild(div);
+        let div = document.createElement('div'); 
+        div.innerHTML = html; 
+        document.body.appendChild(div);
+        
         html2pdf().set({ 
             margin: 0.5, 
             filename: `Estoque_${currentUser}_${new Date().toISOString().slice(0,10)}.pdf`, 
             image: { type: 'jpeg', quality: 0.98 }, 
-            html2canvas: { scale: 2 }, 
+            html2canvas: { scale: 2, useCORS: true, letterRendering: true },
             jsPDF: { unit: 'in', format: 'a4', orientation: 'landscape' } 
-        }).from(div).save().then(() => { document.body.removeChild(div); alert("✅ PDF do estoque gerado!"); }).catch(() => { document.body.removeChild(div); alert("❌ Erro ao gerar PDF"); });
+        }).from(div).save().then(() => { 
+            document.body.removeChild(div); 
+            alert("✅ PDF do estoque gerado com sucesso!"); 
+        }).catch((err) => { 
+            document.body.removeChild(div); 
+            alert("❌ Erro ao gerar PDF: " + err.message); 
+        });
     }
 
     // ==================== EVENTOS ====================
@@ -2063,4 +2203,4 @@
     });
 </script>
 </body>
-    </html>
+</html>
