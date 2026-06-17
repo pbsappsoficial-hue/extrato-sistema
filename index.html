@@ -381,11 +381,11 @@
         .caixa-item .caixa-saldo.positive { color: var(--success); }
         .caixa-item .caixa-saldo.negative { color: var(--danger); }
 
-        /* Grid de totais por caixa */
+        /* Grid de totais por caixa com entradas, saídas e saldo */
         .caixa-total-grid {
             display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
-            gap: 10px;
+            grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+            gap: 12px;
             margin-bottom: 16px;
         }
         .caixa-total-card {
@@ -401,25 +401,49 @@
             box-shadow: var(--shadow);
         }
         .caixa-total-card .caixa-icon {
-            font-size: 20px;
+            font-size: 22px;
             display: block;
             margin-bottom: 2px;
         }
         .caixa-total-card .caixa-nome {
-            font-size: 11px;
+            font-size: 12px;
             color: var(--text-secondary);
-            font-weight: 600;
+            font-weight: 700;
             text-transform: uppercase;
             letter-spacing: 0.3px;
+            margin-bottom: 6px;
         }
-        .caixa-total-card .caixa-valor {
-            font-size: 18px;
+        .caixa-total-card .caixa-linha {
+            display: flex;
+            justify-content: space-between;
+            font-size: 11px;
+            padding: 2px 0;
+            color: var(--text-secondary);
+        }
+        .caixa-total-card .caixa-linha .label {
+            font-weight: 500;
+        }
+        .caixa-total-card .caixa-linha .value {
+            font-weight: 600;
+        }
+        .caixa-total-card .caixa-linha .value.entrada { color: var(--success); }
+        .caixa-total-card .caixa-linha .value.saida { color: var(--danger); }
+        .caixa-total-card .caixa-linha .value.saldo { font-size: 13px; }
+        .caixa-total-card .caixa-linha .value.saldo.positive { color: var(--success); }
+        .caixa-total-card .caixa-linha .value.saldo.negative { color: var(--danger); }
+        .caixa-total-card .caixa-divider {
+            height: 1px;
+            background: var(--border);
+            margin: 4px 0;
+        }
+        .caixa-total-card .caixa-total {
+            font-size: 16px;
             font-weight: 800;
             margin-top: 4px;
         }
-        .caixa-total-card .caixa-valor.positive { color: var(--success); }
-        .caixa-total-card .caixa-valor.negative { color: var(--danger); }
-        .caixa-total-card .caixa-valor.zero { color: var(--text-muted); }
+        .caixa-total-card .caixa-total.positive { color: var(--success); }
+        .caixa-total-card .caixa-total.negative { color: var(--danger); }
+        .caixa-total-card .caixa-total.zero { color: var(--text-muted); }
 
         .transaction-list { display: flex; flex-direction: column; gap: 8px; margin-top: 10px; }
         .transaction-item { background: var(--bg-card); border-radius: 12px; padding: 12px 14px; display: flex; justify-content: space-between; align-items: center; border-left: 3px solid; transition: var(--transition); }
@@ -670,10 +694,6 @@
 
         <div class="caixas-grid">
             <div class="caixa-box">
-                <h4>🏦 Saldo por Caixa</h4>
-                <div id="caixaResumo" class="caixa-list"></div>
-            </div>
-            <div class="caixa-box">
                 <h4>➕ Gerenciar</h4>
                 <div style="display:flex; gap:6px; margin-bottom:10px;">
                     <input type="text" id="newCaixaName" class="auth-input" placeholder="Nome" style="margin:0; padding:10px; font-size:13px;">
@@ -891,6 +911,20 @@
             }
         });
         return s; 
+    }
+
+    function getEntradasSaidasPorCaixa() {
+        let result = {};
+        caixas.forEach(c => {
+            result[c] = { entradas: 0, saidas: 0 };
+        });
+        transacoes.forEach(t => {
+            if(result[t.caixa]) {
+                if(t.tipo === 'entrada') result[t.caixa].entradas += t.valor;
+                else if(t.tipo === 'saida') result[t.caixa].saidas += t.valor;
+            }
+        });
+        return result;
     }
 
     function getTotalGeral() {
@@ -1480,6 +1514,7 @@
     // ==================== CAIXAS ====================
     function renderCaixas() {
         let saldos = getSaldoPorCaixa();
+        let entradasSaidas = getEntradasSaidasPorCaixa();
         let totalGeral = getTotalGeral();
         
         // Grid com o total de cada caixa individual
@@ -1488,28 +1523,31 @@
             gridHtml = '<div class="empty-state" style="grid-column:1/-1;">Nenhum caixa cadastrado</div>';
         } else {
             caixas.forEach(c => {
+                let ent = entradasSaidas[c]?.entradas || 0;
+                let sai = entradasSaidas[c]?.saidas || 0;
                 let saldo = saldos[c] || 0;
-                let cls = saldo > 0 ? 'positive' : saldo < 0 ? 'negative' : 'zero';
-                let icone = saldo > 0 ? '📈' : saldo < 0 ? '📉' : '⚖️';
+                let saldoCls = saldo > 0 ? 'positive' : saldo < 0 ? 'negative' : 'zero';
+                
                 gridHtml += `<div class="caixa-total-card">
                     <span class="caixa-icon">🏦</span>
                     <div class="caixa-nome">${escapeHtml(c)}</div>
-                    <div class="caixa-valor ${cls}">${formatMoney(saldo)}</div>
+                    <div class="caixa-linha">
+                        <span class="label">📥 Entradas</span>
+                        <span class="value entrada">${formatMoney(ent)}</span>
+                    </div>
+                    <div class="caixa-linha">
+                        <span class="label">📤 Saídas</span>
+                        <span class="value saida">${formatMoney(sai)}</span>
+                    </div>
+                    <div class="caixa-divider"></div>
+                    <div class="caixa-linha">
+                        <span class="label" style="font-weight:700;">💰 Saldo</span>
+                        <span class="value saldo ${saldoCls}">${formatMoney(saldo)}</span>
+                    </div>
                 </div>`;
             });
         }
         document.getElementById('caixaTotalGrid').innerHTML = gridHtml;
-        
-        // Resumo simples por caixa (apenas saldo)
-        let htmlResumo = caixas.map(c => {
-            let s = saldos[c] || 0;
-            let cls = s >= 0 ? 'positive' : 'negative';
-            return `<div class="caixa-item">
-                <span class="caixa-name">🏦 ${escapeHtml(c)}</span>
-                <span class="caixa-saldo ${cls}">${formatMoney(s)}</span>
-            </div>`;
-        }).join('');
-        document.getElementById('caixaResumo').innerHTML = htmlResumo || '<div class="empty-state">Nenhum caixa</div>';
         
         // Gerenciar caixas
         let htmlManage = caixas.map(c => {
