@@ -377,7 +377,7 @@
             background: var(--bg-card);
             border-radius: 16px;
             padding: 16px;
-            border: 2px solid var(--success);
+            border: 2px solid var(--info);
             margin-bottom: 14px;
             text-align: center;
         }
@@ -402,6 +402,50 @@
         .caixa-item .caixa-saldo { font-weight: 700; }
         .caixa-item .caixa-saldo.positive { color: var(--success); }
         .caixa-item .caixa-saldo.negative { color: var(--danger); }
+        .caixa-item .caixa-detalhes { font-size: 11px; color: var(--text-muted); display: flex; gap: 8px; }
+
+        .caixa-resumo-completo {
+            background: var(--bg-card);
+            border-radius: 16px;
+            padding: 16px;
+            border: 1px solid var(--border);
+            margin-bottom: 14px;
+        }
+        .caixa-resumo-completo .header-row {
+            display: flex;
+            justify-content: space-between;
+            font-weight: 700;
+            font-size: 12px;
+            color: var(--text-muted);
+            text-transform: uppercase;
+            letter-spacing: 0.3px;
+            padding-bottom: 6px;
+            border-bottom: 2px solid var(--border);
+            margin-bottom: 6px;
+        }
+        .caixa-resumo-completo .row {
+            display: flex;
+            justify-content: space-between;
+            font-size: 13px;
+            padding: 4px 0;
+        }
+        .caixa-resumo-completo .row .name { font-weight: 600; }
+        .caixa-resumo-completo .row .entradas { color: var(--success); }
+        .caixa-resumo-completo .row .saidas { color: var(--danger); }
+        .caixa-resumo-completo .row .saldo { font-weight: 700; }
+        .caixa-resumo-completo .row .saldo.positive { color: var(--success); }
+        .caixa-resumo-completo .row .saldo.negative { color: var(--danger); }
+        .caixa-resumo-completo .total-row {
+            display: flex;
+            justify-content: space-between;
+            font-weight: 700;
+            font-size: 14px;
+            padding: 8px 0;
+            border-top: 2px solid var(--border);
+            margin-top: 4px;
+        }
+        .caixa-resumo-completo .total-row .label { color: var(--text-secondary); }
+        .caixa-resumo-completo .total-row .value { color: var(--info); }
 
         .transaction-list { display: flex; flex-direction: column; gap: 8px; margin-top: 10px; }
         .transaction-item { background: var(--bg-card); border-radius: 12px; padding: 12px 14px; display: flex; justify-content: space-between; align-items: center; border-left: 3px solid; transition: var(--transition); }
@@ -645,10 +689,21 @@
 
     <!-- CAIXAS -->
     <div id="tabCaixas" class="tab-pane" style="display: none;">
-        <!-- Total em Dinheiro -->
-        <div class="caixa-total-box">
-            <div class="label">💰 Total em Dinheiro</div>
-            <div class="total-value" id="totalDinheiro">R$ 0,00</div>
+        <!-- Resumo completo por caixa com entradas, saídas e saldo -->
+        <div class="caixa-resumo-completo">
+            <div class="header-row">
+                <span>Caixa</span>
+                <span style="display:flex; gap:16px;">
+                    <span>Entradas</span>
+                    <span>Saídas</span>
+                    <span>Saldo</span>
+                </span>
+            </div>
+            <div id="caixaResumoCompleto"></div>
+            <div class="total-row">
+                <span class="label">💰 TOTAL</span>
+                <span class="value" id="totalGeralCaixas">R$ 0,00</span>
+            </div>
         </div>
 
         <div class="caixas-grid">
@@ -664,19 +719,6 @@
                 </div>
                 <div id="caixaListManage" class="caixa-list"></div>
             </div>
-        </div>
-
-        <!-- Adicionar valor inicial a um caixa -->
-        <div class="caixa-box" style="margin-top:12px;">
-            <h4>➕ Adicionar Saldo Inicial</h4>
-            <div style="display:flex; gap:6px; flex-wrap:wrap;">
-                <select id="caixaSaldoInicialSelect" style="flex:1; min-width:120px; padding:10px 14px; background:var(--bg-elevated); border:1px solid var(--border); border-radius:10px; color:var(--text-primary); font-size:13px;">
-                    <option value="">Selecione um caixa</option>
-                </select>
-                <input type="text" id="caixaSaldoInicialValor" placeholder="0,00" style="flex:1; min-width:80px; padding:10px 14px; background:var(--bg-elevated); border:1px solid var(--border); border-radius:10px; color:var(--text-primary); font-size:13px;">
-                <button id="adicionarSaldoInicialBtn" style="background:var(--success); color:white; border:none; padding:10px 16px; border-radius:10px; cursor:pointer; font-weight:600; transition:var(--transition);">Adicionar</button>
-            </div>
-            <div style="font-size:10px; color:var(--text-muted); margin-top:4px;">Adiciona um saldo inicial sem criar transação</div>
         </div>
     </div>
 
@@ -776,20 +818,6 @@
         enabled: false,
         authCode: ''
     };
-
-    // ==================== SALDO INICIAL DOS CAIXAS ====================
-    function getSaldoInicial() {
-        try {
-            const saved = localStorage.getItem('saldoInicial_' + (currentUser || 'default'));
-            return saved ? JSON.parse(saved) : {};
-        } catch(e) {
-            return {};
-        }
-    }
-
-    function saveSaldoInicial(saldos) {
-        localStorage.setItem('saldoInicial_' + (currentUser || 'default'), JSON.stringify(saldos));
-    }
 
     function loadSecurityConfig() {
         try {
@@ -900,15 +928,24 @@
                 else if(t.tipo==='saida') s[t.caixa] -= t.valor;
             }
         });
-        // Adiciona saldo inicial
-        const saldoInicial = getSaldoInicial();
-        for(let c of caixas) {
-            if(saldoInicial[c]) s[c] += saldoInicial[c];
-        }
         return s; 
     }
 
-    function getTotalDinheiro() {
+    function getEntradasSaidasPorCaixa() {
+        let result = {};
+        caixas.forEach(c => {
+            result[c] = { entradas: 0, saidas: 0 };
+        });
+        transacoes.forEach(t => {
+            if(result[t.caixa]) {
+                if(t.tipo === 'entrada') result[t.caixa].entradas += t.valor;
+                else if(t.tipo === 'saida') result[t.caixa].saidas += t.valor;
+            }
+        });
+        return result;
+    }
+
+    function getTotalGeral() {
         const saldos = getSaldoPorCaixa();
         let total = 0;
         for(let c of caixas) {
@@ -920,13 +957,6 @@
     function atualizarSelectCaixas() { 
         let opts=caixas.map(c=>`<option value="${escapeHtml(c)}">${escapeHtml(c)}</option>`).join(''); 
         ['mobileCaixa','editCaixa'].forEach(id=>{ let el=document.getElementById(id); if(el) el.innerHTML=opts; }); 
-        // Atualiza select do saldo inicial
-        let sel = document.getElementById('caixaSaldoInicialSelect');
-        if(sel) {
-            let currentVal = sel.value;
-            sel.innerHTML = '<option value="">Selecione um caixa</option>' + caixas.map(c=>`<option value="${escapeHtml(c)}">${escapeHtml(c)}</option>`).join('');
-            if(currentVal && caixas.includes(currentVal)) sel.value = currentVal;
-        }
     }
 
     // ==================== ESTOQUE ====================
@@ -1502,12 +1532,36 @@
     // ==================== CAIXAS ====================
     function renderCaixas() {
         let saldos = getSaldoPorCaixa();
-        let total = getTotalDinheiro();
+        let entradasSaidas = getEntradasSaidasPorCaixa();
+        let totalGeral = getTotalGeral();
         
-        // Total em dinheiro
-        document.getElementById('totalDinheiro').innerText = formatMoney(total);
+        // Resumo completo com entradas, saídas e saldo por caixa
+        let htmlCompleto = '';
+        let totalEntradas = 0;
+        let totalSaidas = 0;
         
-        // Resumo por caixa
+        caixas.forEach(c => {
+            let ent = entradasSaidas[c]?.entradas || 0;
+            let sai = entradasSaidas[c]?.saidas || 0;
+            let saldo = saldos[c] || 0;
+            totalEntradas += ent;
+            totalSaidas += sai;
+            
+            let saldoCls = saldo >= 0 ? 'positive' : 'negative';
+            htmlCompleto += `<div class="row">
+                <span class="name">🏦 ${escapeHtml(c)}</span>
+                <span style="display:flex; gap:16px;">
+                    <span class="entradas">${formatMoney(ent)}</span>
+                    <span class="saidas">${formatMoney(sai)}</span>
+                    <span class="saldo ${saldoCls}">${formatMoney(saldo)}</span>
+                </span>
+            </div>`;
+        });
+        
+        document.getElementById('caixaResumoCompleto').innerHTML = htmlCompleto || '<div class="empty-state">Nenhum caixa cadastrado</div>';
+        document.getElementById('totalGeralCaixas').innerText = formatMoney(totalGeral);
+        
+        // Resumo simples por caixa (apenas saldo)
         let htmlResumo = caixas.map(c => {
             let s = saldos[c] || 0;
             let cls = s >= 0 ? 'positive' : 'negative';
@@ -1521,9 +1575,8 @@
         // Gerenciar caixas
         let htmlManage = caixas.map(c => {
             let tem = transacoes.some(t => t.caixa === c);
-            let temSaldoInicial = (getSaldoInicial()[c] || 0) > 0;
             return `<div class="caixa-item">
-                <span>${escapeHtml(c)} ${temSaldoInicial ? '💰' : ''}</span>
+                <span>${escapeHtml(c)}</span>
                 ${tem ? '<span style="color:var(--text-muted);font-size:12px;">🔒</span>' : 
                 `<button class="delete-caixa-btn" style="background:none;border:none;font-size:14px;cursor:pointer;color:var(--danger);" data-caixa="${escapeHtml(c)}">🗑️</button>`}
             </div>`;
@@ -1532,42 +1585,10 @@
         document.querySelectorAll('.delete-caixa-btn').forEach(b => b.onclick = () => {
             if (confirm(`Excluir "${b.dataset.caixa}"?`)) {
                 caixas = caixas.filter(c => c !== b.dataset.caixa);
-                // Remove saldo inicial também
-                let saldos = getSaldoInicial();
-                delete saldos[b.dataset.caixa];
-                saveSaldoInicial(saldos);
                 saveCurrentUser();
                 refreshAll();
             }
         });
-        
-        // Atualizar select de saldo inicial
-        let sel = document.getElementById('caixaSaldoInicialSelect');
-        if (sel) {
-            let currentVal = sel.value;
-            sel.innerHTML = '<option value="">Selecione um caixa</option>' + 
-                caixas.map(c => `<option value="${escapeHtml(c)}">${escapeHtml(c)}</option>`).join('');
-            if (currentVal && caixas.includes(currentVal)) sel.value = currentVal;
-        }
-    }
-
-    function adicionarSaldoInicial() {
-        let caixa = document.getElementById('caixaSaldoInicialSelect').value;
-        let valorRaw = document.getElementById('caixaSaldoInicialValor').value.trim();
-        
-        if (!caixa) return alert("❌ Selecione um caixa!");
-        if (!caixas.includes(caixa)) return alert("❌ Caixa não encontrado!");
-        
-        let valor = parseMoney(valorRaw);
-        if (valor === null || valor <= 0) return alert("❌ Digite um valor válido!");
-        
-        let saldos = getSaldoInicial();
-        saldos[caixa] = (saldos[caixa] || 0) + valor;
-        saveSaldoInicial(saldos);
-        
-        document.getElementById('caixaSaldoInicialValor').value = '';
-        refreshAll();
-        alert(`✅ R$ ${formatMoney(valor)} adicionado ao caixa "${caixa}"!`);
     }
 
     // ==================== LISTA COMPLETA ====================
@@ -1886,12 +1907,6 @@
             termoPesquisa = '';
             renderEstoque();
         };
-        
-        // ADICIONAR SALDO INICIAL
-        document.getElementById('adicionarSaldoInicialBtn').onclick = adicionarSaldoInicial;
-        document.getElementById('caixaSaldoInicialValor').addEventListener('keypress', function(e) {
-            if (e.key === 'Enter') adicionarSaldoInicial();
-        });
         
         document.getElementById('modoAdicionar').onclick = () => { 
             modoScanner='adicionar'; 
