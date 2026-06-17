@@ -316,6 +316,18 @@
         .produto-acoes button:hover { background: var(--hover-bg); transform: scale(0.92); }
         .produto-acoes .btn-add { color: var(--success); }
         .produto-acoes .btn-remove { color: var(--danger); }
+        .produto-acoes .btn-remove.locked {
+            opacity: 0.7;
+            position: relative;
+            color: var(--danger);
+        }
+        .produto-acoes .btn-remove.locked::after {
+            content: '🔒';
+            font-size: 10px;
+            position: absolute;
+            top: -4px;
+            right: -4px;
+        }
         .produto-acoes .btn-edit { color: var(--warning); }
         .produto-acoes .btn-delete { color: var(--danger); }
 
@@ -412,17 +424,40 @@
             background: rgba(231,76,60,0.1);
             color: var(--danger);
         }
-        .produto-acoes .btn-remove.locked {
-            opacity: 0.5;
-            cursor: not-allowed;
-            position: relative;
+
+        /* Auth Code Scanner inside modal */
+        #authCodeReader {
+            width: 100%;
+            min-height: 180px;
+            border-radius: 12px;
+            overflow: hidden;
+            margin-bottom: 12px;
+            background: var(--bg-elevated);
+            display: none;
         }
-        .produto-acoes .btn-remove.locked::after {
-            content: '🔒';
-            position: absolute;
-            font-size: 10px;
-            top: -6px;
-            right: -6px;
+        #authCodeReader video {
+            width: 100% !important;
+            height: auto !important;
+        }
+        .auth-code-status {
+            text-align: center;
+            font-size: 13px;
+            font-weight: 600;
+            padding: 8px;
+            border-radius: 10px;
+            margin-top: 8px;
+        }
+        .auth-code-status.waiting {
+            color: var(--text-muted);
+            background: var(--bg-elevated);
+        }
+        .auth-code-status.success {
+            color: var(--success);
+            background: rgba(46,204,113,0.1);
+        }
+        .auth-code-status.error {
+            color: var(--danger);
+            background: rgba(231,76,60,0.1);
         }
     </style>
 </head>
@@ -692,13 +727,12 @@
         <h3>🔑 Autorização Necessária</h3>
         <p class="sub">Escaneie o código de autorização para remover este item</p>
         <div style="background:var(--bg-elevated); border-radius:12px; padding:12px; margin-bottom:12px; border:1px solid var(--border); text-align:center;">
-            <div style="font-weight:700;" id="authCodeProductName">Produto</div>
-            <div style="font-size:11px; color:var(--text-muted);">Para remover, escaneie o código autorizado</div>
+            <div style="font-weight:700; font-size:15px;" id="authCodeProductName">Produto</div>
+            <div style="font-size:11px; color:var(--text-muted);">Aponte a câmera para o código de autorização</div>
         </div>
-        <div id="authCodeReader" style="width:100%; min-height:150px; border-radius:12px; overflow:hidden; margin-bottom:12px; display:none; background:var(--bg-elevated);"></div>
-        <button id="startAuthCodeBtn" class="auth-btn" style="background:var(--scan-primary);">📷 Escanear Código</button>
-        <button id="cancelAuthCodeBtn" class="auth-btn" style="background:var(--text-muted); margin-top:8px;">Cancelar</button>
-        <div id="authCodeStatus" style="margin-top:8px; font-size:12px; text-align:center; color:var(--text-muted);"></div>
+        <div id="authCodeReader"></div>
+        <div id="authCodeStatus" class="auth-code-status waiting">📷 Aguardando código...</div>
+        <button id="cancelAuthCodeBtn" class="auth-btn" style="background:var(--danger); margin-top:8px;">Cancelar</button>
     </div>
 </div>
 
@@ -806,6 +840,7 @@
     let scannerTipo = 'normal';
     let authCodeHtml5Qr = null;
     let pendingRemoveProduct = null;
+    let authCodeScannerRunning = false;
 
     function identificarProduto(codigo) {
         const p=produtos.find(x=>x.codigo===codigo);
@@ -837,14 +872,19 @@
         if(idx!==-1){ 
             if(produtos[idx].quantidade<qtd){ alert(`❌ Estoque insuficiente!`); return false; } 
             
-            // Check security
+            // Check security - if locked, open auth scanner
             if (isRemovalLocked()) {
                 // Save pending product and show auth modal
                 pendingRemoveProduct = { codigo, qtd, idx };
-                document.getElementById('authCodeProductName').innerText = produtos[idx].nome + ' (x' + qtd + ')';
+                document.getElementById('authCodeProductName').innerHTML = produtos[idx].nome + ' (x' + qtd + ')';
                 document.getElementById('authCodeModal').classList.add('active');
-                document.getElementById('authCodeStatus').innerText = 'Escaneie o código de autorização';
-                document.getElementById('authCodeStatus').style.color = 'var(--text-muted)';
+                document.getElementById('authCodeStatus').textContent = '📷 Aguardando código...';
+                document.getElementById('authCodeStatus').className = 'auth-code-status waiting';
+                
+                // Start scanner automatically
+                setTimeout(() => {
+                    startAuthCodeScanner();
+                }, 300);
                 return false;
             }
             
@@ -906,6 +946,8 @@
             let qtdClass = p.quantidade < 5 ? 'low' : '';
             let qtdDisplay = p.quantidade > 0 ? p.quantidade : '0';
             let securityBadge = isLocked ? '<span class="security-badge locked">🔒 Seguro</span>' : '';
+            let removeLockClass = isLocked ? 'locked' : '';
+            let removeTitle = isLocked ? '🔒 Requer código de autorização' : 'Remover';
             
             return `<div class="produto-item ${cls}">
                 <div class="produto-info">
@@ -921,7 +963,7 @@
                     <span class="produto-qtd ${qtdClass}">${qtdDisplay}</span>
                     <div class="produto-acoes">
                         <button class="btn-add" data-codigo="${escapeHtml(p.codigo)}" title="Adicionar">➕</button>
-                        <button class="btn-remove ${isLocked ? 'locked' : ''}" data-codigo="${escapeHtml(p.codigo)}" title="${isLocked ? '🔒 Requer autorização' : 'Remover'}">➖</button>
+                        <button class="btn-remove ${removeLockClass}" data-codigo="${escapeHtml(p.codigo)}" title="${removeTitle}">➖</button>
                         <button class="btn-edit" data-codigo="${escapeHtml(p.codigo)}" title="Editar">✏️</button>
                         <button class="btn-delete" data-codigo="${escapeHtml(p.codigo)}" title="Excluir">🗑️</button>
                     </div>
@@ -1264,67 +1306,110 @@
     function startAuthCodeScanner() {
         const reader = document.getElementById('authCodeReader');
         const status = document.getElementById('authCodeStatus');
-        const btn = document.getElementById('startAuthCodeBtn');
         
+        // If already running, stop it
         if (authCodeHtml5Qr) {
             authCodeHtml5Qr.stop().then(() => {
                 authCodeHtml5Qr = null;
+                authCodeScannerRunning = false;
                 reader.style.display = 'none';
-                btn.innerHTML = '📷 Escanear Código';
-                status.innerText = 'Scaner parado';
+                status.textContent = '📷 Aguardando código...';
+                status.className = 'auth-code-status waiting';
             }).catch(() => {});
             return;
         }
         
+        // Make sure reader is visible
         reader.style.display = 'block';
-        btn.innerHTML = '🛑 Parar';
-        status.innerText = '📷 Aguardando código...';
-        status.style.color = 'var(--text-muted)';
+        status.textContent = '📷 Aguardando código...';
+        status.className = 'auth-code-status waiting';
         
-        authCodeHtml5Qr = new Html5Qrcode("authCodeReader");
-        authCodeHtml5Qr.start({ facingMode:"environment" }, { fps:10, qrbox:{width:200,height:200} }, (decoded) => {
-            let now = Date.now();
-            if (decoded === ultimoCodigoLido && now - ultimoTempoLeitura < 1500) return;
-            ultimoCodigoLido = decoded;
-            ultimoTempoLeitura = now;
+        try {
+            authCodeHtml5Qr = new Html5Qrcode("authCodeReader");
+            authCodeScannerRunning = true;
             
-            if (checkAuthCode(decoded)) {
-                status.innerText = '✅ Código autorizado!';
-                status.style.color = 'var(--success)';
-                try { let ctx=new AudioContext(); let o=ctx.createOscillator(); o.frequency.value=1100; o.start(); o.stop(ctx.currentTime+0.15); } catch(e){}
-                
-                // Execute the pending removal
-                if (pendingRemoveProduct) {
-                    const p = pendingRemoveProduct;
-                    produtos[p.idx].quantidade -= p.qtd;
-                    saveCurrentUser();
-                    renderEstoque();
-                    destacarNaLista(p.codigo);
-                    mostrarAnimacao(window.innerWidth/2, window.innerHeight/2, produtos[p.idx].nome, p.qtd, 'remover');
-                    pendingRemoveProduct = null;
-                }
-                
-                // Close modal after success
-                setTimeout(() => {
-                    document.getElementById('authCodeModal').classList.remove('active');
-                    if (authCodeHtml5Qr) {
-                        authCodeHtml5Qr.stop().then(() => {
-                            authCodeHtml5Qr = null;
-                            reader.style.display = 'none';
-                            btn.innerHTML = '📷 Escanear Código';
-                        }).catch(() => {});
+            authCodeHtml5Qr.start(
+                { facingMode: "environment" },
+                { fps: 10, qrbox: { width: 250, height: 200 } },
+                (decoded) => {
+                    let now = Date.now();
+                    if (decoded === ultimoCodigoLido && now - ultimoTempoLeitura < 1500) return;
+                    ultimoCodigoLido = decoded;
+                    ultimoTempoLeitura = now;
+                    
+                    if (checkAuthCode(decoded)) {
+                        status.textContent = '✅ Código autorizado!';
+                        status.className = 'auth-code-status success';
+                        try { 
+                            let ctx = new AudioContext(); 
+                            let o = ctx.createOscillator(); 
+                            o.frequency.value = 1100; 
+                            o.start(); 
+                            o.stop(ctx.currentTime + 0.15); 
+                        } catch(e){}
+                        
+                        // Execute the pending removal
+                        if (pendingRemoveProduct) {
+                            const p = pendingRemoveProduct;
+                            produtos[p.idx].quantidade -= p.qtd;
+                            saveCurrentUser();
+                            renderEstoque();
+                            destacarNaLista(p.codigo);
+                            mostrarAnimacao(window.innerWidth/2, window.innerHeight/2, produtos[p.idx].nome, p.qtd, 'remover');
+                            pendingRemoveProduct = null;
+                        }
+                        
+                        // Close modal after success
+                        setTimeout(() => {
+                            document.getElementById('authCodeModal').classList.remove('active');
+                            if (authCodeHtml5Qr) {
+                                authCodeHtml5Qr.stop().then(() => {
+                                    authCodeHtml5Qr = null;
+                                    authCodeScannerRunning = false;
+                                    reader.style.display = 'none';
+                                }).catch(() => {});
+                            }
+                        }, 800);
+                    } else {
+                        status.textContent = '❌ Código inválido! Tente novamente.';
+                        status.className = 'auth-code-status error';
+                        try { 
+                            let ctx = new AudioContext(); 
+                            let o = ctx.createOscillator(); 
+                            o.frequency.value = 200; 
+                            o.start(); 
+                            o.stop(ctx.currentTime + 0.1); 
+                        } catch(e){}
+                        setTimeout(() => {
+                            status.textContent = '📷 Aguardando código...';
+                            status.className = 'auth-code-status waiting';
+                        }, 2000);
                     }
-                }, 800);
-            } else {
-                status.innerText = '❌ Código inválido! Tente novamente.';
-                status.style.color = 'var(--danger)';
-                try { let ctx=new AudioContext(); let o=ctx.createOscillator(); o.frequency.value=200; o.start(); o.stop(ctx.currentTime+0.1); } catch(e){}
-                setTimeout(() => {
-                    status.innerText = '📷 Aguardando código...';
-                    status.style.color = 'var(--text-muted)';
-                }, 2000);
-            }
-        }, (error) => {});
+                },
+                (error) => {
+                    // Ignore errors, just keep scanning
+                }
+            );
+        } catch(e) {
+            console.error('Error starting auth code scanner:', e);
+            status.textContent = '❌ Erro ao iniciar câmera';
+            status.className = 'auth-code-status error';
+            authCodeScannerRunning = false;
+            setTimeout(() => {
+                status.textContent = '📷 Aguardando código...';
+                status.className = 'auth-code-status waiting';
+            }, 3000);
+        }
+    }
+
+    function stopAuthCodeScanner() {
+        if (authCodeHtml5Qr) {
+            authCodeHtml5Qr.stop().then(() => {
+                authCodeHtml5Qr = null;
+                authCodeScannerRunning = false;
+                document.getElementById('authCodeReader').style.display = 'none';
+            }).catch(() => {});
+        }
     }
 
     // ==================== LISTA COMPLETA ====================
@@ -1392,7 +1477,7 @@
     function criarCaixa(nome){ if(!nome||!nome.trim())return alert("❌ Digite um nome"); if(caixas.includes(nome.trim()))return alert("❌ Já existe!"); caixas.push(nome.trim()); saveCurrentUser(); atualizarSelectCaixas(); refreshAll(); alert(`✅ Caixa "${nome.trim()}" criado!`); document.getElementById('newCaixaName').value=''; }
     function toggleHideValues(){ document.body.classList.toggle('value-hidden'); localStorage.setItem('hideValuesPreference',document.body.classList.contains('value-hidden')); document.getElementById('hideValuesBtn').innerHTML=document.body.classList.contains('value-hidden')?'🔓':'🔒'; }
     function toggleTheme(){ document.body.classList.toggle('dark-theme'); localStorage.setItem('themePreference',document.body.classList.contains('dark-theme')?'dark':'light'); }
-    function logout(){ if(confirm("Sair?")){ if(scannerAtivo&&html5QrCode)html5QrCode.stop().catch(e=>{}); currentUser=null; document.getElementById('mainApp').style.display='none'; document.getElementById('loginScreen').style.display='flex'; } }
+    function logout(){ if(confirm("Sair?")){ if(scannerAtivo&&html5QrCode)html5QrCode.stop().catch(e=>{}); stopAuthCodeScanner(); currentUser=null; document.getElementById('mainApp').style.display='none'; document.getElementById('loginScreen').style.display='flex'; } }
 
     function backupAction(){ let pass=document.getElementById('backupPass').value; if(!pass)return alert("Digite uma senha"); let data={ transacoes, produtos, caixas }; let str=JSON.stringify(data); let out=''; for(let i=0;i<str.length;i++)out+=String.fromCharCode(str.charCodeAt(i)^pass.charCodeAt(i%pass.length)); let blob=new Blob([btoa(out)],{type:"application/octet-stream"}); let a=document.createElement('a'); a.href=URL.createObjectURL(blob); a.download=`backup_${currentUser}_${new Date().toISOString().slice(0,10)}.fin`; a.click(); document.getElementById('backupModalMobile').classList.remove('active'); alert("Backup criado!"); }
     function restoreAction(){ let input=document.createElement('input'); input.type='file'; input.accept='.fin'; input.onchange=e=>{ let file=e.target.files[0]; if(!file)return; let pass=prompt("Senha:"); if(!pass)return; let reader=new FileReader(); reader.onload=ev=>{ try{ let enc=ev.target.result; let str=atob(enc); let out=''; for(let i=0;i<str.length;i++)out+=String.fromCharCode(str.charCodeAt(i)^pass.charCodeAt(i%pass.length)); let dec=JSON.parse(out); if(confirm("Restaurar?")){ transacoes=dec.transacoes||[]; produtos=dec.produtos||[]; caixas=dec.caixas||["Carteira","Banco","PicPay","Nubank"]; refreshAll(); alert("Restaurado!"); } }catch(e){ alert("Erro: senha incorreta"); } }; reader.readAsText(file); }; input.click(); }
@@ -1962,19 +2047,21 @@
             }
         }
         
-        // AUTH CODE MODAL
-        document.getElementById('startAuthCodeBtn').onclick = startAuthCodeScanner;
+        // AUTH CODE MODAL - cancel button
         document.getElementById('cancelAuthCodeBtn').onclick = () => {
-            if (authCodeHtml5Qr) {
-                authCodeHtml5Qr.stop().then(() => {
-                    authCodeHtml5Qr = null;
-                    document.getElementById('authCodeReader').style.display = 'none';
-                    document.getElementById('startAuthCodeBtn').innerHTML = '📷 Escanear Código';
-                }).catch(() => {});
-            }
+            stopAuthCodeScanner();
             document.getElementById('authCodeModal').classList.remove('active');
             pendingRemoveProduct = null;
         };
+        
+        // Handle modal close - stop scanner
+        document.getElementById('authCodeModal').addEventListener('click', function(e) {
+            if (e.target === this) {
+                stopAuthCodeScanner();
+                this.classList.remove('active');
+                pendingRemoveProduct = null;
+            }
+        });
         
         document.querySelectorAll('.tipo-btn').forEach(b=>b.onclick=function(){ document.querySelectorAll('.tipo-btn').forEach(x=>x.classList.remove('active')); this.classList.add('active'); tipoSelecionadoMobile=this.dataset.tipoMobile; });
         document.querySelectorAll('.mobile-tab').forEach(b=>b.onclick=function(){ document.querySelectorAll('.mobile-tab').forEach(x=>x.classList.remove('active')); this.classList.add('active'); document.querySelectorAll('.tab-pane').forEach(p=>p.style.display='none'); document.getElementById('tab'+this.dataset.tab.charAt(0).toUpperCase()+this.dataset.tab.slice(1)).style.display='block'; if(this.dataset.tab==='estoque'){ renderEstoque(); } if(this.dataset.tab==='caixas')renderCaixas(); });
