@@ -16,12 +16,20 @@
             --warning: #f39c12; --shadow: 0 4px 16px rgba(0,0,0,0.06);
             --radius-card: 16px; --radius-btn: 12px; --hover-bg: #eef1f5;
             --transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+            --scan-primary: #6c5ce7;
+            --scan-primary-dark: #5a4bd1;
+            --scan-secondary: #00b894;
+            --scan-danger: #fd79a8;
         }
         body.dark-theme {
             --bg-page: #0d1117; --bg-surface: #161b22; --bg-card: #1c2333;
             --bg-elevated: #252d3f; --text-primary: #f0f6fc; --text-secondary: #c9d1d9;
             --text-muted: #8b949e; --border: #30363d; --shadow: 0 4px 16px rgba(0,0,0,0.4);
             --hover-bg: #2d3548;
+            --scan-primary: #a29bfe;
+            --scan-primary-dark: #6c5ce7;
+            --scan-secondary: #55efc4;
+            --scan-danger: #fd79a8;
         }
         body { background-color: var(--bg-page); font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, system-ui, sans-serif; color: var(--text-primary); padding: 0; margin: 0; min-height: 100vh; transition: var(--transition); }
         
@@ -71,40 +79,247 @@
         .mobile-tab { flex: 1; text-align: center; padding: 8px 4px; border-radius: 10px; font-weight: 600; font-size: 11px; background: transparent; border: none; color: var(--text-muted); cursor: pointer; transition: var(--transition); }
         .mobile-tab.active { background: var(--success); color: white; box-shadow: 0 2px 8px rgba(46,204,113,0.25); }
 
+        /* ===== SCANNER - NOVO DESIGN ===== */
+        .scanner-section {
+            background: var(--bg-card);
+            border-radius: 16px;
+            padding: 16px;
+            margin-bottom: 14px;
+            border: 1px solid var(--border);
+        }
+        
+        .scanner-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 12px;
+        }
+        .scanner-header h4 {
+            font-size: 13px;
+            font-weight: 600;
+            color: var(--text-secondary);
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+        .scanner-header .badge-scanner {
+            font-size: 9px;
+            padding: 2px 10px;
+            border-radius: 20px;
+            background: var(--bg-elevated);
+            color: var(--text-muted);
+            font-weight: 600;
+        }
+
+        .scanner-modes {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 6px;
+            margin-bottom: 10px;
+        }
+        .scanner-mode-btn {
+            padding: 10px;
+            border-radius: 10px;
+            border: 2px solid var(--border);
+            background: var(--bg-elevated);
+            cursor: pointer;
+            font-weight: 600;
+            font-size: 12px;
+            transition: var(--transition);
+            color: var(--text-secondary);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 6px;
+        }
+        .scanner-mode-btn:hover {
+            border-color: var(--text-muted);
+        }
+        .scanner-mode-btn.active-add {
+            border-color: var(--success);
+            background: rgba(46,204,113,0.1);
+            color: var(--success);
+        }
+        .scanner-mode-btn.active-remove {
+            border-color: var(--danger);
+            background: rgba(231,76,60,0.1);
+            color: var(--danger);
+        }
+        .scanner-mode-btn .mode-icon {
+            font-size: 16px;
+        }
+
+        .scanner-actions {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+        .scanner-btn {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+            padding: 14px 20px;
+            border: none;
+            border-radius: 12px;
+            font-weight: 700;
+            font-size: 14px;
+            cursor: pointer;
+            transition: var(--transition);
+            color: white;
+            position: relative;
+            overflow: hidden;
+        }
+        .scanner-btn::after {
+            content: '';
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            width: 0;
+            height: 0;
+            border-radius: 50%;
+            background: rgba(255,255,255,0.2);
+            transition: width 0.6s, height 0.6s, top 0.6s, left 0.6s;
+        }
+        .scanner-btn:active::after {
+            width: 300px;
+            height: 300px;
+            top: -100px;
+            left: -100px;
+        }
+        .scanner-btn .btn-icon {
+            font-size: 20px;
+        }
+        .scanner-btn .btn-text {
+            font-size: 14px;
+        }
+        .scanner-btn .btn-badge {
+            background: rgba(255,255,255,0.25);
+            padding: 2px 10px;
+            border-radius: 20px;
+            font-size: 10px;
+            font-weight: 600;
+        }
+
+        .scanner-btn-primary {
+            background: linear-gradient(135deg, #6c5ce7, #a29bfe);
+            box-shadow: 0 4px 12px rgba(108, 92, 231, 0.3);
+        }
+        .scanner-btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(108, 92, 231, 0.4);
+        }
+        .scanner-btn-primary:active {
+            transform: translateY(0);
+        }
+
+        .scanner-btn-secondary {
+            background: linear-gradient(135deg, #00b894, #55efc4);
+            box-shadow: 0 4px 12px rgba(0, 184, 148, 0.3);
+        }
+        .scanner-btn-secondary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(0, 184, 148, 0.4);
+        }
+        .scanner-btn-secondary:active {
+            transform: translateY(0);
+        }
+
+        .scanner-btn-danger {
+            background: linear-gradient(135deg, #fd79a8, #e74c3c);
+            box-shadow: 0 4px 12px rgba(231, 76, 60, 0.3);
+        }
+        .scanner-btn-danger:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(231, 76, 60, 0.4);
+        }
+        .scanner-btn-danger:active {
+            transform: translateY(0);
+        }
+
+        .scanner-btn-warning {
+            background: linear-gradient(135deg, #fdcb6e, #f39c12);
+            box-shadow: 0 4px 12px rgba(243, 156, 18, 0.3);
+            animation: pulseScan 1.2s infinite;
+        }
+        .scanner-btn-warning:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(243, 156, 18, 0.4);
+        }
+        .scanner-btn-warning:active {
+            transform: translateY(0);
+        }
+        @keyframes pulseScan {
+            0% { opacity: 1; }
+            50% { opacity: 0.7; }
+            100% { opacity: 1; }
+        }
+
+        .scanner-btn .scanning-dot {
+            display: inline-block;
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: white;
+            margin-right: 4px;
+            animation: dotPulse 1s infinite;
+        }
+        @keyframes dotPulse {
+            0%, 100% { opacity: 1; transform: scale(1); }
+            50% { opacity: 0.4; transform: scale(0.8); }
+        }
+
+        .scanner-status {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            padding: 8px 12px;
+            margin-top: 8px;
+            border-radius: 10px;
+            font-size: 12px;
+            font-weight: 500;
+            background: var(--bg-elevated);
+            color: var(--text-muted);
+            transition: var(--transition);
+        }
+        .scanner-status.active {
+            background: rgba(108, 92, 231, 0.1);
+            color: var(--scan-primary);
+        }
+        .scanner-status .status-dot {
+            width: 6px;
+            height: 6px;
+            border-radius: 50%;
+            background: var(--text-muted);
+        }
+        .scanner-status.active .status-dot {
+            background: var(--scan-primary);
+            animation: dotPulse 1s infinite;
+        }
+        .scanner-status.success {
+            background: rgba(46,204,113,0.1);
+            color: var(--success);
+        }
+        .scanner-status.success .status-dot {
+            background: var(--success);
+        }
+        .scanner-status.error {
+            background: rgba(231,76,60,0.1);
+            color: var(--danger);
+        }
+        .scanner-status.error .status-dot {
+            background: var(--danger);
+        }
+
+        #reader { width: 100%; border: none; min-height: 200px; border-radius: 12px; overflow: hidden; margin-top: 10px; display: none; }
+
         /* ===== ESTOQUE ===== */
         .estoque-resumo { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 14px; }
         .estoque-resumo-item { background: var(--bg-card); border-radius: 12px; padding: 10px 12px; border: 1px solid var(--border); font-size: 12px; display: flex; justify-content: space-between; align-items: center; }
         .estoque-resumo-item strong { font-weight: 600; color: var(--text-secondary); }
         .estoque-resumo-item span { font-weight: 700; color: var(--text-primary); }
 
-        .scanner-container { background: var(--bg-card); border-radius: 16px; overflow: hidden; margin-bottom: 12px; border: 1px solid var(--border); }
-        #reader { width: 100%; border: none; min-height: 200px; }
-        .scan-btn { background: var(--info); color: white; border: none; padding: 12px; border-radius: 12px; font-weight: 600; cursor: pointer; width: 100%; font-size: 14px; transition: var(--transition); display: flex; align-items: center; justify-content: center; gap: 8px; }
-        .scan-btn:hover { transform: translateY(-1px); box-shadow: 0 4px 12px rgba(52,152,219,0.3); }
-        .scan-btn.remover { background: var(--danger); }
-        .scan-btn.remover:hover { box-shadow: 0 4px 12px rgba(231,76,60,0.3); }
-        .scan-btn.scanning { background: var(--warning); animation: pulseScan 1s infinite; }
-        @keyframes pulseScan { 0% { opacity: 1; } 50% { opacity: 0.6; } 100% { opacity: 1; } }
-        .scan-status-text { text-align: center; padding: 8px; font-size: 12px; color: var(--text-muted); }
-
-        .modo-scanner { display: flex; gap: 6px; margin-bottom: 8px; }
-        .modo-scanner button { flex: 1; padding: 8px; border-radius: 10px; border: 2px solid var(--border); background: var(--bg-elevated); cursor: pointer; font-weight: 600; font-size: 12px; transition: var(--transition); }
-        .modo-scanner button.active-adicionar { border-color: var(--success); background: var(--success); color: white; }
-        .modo-scanner button.active-remover { border-color: var(--danger); background: var(--danger); color: white; }
-
-        .scan-duplo-status { text-align: center; padding: 8px; font-size: 12px; font-weight: 600; border-radius: 10px; margin-top: 6px; }
-        .scan-duplo-status.aguardando { background: var(--warning); color: white; }
-        .scan-duplo-status.lido { background: var(--success); color: white; }
-        .scan-duplo-status.erro { background: var(--danger); color: white; }
-        .scan-duplo-status.identificado { background: var(--info); color: white; }
-
-        .scan-animation { position: fixed; background: var(--success); color: white; font-size: 20px; font-weight: 700; padding: 10px 20px; border-radius: 30px; pointer-events: none; z-index: 2000; animation: floatUp 0.8s ease-out forwards; box-shadow: 0 8px 24px rgba(0,0,0,0.2); text-align: center; white-space: nowrap; }
-        .scan-animation.remover { background: var(--danger); }
-        .warning-animation { position: fixed; background: var(--warning); color: white; font-size: 14px; font-weight: 600; padding: 10px 16px; border-radius: 20px; pointer-events: none; z-index: 2000; animation: shakeWarning 0.5s ease-out forwards; box-shadow: 0 8px 24px rgba(0,0,0,0.2); text-align: center; max-width: 80%; left: 10%; }
-        @keyframes floatUp { 0% { opacity: 1; transform: translateY(0) scale(1); } 100% { opacity: 0; transform: translateY(-80px) scale(1.2); } }
-        @keyframes shakeWarning { 0% { transform: translateX(0); opacity: 1; } 25% { transform: translateX(-10px); } 75% { transform: translateX(10px); } 100% { transform: translateX(0); opacity: 0; } }
-
-        /* ===== FORM ===== */
         .form-mobile { background: var(--bg-card); border-radius: 16px; padding: 16px; margin-bottom: 14px; border: 1px solid var(--border); }
         .form-mobile h3 { font-size: 15px; margin-bottom: 12px; font-weight: 700; }
         .input-field { margin-bottom: 10px; }
@@ -146,7 +361,6 @@
         .badge-danger { background: rgba(231,76,60,0.15); color: var(--danger); }
         .badge-low { background: rgba(243,156,18,0.15); color: var(--warning); }
 
-        /* ===== PESQUISA ===== */
         .pesquisa-container { display: flex; gap: 8px; margin-bottom: 12px; }
         .pesquisa-container input { flex: 1; padding: 10px 14px; background: var(--bg-elevated); border: 1px solid var(--border); border-radius: 12px; color: var(--text-primary); font-size: 14px; transition: var(--transition); }
         .pesquisa-container input:focus { outline: none; border-color: var(--success); box-shadow: 0 0 0 3px rgba(46,204,113,0.1); }
@@ -177,7 +391,12 @@
         .produto-completo-item .qtd { font-weight: 700; padding: 2px 10px; border-radius: 20px; font-size: 13px; background: var(--bg-elevated); }
         .produto-completo-item .qtd.zero { color: var(--danger); background: rgba(231,76,60,0.1); }
 
-        /* ===== OUTROS ===== */
+        .scan-animation { position: fixed; background: var(--success); color: white; font-size: 20px; font-weight: 700; padding: 10px 20px; border-radius: 30px; pointer-events: none; z-index: 2000; animation: floatUp 0.8s ease-out forwards; box-shadow: 0 8px 24px rgba(0,0,0,0.2); text-align: center; white-space: nowrap; }
+        .scan-animation.remover { background: var(--danger); }
+        .warning-animation { position: fixed; background: var(--warning); color: white; font-size: 14px; font-weight: 600; padding: 10px 16px; border-radius: 20px; pointer-events: none; z-index: 2000; animation: shakeWarning 0.5s ease-out forwards; box-shadow: 0 8px 24px rgba(0,0,0,0.2); text-align: center; max-width: 80%; left: 10%; }
+        @keyframes floatUp { 0% { opacity: 1; transform: translateY(0) scale(1); } 100% { opacity: 0; transform: translateY(-80px) scale(1.2); } }
+        @keyframes shakeWarning { 0% { transform: translateX(0); opacity: 1; } 25% { transform: translateX(-10px); } 75% { transform: translateX(10px); } 100% { transform: translateX(0); opacity: 0; } }
+
         .value-hidden .resumo-valor, .value-hidden .transaction-value, .value-hidden .caixa-item span:last-child { visibility: hidden; position: relative; display: inline-block; }
         .value-hidden .resumo-valor::before, .value-hidden .transaction-value::before, .value-hidden .caixa-item span:last-child::before { visibility: visible; position: absolute; left: 0; top: 0; content: "•••••"; font-family: inherit; font-size: inherit; font-weight: inherit; letter-spacing: 2px; color: var(--text-muted); background: transparent; }
 
@@ -202,7 +421,12 @@
         .transaction-value { font-weight: 700; font-size: 15px; margin-right: 8px; }
         .transaction-actions { display: flex; gap: 4px; }
 
-        /* Scrollbar */
+        .scan-duplo-status { text-align: center; padding: 8px; font-size: 12px; font-weight: 600; border-radius: 10px; margin-top: 6px; display: none; }
+        .scan-duplo-status.aguardando { display: block; background: var(--warning); color: white; }
+        .scan-duplo-status.lido { display: block; background: var(--success); color: white; }
+        .scan-duplo-status.erro { display: block; background: var(--danger); color: white; }
+        .scan-duplo-status.identificado { display: block; background: var(--info); color: white; }
+
         ::-webkit-scrollbar { width: 4px; }
         ::-webkit-scrollbar-track { background: var(--bg-elevated); }
         ::-webkit-scrollbar-thumb { background: var(--text-muted); border-radius: 4px; }
@@ -328,21 +552,44 @@
             <div class="estoque-resumo-item"><strong>⏰ Vencem</strong> <span id="produtosVencendo">0</span></div>
         </div>
         
-        <!-- Scanner Validade -->
-        <div class="scanner-container">
-            <button id="startScannerValidade" class="scan-btn">📷 Scanear Produto + Validade</button>
-            <div id="reader" style="width:100%; display:none;"></div>
-            <div class="scan-status-text" id="scanStatus" style="display: none;">🔍 Aponte para o código</div>
-            <div id="scanDuploStatus" class="scan-duplo-status" style="display: none;"></div>
-        </div>
-        
-        <!-- Scanner Rápido -->
-        <div style="margin-top:6px;">
-            <div class="modo-scanner">
-                <button id="modoAdicionar" class="active-adicionar">➕ Adicionar</button>
-                <button id="modoRemover">➖ Remover</button>
+        <!-- SCANNER SECTION - NOVO DESIGN -->
+        <div class="scanner-section">
+            <div class="scanner-header">
+                <h4>📷 Scanner Inteligente</h4>
+                <span class="badge-scanner">v2.0</span>
             </div>
-            <button id="startScannerBtn" class="scan-btn">📷 Scanear Código</button>
+            
+            <div class="scanner-modes">
+                <button id="modoAdicionar" class="scanner-mode-btn active-add">
+                    <span class="mode-icon">➕</span> Adicionar
+                </button>
+                <button id="modoRemover" class="scanner-mode-btn">
+                    <span class="mode-icon">➖</span> Remover
+                </button>
+            </div>
+            
+            <div class="scanner-actions">
+                <button id="startScannerBtn" class="scanner-btn scanner-btn-primary">
+                    <span class="btn-icon">📷</span>
+                    <span class="btn-text" id="scanBtnText">Scanear Código</span>
+                    <span class="btn-badge" id="scanBtnBadge">Rápido</span>
+                </button>
+                
+                <button id="startScannerValidade" class="scanner-btn scanner-btn-secondary">
+                    <span class="btn-icon">📋</span>
+                    <span class="btn-text" id="scanValidadeBtnText">Scanear + Validade</span>
+                    <span class="btn-badge">Completo</span>
+                </button>
+            </div>
+            
+            <div id="scanDuploStatus" class="scan-duplo-status" style="display:none;"></div>
+            
+            <div class="scanner-status" id="scannerStatus">
+                <span class="status-dot"></span>
+                <span id="scannerStatusText">Pronto para escanear</span>
+            </div>
+            
+            <div id="reader" style="width:100%; display:none;"></div>
         </div>
         
         <!-- Formulário Produto -->
@@ -496,6 +743,7 @@
     let html5QrCode=null, scannerAtivo=false, ultimoCodigoLido="", ultimoTempoLeitura=0;
     let modoScanner='adicionar', scanDuploProduto=null, scanDuploAguardandoValidade=false;
     let aguardandoData = false, termoPesquisa = '';
+    let scannerTipo = 'normal'; // 'normal' ou 'validade'
 
     function identificarProduto(codigo) {
         const p=produtos.find(x=>x.codigo===codigo);
@@ -673,11 +921,48 @@
     }
 
     // ==================== SCANNERS ====================
+    function updateScannerStatus(text, type='active') {
+        const status = document.getElementById('scannerStatus');
+        const textEl = document.getElementById('scannerStatusText');
+        status.className = 'scanner-status ' + type;
+        textEl.textContent = text;
+    }
+
     function iniciarScannerValidade() {
-        const rd=document.getElementById('reader'), st=document.getElementById('startScannerValidade'), sc=document.getElementById('scanStatus'), sd=document.getElementById('scanDuploStatus');
-        if(scannerAtivo){ if(html5QrCode){ html5QrCode.stop().then(()=>{ rd.style.display='none'; sc.style.display='none'; sd.style.display='none'; st.innerHTML='📷 Scanear Produto + Validade'; st.className='scan-btn'; scannerAtivo=false; html5QrCode=null; aguardandoData=false; }).catch(e=>{}); } return; }
-        rd.style.display='block'; sc.style.display='block'; sd.style.display='block'; sd.className='scan-duplo-status aguardando'; sd.innerHTML='📷 Aguardando código...'; st.innerHTML='🛑 Parar'; st.className='scan-btn scanning';
-        scanDuploProduto=null; scanDuploAguardandoValidade=false; aguardandoData=false;
+        const rd=document.getElementById('reader');
+        const st=document.getElementById('startScannerValidade');
+        const stText=document.getElementById('scanValidadeBtnText');
+        const sd=document.getElementById('scanDuploStatus');
+        
+        if(scannerAtivo){ 
+            if(html5QrCode){ 
+                html5QrCode.stop().then(()=>{ 
+                    rd.style.display='none'; 
+                    stText.innerHTML='Scanear + Validade';
+                    st.className='scanner-btn scanner-btn-secondary';
+                    scannerAtivo=false; 
+                    html5QrCode=null; 
+                    aguardandoData=false;
+                    sd.style.display='none';
+                    updateScannerStatus('Pronto para escanear', '');
+                }).catch(e=>{}); 
+            } 
+            return; 
+        }
+        
+        rd.style.display='block';
+        sd.style.display='block';
+        sd.className='scan-duplo-status aguardando';
+        sd.innerHTML='📷 Aguardando código do produto...';
+        stText.innerHTML='🛑 Parar';
+        st.className='scanner-btn scanner-btn-warning';
+        updateScannerStatus('Aguardando escaneamento...', 'active');
+        
+        scanDuploProduto=null; 
+        scanDuploAguardandoValidade=false; 
+        aguardandoData=false;
+        scannerTipo = 'validade';
+        
         html5QrCode=new Html5Qrcode("reader");
         html5QrCode.start({ facingMode:"environment" },{ fps:10, qrbox:{width:250,height:200} }, (decoded)=>{
             let agora=Date.now();
@@ -687,11 +972,17 @@
             if(!scanDuploAguardandoValidade && !aguardandoData){
                 let ident=identificarProduto(decoded);
                 if(ident.encontrado){
-                    scanDuploProduto=ident.produto; scanDuploAguardandoValidade=true;
+                    scanDuploProduto=ident.produto; 
+                    scanDuploAguardandoValidade=true;
                     let msg=`✅ ${ident.produto.nome}`;
-                    if(ident.origem==='estoque'){ msg+=` (${ident.produto.quantidade} un.)`; sd.className='scan-duplo-status lido'; }
-                    else { sd.className='scan-duplo-status identificado'; }
+                    if(ident.origem==='estoque'){ 
+                        msg+=` (${ident.produto.quantidade} un.)`; 
+                        sd.className='scan-duplo-status lido'; 
+                    } else { 
+                        sd.className='scan-duplo-status identificado'; 
+                    }
                     sd.innerHTML=`${msg}<br>📷 Agora escaneie a data de validade`;
+                    updateScannerStatus(`Produto: ${ident.produto.nome} - Aguardando data`, 'success');
                     
                     document.getElementById('validadeProdutoNome').innerText=ident.produto.nome;
                     document.getElementById('validadeProdutoCodigo').innerHTML=`Código: ${ident.produto.codigo}`;
@@ -710,15 +1001,33 @@
                     if(dataTeste){
                         sd.className='scan-duplo-status erro';
                         sd.innerHTML=`📅 Data reconhecida: ${formatDateBR(formatarDataParaInput(dataTeste))}<br>⚠️ Escaneie o produto primeiro!`;
-                        setTimeout(()=>{ if(!scanDuploAguardandoValidade){ sd.className='scan-duplo-status aguardando'; sd.innerHTML='📷 Aguardando código...'; } },2000);
+                        updateScannerStatus('Data reconhecida, mas aguarde o produto', 'error');
+                        setTimeout(()=>{ 
+                            if(!scanDuploAguardandoValidade){ 
+                                sd.className='scan-duplo-status aguardando'; 
+                                sd.innerHTML='📷 Aguardando código do produto...';
+                                updateScannerStatus('Aguardando escaneamento...', 'active');
+                            } 
+                        },2000);
                     } else {
                         sd.className='scan-duplo-status erro';
                         sd.innerHTML=`❌ Produto não encontrado!<br>${decoded}`;
+                        updateScannerStatus('Produto não encontrado', 'error');
                         if(confirm(`📷 Código: ${decoded}\n\nProduto não encontrado!\nCadastrar?`)){
                             document.getElementById('produtoCodigo').value=decoded;
                             document.getElementById('formNovoLote').style.display='block';
                             document.getElementById('produtoNome').focus();
-                            if(html5QrCode){ html5QrCode.stop().then(()=>{ rd.style.display='none'; sc.style.display='none'; sd.style.display='none'; st.innerHTML='📷 Scanear Produto + Validade'; st.className='scan-btn'; scannerAtivo=false; html5QrCode=null; }).catch(e=>{}); }
+                            if(html5QrCode){ 
+                                html5QrCode.stop().then(()=>{ 
+                                    rd.style.display='none'; 
+                                    sd.style.display='none';
+                                    stText.innerHTML='Scanear + Validade';
+                                    st.className='scanner-btn scanner-btn-secondary';
+                                    scannerAtivo=false; 
+                                    html5QrCode=null;
+                                    updateScannerStatus('Pronto para escanear', '');
+                                }).catch(e=>{}); 
+                            }
                         }
                     }
                 }
@@ -732,10 +1041,13 @@
                     if(scanDuploProduto){
                         adicionarComValidade(scanDuploProduto.codigo, dataFormatada, qtd, lote);
                         document.getElementById('validadeModal').classList.remove('active');
-                        scanDuploProduto=null; scanDuploAguardandoValidade=false;
+                        scanDuploProduto=null; 
+                        scanDuploAguardandoValidade=false;
                         sd.className='scan-duplo-status aguardando';
                         sd.innerHTML='📷 Aguardando próximo código...';
+                        updateScannerStatus('Produto adicionado com sucesso!', 'success');
                         try { let ctx=new AudioContext(); let o=ctx.createOscillator(); o.frequency.value=1100; o.start(); o.stop(ctx.currentTime+0.1); } catch(e){}
+                        setTimeout(() => updateScannerStatus('Aguardando escaneamento...', 'active'), 1500);
                     }
                 } else {
                     let ident=identificarProduto(decoded);
@@ -748,14 +1060,17 @@
                         document.getElementById('validadeProdutoDetalhes').innerHTML=detalhes;
                         sd.className='scan-duplo-status lido';
                         sd.innerHTML=`✅ Produto: ${ident.produto.nome}<br>📷 Agora escaneie a data`;
+                        updateScannerStatus(`Produto alterado: ${ident.produto.nome}`, 'success');
                         try { let ctx=new AudioContext(); let o=ctx.createOscillator(); o.frequency.value=660; o.start(); o.stop(ctx.currentTime+0.1); } catch(e){}
                     } else {
                         sd.className='scan-duplo-status erro';
                         sd.innerHTML=`❌ Data inválida: ${decoded}`;
+                        updateScannerStatus('Data inválida, tente novamente', 'error');
                         setTimeout(()=>{
                             if(scanDuploAguardandoValidade && scanDuploProduto){
                                 sd.className='scan-duplo-status lido';
                                 sd.innerHTML=`✅ Produto: ${scanDuploProduto.nome}<br>📷 Agora escaneie a data`;
+                                updateScannerStatus(`Aguardando data para ${scanDuploProduto.nome}`, 'active');
                             }
                         },2000);
                     }
@@ -766,9 +1081,36 @@
     }
 
     function iniciarScannerNormal() {
-        const rd=document.getElementById('reader'), st=document.getElementById('startScannerBtn'), sc=document.getElementById('scanStatus');
-        if(scannerAtivo){ if(html5QrCode){ html5QrCode.stop().then(()=>{ rd.style.display='none'; sc.style.display='none'; st.innerHTML='📷 Scanear Código'; st.className='scan-btn'; scannerAtivo=false; html5QrCode=null; document.getElementById('startScannerValidade').innerHTML='📷 Scanear Produto + Validade'; document.getElementById('startScannerValidade').className='scan-btn'; }).catch(e=>{}); } return; }
-        rd.style.display='block'; sc.style.display='block'; st.innerHTML='🛑 Parar'; st.className='scan-btn scanning';
+        const rd=document.getElementById('reader');
+        const st=document.getElementById('startScannerBtn');
+        const stText=document.getElementById('scanBtnText');
+        const badge=document.getElementById('scanBtnBadge');
+        
+        if(scannerAtivo){ 
+            if(html5QrCode){ 
+                html5QrCode.stop().then(()=>{ 
+                    rd.style.display='none'; 
+                    stText.innerHTML='Scanear Código';
+                    badge.innerHTML='Rápido';
+                    st.className='scanner-btn scanner-btn-primary';
+                    scannerAtivo=false; 
+                    html5QrCode=null;
+                    document.getElementById('startScannerValidade').innerHTML='📋 Scanear + Validade';
+                    document.getElementById('startScannerValidade').className='scanner-btn scanner-btn-secondary';
+                    document.getElementById('scanValidadeBtnText').innerHTML='Scanear + Validade';
+                    updateScannerStatus('Pronto para escanear', '');
+                }).catch(e=>{}); 
+            } 
+            return; 
+        }
+        
+        rd.style.display='block';
+        stText.innerHTML='🛑 Parar';
+        badge.innerHTML='Escanendo...';
+        st.className='scanner-btn scanner-btn-warning';
+        updateScannerStatus('Escanendo...', 'active');
+        scannerTipo = 'normal';
+        
         html5QrCode=new Html5Qrcode("reader");
         html5QrCode.start({ facingMode:"environment" },{ fps:10, qrbox:{width:250,height:200} }, (decoded)=>{
             let agora=Date.now();
@@ -779,30 +1121,60 @@
                 let nome=ident.produto.nome;
                 if(modoScanner==='adicionar'){
                     let p=produtos.find(x=>x.codigo===decoded);
-                    if(p){ adicionarQtd(decoded,1); }
-                    else {
+                    if(p){ 
+                        adicionarQtd(decoded,1); 
+                        updateScannerStatus(`+1 ${nome} adicionado!`, 'success');
+                    } else {
                         if(confirm(`📦 "${nome}" encontrado!\n\nAdicionar ao estoque?`)){
                             produtos.push({ codigo:decoded, nome:ident.produto.nome, preco:ident.produto.preco||null, quantidade:1, validade:null, numeroLote:null });
                             saveCurrentUser(); renderEstoque(); mostrarAnimacao(window.innerWidth/2,window.innerHeight/2,nome,1,'adicionar');
-                            alert(`✅ "${nome}" adicionado!`);
+                            updateScannerStatus(`✅ "${nome}" adicionado!`, 'success');
                         }
                     }
                 } else {
                     let p=produtos.find(x=>x.codigo===decoded);
-                    if(p){ removerQtd(decoded,1); }
-                    else { alert(`❌ "${nome}" não está no estoque.`); }
+                    if(p){ 
+                        removerQtd(decoded,1); 
+                        updateScannerStatus(`-1 ${nome} removido!`, 'success');
+                    } else { 
+                        alert(`❌ "${nome}" não está no estoque.`);
+                        updateScannerStatus('Produto não encontrado no estoque', 'error');
+                    }
                 }
                 try { let ctx=new AudioContext(); let o=ctx.createOscillator(); o.frequency.value=880; o.start(); o.stop(ctx.currentTime+0.1); } catch(e){}
+                setTimeout(() => updateScannerStatus('Escanendo...', 'active'), 1000);
             } else {
                 if(modoScanner==='adicionar'){
                     if(confirm(`📷 Código: ${decoded}\n\nProduto não encontrado!\nCadastrar?`)){
                         document.getElementById('produtoCodigo').value=decoded;
                         document.getElementById('formNovoLote').style.display='block';
                         document.getElementById('produtoNome').focus();
-                        if(html5QrCode){ html5QrCode.stop().then(()=>{ rd.style.display='none'; sc.style.display='none'; st.innerHTML='📷 Scanear Código'; st.className='scan-btn'; scannerAtivo=false; html5QrCode=null; }).catch(e=>{}); }
+                        if(html5QrCode){ 
+                            html5QrCode.stop().then(()=>{ 
+                                rd.style.display='none'; 
+                                stText.innerHTML='Scanear Código';
+                                badge.innerHTML='Rápido';
+                                st.className='scanner-btn scanner-btn-primary';
+                                scannerAtivo=false; 
+                                html5QrCode=null;
+                                updateScannerStatus('Pronto para escanear', '');
+                            }).catch(e=>{}); 
+                        }
+                    } else {
+                        updateScannerStatus('Produto não cadastrado', 'error');
+                        setTimeout(() => updateScannerStatus('Escanendo...', 'active'), 1000);
                     }
                 } else {
-                    let div=document.createElement('div'); div.className='warning-animation'; div.innerHTML=`❌ Produto não encontrado!`; div.style.left='10%'; div.style.width='80%'; div.style.top='40%'; document.body.appendChild(div); setTimeout(()=>div.remove(),3000);
+                    let div=document.createElement('div'); 
+                    div.className='warning-animation'; 
+                    div.innerHTML=`❌ Produto não encontrado!`; 
+                    div.style.left='10%'; 
+                    div.style.width='80%'; 
+                    div.style.top='40%'; 
+                    document.body.appendChild(div); 
+                    setTimeout(()=>div.remove(),3000);
+                    updateScannerStatus('Produto não encontrado', 'error');
+                    setTimeout(() => updateScannerStatus('Escanendo...', 'active'), 1000);
                 }
             }
         }, (error)=>{});
@@ -931,8 +1303,10 @@
         document.getElementById('cancelDeleteAccountBtn').onclick = () => document.getElementById('deleteAccountModal').classList.remove('active');
         document.getElementById('forceUpdateBtn').onclick = () => { let np=document.getElementById('forceNewPassword').value; let cp=document.getElementById('forceConfirmPassword').value; if(!np||!cp)return document.getElementById('forceErrorMsg').innerText="Preencha todos!"; if(np!==cp)return document.getElementById('forceErrorMsg').innerText="Senhas não coincidem!"; if(!isStrongPassword(np))return document.getElementById('forceErrorMsg').innerText="Senha fraca!"; let u=loadUsers(); u[currentUser].senha=np; saveUsers(u); document.getElementById('forceUpdateModal').style.display='none'; document.getElementById('mainApp').style.display='block'; refreshAll(); alert("✅ Senha atualizada!"); };
         
+        // Scanner buttons - novos handlers
         document.getElementById('startScannerValidade').onclick = iniciarScannerValidade;
         document.getElementById('startScannerBtn').onclick = iniciarScannerNormal;
+        
         document.getElementById('salvarNovoLoteBtn').onclick = salvarNovoLote;
         document.getElementById('cancelarNovoLoteBtn').onclick = () => { document.getElementById('formNovoLote').style.display='none'; ['produtoCodigo','produtoNome','produtoPreco','produtoValidade','produtoLote'].forEach(id=>document.getElementById(id).value=''); document.getElementById('produtoQuantidade').value='1'; };
         document.getElementById('editarEstoqueBtn').onclick = () => { document.getElementById('formNovoLote').style.display='block'; document.getElementById('produtoCodigo').focus(); };
@@ -947,8 +1321,21 @@
             renderEstoque();
         };
         
-        document.getElementById('modoAdicionar').onclick = () => { modoScanner='adicionar'; document.getElementById('modoAdicionar').className='active-adicionar'; document.getElementById('modoRemover').className=''; document.getElementById('startScannerBtn').className='scan-btn'; };
-        document.getElementById('modoRemover').onclick = () => { modoScanner='remover'; document.getElementById('modoRemover').className='active-remover'; document.getElementById('modoAdicionar').className=''; document.getElementById('startScannerBtn').className='scan-btn remover'; };
+        // Modos scanner - novo estilo
+        document.getElementById('modoAdicionar').onclick = () => { 
+            modoScanner='adicionar'; 
+            document.getElementById('modoAdicionar').className='scanner-mode-btn active-add'; 
+            document.getElementById('modoRemover').className='scanner-mode-btn'; 
+            document.getElementById('startScannerBtn').className='scanner-btn scanner-btn-primary';
+            updateScannerStatus('Modo Adicionar ativado', '');
+        };
+        document.getElementById('modoRemover').onclick = () => { 
+            modoScanner='remover'; 
+            document.getElementById('modoRemover').className='scanner-mode-btn active-remove'; 
+            document.getElementById('modoAdicionar').className='scanner-mode-btn'; 
+            document.getElementById('startScannerBtn').className='scanner-btn scanner-btn-danger';
+            updateScannerStatus('Modo Remover ativado', '');
+        };
         
         document.getElementById('confirmarValidadeBtn').onclick = () => {
             let validade=document.getElementById('validadeDataInput').value;
@@ -956,15 +1343,18 @@
             let lote=document.getElementById('validadeLote').value.trim()||null;
             if(!validade)return alert("❌ Selecione uma data!");
             if(qtd<1)return alert("❌ Quantidade inválida!");
-            if(scanDuploProduto){ adicionarComValidade(scanDuploProduto.codigo,validade,qtd,lote); document.getElementById('validadeModal').classList.remove('active'); scanDuploProduto=null; scanDuploAguardandoValidade=false; document.getElementById('scanDuploStatus').className='scan-duplo-status aguardando'; document.getElementById('scanDuploStatus').innerHTML='📷 Aguardando próximo código...'; }
+            if(scanDuploProduto){ adicionarComValidade(scanDuploProduto.codigo,validade,qtd,lote); document.getElementById('validadeModal').classList.remove('active'); scanDuploProduto=null; scanDuploAguardandoValidade=false; document.getElementById('scanDuploStatus').className='scan-duplo-status aguardando'; document.getElementById('scanDuploStatus').innerHTML='📷 Aguardando próximo código...'; updateScannerStatus('Produto adicionado!', 'success'); setTimeout(() => updateScannerStatus('Aguardando escaneamento...', 'active'), 1500); }
         };
-        document.getElementById('cancelarValidadeBtn').onclick = () => { document.getElementById('validadeModal').classList.remove('active'); scanDuploProduto=null; scanDuploAguardandoValidade=false; document.getElementById('scanDuploStatus').className='scan-duplo-status aguardando'; document.getElementById('scanDuploStatus').innerHTML='📷 Aguardando código...'; };
+        document.getElementById('cancelarValidadeBtn').onclick = () => { document.getElementById('validadeModal').classList.remove('active'); scanDuploProduto=null; scanDuploAguardandoValidade=false; document.getElementById('scanDuploStatus').className='scan-duplo-status aguardando'; document.getElementById('scanDuploStatus').innerHTML='📷 Aguardando código...'; updateScannerStatus('Aguardando escaneamento...', 'active'); };
         
         document.querySelectorAll('.tipo-btn').forEach(b=>b.onclick=function(){ document.querySelectorAll('.tipo-btn').forEach(x=>x.classList.remove('active')); this.classList.add('active'); tipoSelecionadoMobile=this.dataset.tipoMobile; });
         document.querySelectorAll('.mobile-tab').forEach(b=>b.onclick=function(){ document.querySelectorAll('.mobile-tab').forEach(x=>x.classList.remove('active')); this.classList.add('active'); document.querySelectorAll('.tab-pane').forEach(p=>p.style.display='none'); document.getElementById('tab'+this.dataset.tab.charAt(0).toUpperCase()+this.dataset.tab.slice(1)).style.display='block'; if(this.dataset.tab==='estoque'){ renderEstoque(); } if(this.dataset.tab==='caixas')renderCaixas(); });
         document.getElementById('filtroTipoMobile').onchange = renderMovements;
         document.getElementById('mobileData').value = new Date().toISOString().slice(0,10);
         atualizarSelectCaixas();
+        
+        // Status inicial
+        updateScannerStatus('Pronto para escanear', '');
     });
 
     let tipoSelecionadoMobile = 'entrada';
