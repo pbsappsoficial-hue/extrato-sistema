@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=yes, viewport-fit=cover">
-    <title>Sistema de Caixa + Estoque - Leitura Rápida</title>
+    <title>Sistema de Caixa + Estoque - Leitura Inteligente</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
     <script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
     <style>
@@ -976,6 +976,21 @@
             background: var(--danger);
             color: white;
         }
+        
+        .scan-duplo-status.identificado {
+            background: var(--info);
+            color: white;
+        }
+        
+        .produto-encontrado {
+            color: var(--success);
+            font-weight: bold;
+        }
+        
+        .produto-nao-encontrado {
+            color: var(--danger);
+            font-weight: bold;
+        }
     </style>
 </head>
 <body class="value-hidden">
@@ -984,7 +999,7 @@
 <div id="loginScreen" class="auth-screen">
     <div class="auth-card">
         <h2>💰 Sistema Integrado</h2>
-        <div class="sub">Caixa + Estoque com Leitura Rápida</div>
+        <div class="sub">Caixa + Estoque com Leitura Inteligente</div>
         <div id="loginErrorMsg" style="color:#ef4444; font-size:13px; margin-bottom:12px;"></div>
         <input type="text" id="loginNome" class="auth-input" placeholder="Nome do usuário">
         <input type="password" id="loginSenha" class="auth-input" placeholder="Senha (4-6 números)">
@@ -1104,9 +1119,9 @@
             <div class="estoque-resumo-item"><strong>⏰ Produtos próximos ao vencimento (≤7 dias):</strong> <span id="produtosVencendo">0</span></div>
         </div>
         
-        <!-- Scanner de Validade -->
+        <!-- Scanner de Validade Inteligente -->
         <div class="scanner-container">
-            <button id="startScannerValidade" class="scan-btn">📷 SCANEAR PRODUTO + VALIDADE</button>
+            <button id="startScannerValidade" class="scan-btn">📷 SCANEAR PRODUTO + VALIDADE (IDENTIFICA AUTOMÁTICO)</button>
             <div id="reader" style="width:100%; display:none;"></div>
             <div class="scan-status-text" id="scanStatus" style="display: none;">🔍 Câmera ativa - Aponte para o código</div>
             <div id="scanDuploStatus" class="scan-duplo-status" style="display: none;"></div>
@@ -1160,7 +1175,7 @@
         </div>
     </div>
 
-    <footer>✔️ Escaneie o código do produto e a validade em sequência para adicionar rapidamente!</footer>
+    <footer>✔️ Escaneie o código do produto e a validade - O sistema identifica automaticamente o produto!</footer>
 </div>
 
 <!-- Modais -->
@@ -1174,6 +1189,7 @@
             <div class="nome" id="validadeProdutoNome">Produto</div>
             <div class="codigo" id="validadeProdutoCodigo">Código: ---</div>
             <div class="detalhes" id="validadeProdutoDetalhes">Quantidade: 0 | Validade: ---</div>
+            <div id="validadeProdutoStatus" style="margin-top: 8px;"></div>
         </div>
         <div class="input-field">
             <label>📅 DATA DE VALIDADE</label>
@@ -1195,6 +1211,25 @@
 </div>
 
 <script>
+    // ==================== BASE DE PRODUTOS PARA IDENTIFICAÇÃO ====================
+    const baseProdutos = {
+        // Códigos EAN comuns (exemplos)
+        '7891000100107': { nome: 'Leite Integral', preco: 4.99, descricao: 'Leite Integral 1L' },
+        '7891000100206': { nome: 'Leite Desnatado', preco: 4.99, descricao: 'Leite Desnatado 1L' },
+        '7891000100305': { nome: 'Leite Semidesnatado', preco: 4.99, descricao: 'Leite Semidesnatado 1L' },
+        '7896015505006': { nome: 'Arroz', preco: 22.90, descricao: 'Arroz 5kg' },
+        '7896015505228': { nome: 'Feijão', preco: 8.90, descricao: 'Feijão Preto 1kg' },
+        '7896015505303': { nome: 'Açúcar', preco: 4.50, descricao: 'Açúcar Cristal 1kg' },
+        '7896015505402': { nome: 'Café', preco: 12.90, descricao: 'Café Torrado 500g' },
+        '7896015505501': { nome: 'Óleo', preco: 7.90, descricao: 'Óleo de Soja 900ml' },
+        '7896015505600': { nome: 'Macarrão', preco: 3.90, descricao: 'Macarrão Espaguete 500g' },
+        '7896015505709': { nome: 'Farinha', preco: 4.50, descricao: 'Farinha de Trigo 1kg' },
+        '7896015505808': { nome: 'Sal', preco: 2.50, descricao: 'Sal Refinado 1kg' },
+        '7896015505907': { nome: 'Achocolatado', preco: 6.90, descricao: 'Achocolatado 400g' },
+        '7891000123456': { nome: 'Produto Teste', preco: 10.00, descricao: 'Produto para testes' },
+        // Adicione mais produtos aqui conforme necessidade
+    };
+
     // ==================== FUNÇÕES AUXILIARES ====================
     function parseMoneyValue(inputValue) {
         if (!inputValue || inputValue === '') return null;
@@ -1302,6 +1337,35 @@
                 break;
             }
         }
+    }
+
+    // ==================== IDENTIFICAÇÃO DE PRODUTO ====================
+    function identificarProdutoPorCodigo(codigo) {
+        // Primeiro verificar no estoque do usuário
+        const produtoEstoque = produtos.find(p => p.codigo === codigo);
+        if(produtoEstoque) {
+            return { encontrado: true, produto: produtoEstoque, origem: 'estoque' };
+        }
+        
+        // Depois verificar na base de produtos
+        const produtoBase = baseProdutos[codigo];
+        if(produtoBase) {
+            return { 
+                encontrado: true, 
+                produto: {
+                    codigo: codigo,
+                    nome: produtoBase.nome,
+                    preco: produtoBase.preco,
+                    descricao: produtoBase.descricao || '',
+                    quantidade: 0,
+                    validade: null,
+                    numeroLote: null
+                },
+                origem: 'base'
+            };
+        }
+        
+        return { encontrado: false };
     }
 
     // ==================== GERENCIAMENTO DE USUÁRIOS ====================
@@ -1459,7 +1523,6 @@
         const produtoIndex = produtos.findIndex(p => p.codigo === codigo);
         
         if(produtoIndex !== -1) {
-            // Atualizar produto existente
             produtos[produtoIndex].quantidade += quantidade;
             produtos[produtoIndex].validade = validade;
             if(lote) produtos[produtoIndex].numeroLote = lote;
@@ -1469,14 +1532,34 @@
             alert(`✅ ${quantidade} unidade(s) de "${produtos[produtoIndex].nome}" adicionadas com validade ${formatDateBR(validade)}!`);
             return true;
         } else {
-            // Produto não existe - abrir formulário
-            document.getElementById('produtoCodigo').value = codigo;
-            document.getElementById('produtoValidade').value = validade;
-            document.getElementById('produtoQuantidade').value = quantidade;
-            if(lote) document.getElementById('produtoLote').value = lote;
-            document.getElementById('formNovoLote').style.display = 'block';
-            document.getElementById('produtoNome').focus();
-            return false;
+            // Verificar na base de produtos
+            const identificacao = identificarProdutoPorCodigo(codigo);
+            if(identificacao.encontrado && identificacao.origem === 'base') {
+                const produtoBase = identificacao.produto;
+                produtos.push({
+                    codigo: codigo,
+                    nome: produtoBase.nome,
+                    preco: produtoBase.preco,
+                    quantidade: quantidade,
+                    validade: validade || null,
+                    numeroLote: lote || null,
+                    descricao: produtoBase.descricao || ''
+                });
+                saveCurrentUser();
+                renderEstoque();
+                mostrarAnimacaoAdicao(window.innerWidth / 2, window.innerHeight / 2, produtoBase.nome, quantidade, 'adicionar');
+                alert(`✅ "${produtoBase.nome}" adicionado ao estoque com sucesso!`);
+                return true;
+            } else {
+                // Produto não existe - abrir formulário
+                document.getElementById('produtoCodigo').value = codigo;
+                document.getElementById('produtoValidade').value = validade;
+                document.getElementById('produtoQuantidade').value = quantidade;
+                if(lote) document.getElementById('produtoLote').value = lote;
+                document.getElementById('formNovoLote').style.display = 'block';
+                document.getElementById('produtoNome').focus();
+                return false;
+            }
         }
     }
 
@@ -1712,7 +1795,7 @@
                     readerDiv.style.display = 'none';
                     scanStatus.style.display = 'none';
                     scanDuploStatus.style.display = 'none';
-                    startBtn.innerHTML = '📷 SCANEAR PRODUTO + VALIDADE';
+                    startBtn.innerHTML = '📷 SCANEAR PRODUTO + VALIDADE (IDENTIFICA AUTOMÁTICO)';
                     startBtn.className = 'scan-btn';
                     scannerAtivo = false;
                     html5QrCode = null;
@@ -1754,22 +1837,47 @@
             const isData = dataRegex.test(decodedText);
             
             if(!scanDuploAguardandoValidade) {
-                // Primeiro scan: código do produto
-                const produtoExistente = produtos.find(p => p.codigo === decodedText);
+                // Primeiro scan: código do produto - IDENTIFICAÇÃO AUTOMÁTICA
+                const identificacao = identificarProdutoPorCodigo(decodedText);
                 
-                if(produtoExistente) {
-                    scanDuploProduto = produtoExistente;
+                if(identificacao.encontrado) {
+                    scanDuploProduto = identificacao.produto;
+                    scanDuploProduto.origem = identificacao.origem;
                     scanDuploAguardandoValidade = true;
-                    scanDuploStatus.className = 'scan-duplo-status lido';
-                    scanDuploStatus.innerHTML = `✅ Produto: ${produtoExistente.nome}<br>📷 Aguardando data de validade...`;
+                    
+                    let statusMsg = `✅ Produto identificado: ${identificacao.produto.nome}`;
+                    if(identificacao.origem === 'estoque') {
+                        statusMsg += ` (Em estoque: ${identificacao.produto.quantidade} un.)`;
+                        scanDuploStatus.className = 'scan-duplo-status lido';
+                    } else {
+                        statusMsg += ` (Produto da base)`;
+                        scanDuploStatus.className = 'scan-duplo-status identificado';
+                    }
+                    scanDuploStatus.innerHTML = `${statusMsg}<br>📷 Aguardando data de validade...`;
                     
                     // Abrir modal com informações do produto
-                    document.getElementById('validadeProdutoNome').innerText = produtoExistente.nome;
-                    document.getElementById('validadeProdutoCodigo').innerHTML = `Código: ${produtoExistente.codigo}`;
-                    document.getElementById('validadeProdutoDetalhes').innerHTML = `Quantidade atual: ${produtoExistente.quantidade} | Validade: ${produtoExistente.validade ? formatDateBR(produtoExistente.validade) : 'Não definida'}`;
+                    document.getElementById('validadeProdutoNome').innerText = identificacao.produto.nome;
+                    document.getElementById('validadeProdutoCodigo').innerHTML = `Código: ${identificacao.produto.codigo}`;
+                    let detalhes = `Quantidade atual: ${identificacao.produto.quantidade || 0}`;
+                    if(identificacao.produto.validade) {
+                        detalhes += ` | Validade: ${formatDateBR(identificacao.produto.validade)}`;
+                    }
+                    if(identificacao.produto.preco) {
+                        detalhes += ` | Preço: ${formatMoney(identificacao.produto.preco)}`;
+                    }
+                    document.getElementById('validadeProdutoDetalhes').innerHTML = detalhes;
+                    
+                    let statusHtml = '';
+                    if(identificacao.origem === 'estoque') {
+                        statusHtml = `<span style="color: var(--success);">✅ Produto já cadastrado no estoque</span>`;
+                    } else {
+                        statusHtml = `<span style="color: var(--info);">💡 Produto identificado na base de dados - será cadastrado automaticamente</span>`;
+                    }
+                    document.getElementById('validadeProdutoStatus').innerHTML = statusHtml;
+                    
                     document.getElementById('validadeDataInput').value = '';
                     document.getElementById('validadeQuantidade').value = '1';
-                    document.getElementById('validadeLote').value = produtoExistente.numeroLote || '';
+                    document.getElementById('validadeLote').value = identificacao.produto.numeroLote || '';
                     
                     document.getElementById('validadeModal').classList.add('active');
                     
@@ -1787,7 +1895,7 @@
                     } catch(e) {}
                     
                 } else {
-                    // Produto não encontrado - oferecer para cadastrar
+                    // Produto não encontrado
                     scanDuploStatus.className = 'scan-duplo-status erro';
                     scanDuploStatus.innerHTML = `❌ Produto não encontrado!<br>Código: ${decodedText}`;
                     
@@ -1802,7 +1910,7 @@
                                 readerDiv.style.display = 'none';
                                 scanStatus.style.display = 'none';
                                 scanDuploStatus.style.display = 'none';
-                                startBtn.innerHTML = '📷 SCANEAR PRODUTO + VALIDADE';
+                                startBtn.innerHTML = '📷 SCANEAR PRODUTO + VALIDADE (IDENTIFICA AUTOMÁTICO)';
                                 startBtn.className = 'scan-btn';
                                 scannerAtivo = false;
                                 html5QrCode = null;
@@ -1894,7 +2002,7 @@
                     scannerAtivo = false;
                     html5QrCode = null;
                     scanDuploAtivo = false;
-                    document.getElementById('startScannerValidade').innerHTML = '📷 SCANEAR PRODUTO + VALIDADE';
+                    document.getElementById('startScannerValidade').innerHTML = '📷 SCANEAR PRODUTO + VALIDADE (IDENTIFICA AUTOMÁTICO)';
                     document.getElementById('startScannerValidade').className = 'scan-btn';
                 }).catch(err => console.log(err));
             }
@@ -1919,13 +2027,41 @@
             ultimoCodigoLido = decodedText;
             ultimoTempoLeitura = agora;
             
-            const produtoExistente = produtos.find(p => p.codigo === decodedText);
+            const identificacao = identificarProdutoPorCodigo(decodedText);
             
-            if(produtoExistente) {
+            if(identificacao.encontrado) {
+                const produtoNome = identificacao.produto.nome;
                 if(modoScanner === 'adicionar') {
-                    adicionarQuantidadePorCodigo(decodedText, 1);
+                    // Verificar se o produto está no estoque ou na base
+                    const produtoEstoque = produtos.find(p => p.codigo === decodedText);
+                    if(produtoEstoque) {
+                        adicionarQuantidadePorCodigo(decodedText, 1);
+                    } else {
+                        // Produto na base mas não no estoque - perguntar se quer adicionar
+                        if(confirm(`📦 "${produtoNome}" encontrado na base de dados!\n\nDeseja adicioná-lo ao estoque com quantidade 1?`)) {
+                            produtos.push({
+                                codigo: decodedText,
+                                nome: identificacao.produto.nome,
+                                preco: identificacao.produto.preco || null,
+                                quantidade: 1,
+                                validade: null,
+                                numeroLote: null,
+                                descricao: identificacao.produto.descricao || ''
+                            });
+                            saveCurrentUser();
+                            renderEstoque();
+                            mostrarAnimacaoAdicao(window.innerWidth / 2, window.innerHeight / 2, identificacao.produto.nome, 1, 'adicionar');
+                            alert(`✅ "${identificacao.produto.nome}" adicionado ao estoque!`);
+                        }
+                    }
                 } else {
-                    removerQuantidadePorCodigo(decodedText, 1);
+                    // Modo remover
+                    const produtoEstoque = produtos.find(p => p.codigo === decodedText);
+                    if(produtoEstoque) {
+                        removerQuantidadePorCodigo(decodedText, 1);
+                    } else {
+                        alert(`❌ "${produtoNome}" não está no estoque para remover.`);
+                    }
                 }
                 try {
                     const audioContext = new (window.AudioContext || window.webkitAudioContext)();
@@ -1981,7 +2117,7 @@
                 document.getElementById('scanDuploStatus').style.display = 'none';
                 document.getElementById('startScannerBtn').innerHTML = '📷 SCANEAR CÓDIGO (Adicionar/Remover)';
                 document.getElementById('startScannerBtn').className = 'scan-btn';
-                document.getElementById('startScannerValidade').innerHTML = '📷 SCANEAR PRODUTO + VALIDADE';
+                document.getElementById('startScannerValidade').innerHTML = '📷 SCANEAR PRODUTO + VALIDADE (IDENTIFICA AUTOMÁTICO)';
                 document.getElementById('startScannerValidade').className = 'scan-btn';
                 scannerAtivo = false;
                 html5QrCode = null;
@@ -1995,7 +2131,7 @@
             document.getElementById('scanDuploStatus').style.display = 'none';
             document.getElementById('startScannerBtn').innerHTML = '📷 SCANEAR CÓDIGO (Adicionar/Remover)';
             document.getElementById('startScannerBtn').className = 'scan-btn';
-            document.getElementById('startScannerValidade').innerHTML = '📷 SCANEAR PRODUTO + VALIDADE';
+            document.getElementById('startScannerValidade').innerHTML = '📷 SCANEAR PRODUTO + VALIDADE (IDENTIFICA AUTOMÁTICO)';
             document.getElementById('startScannerValidade').className = 'scan-btn';
             scannerAtivo = false;
         }
