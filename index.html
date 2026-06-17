@@ -79,7 +79,7 @@
         .mobile-tab { flex: 1; text-align: center; padding: 8px 4px; border-radius: 10px; font-weight: 600; font-size: 11px; background: transparent; border: none; color: var(--text-muted); cursor: pointer; transition: var(--transition); }
         .mobile-tab.active { background: var(--success); color: white; box-shadow: 0 2px 8px rgba(46,204,113,0.25); }
 
-        /* ===== SCANNER - NOVO DESIGN ===== */
+        /* ===== SCANNER ===== */
         .scanner-section {
             background: var(--bg-card);
             border-radius: 16px;
@@ -87,7 +87,6 @@
             margin-bottom: 14px;
             border: 1px solid var(--border);
         }
-        
         .scanner-header {
             display: flex;
             align-items: center;
@@ -110,7 +109,6 @@
             color: var(--text-muted);
             font-weight: 600;
         }
-
         .scanner-modes {
             display: grid;
             grid-template-columns: 1fr 1fr;
@@ -132,9 +130,7 @@
             justify-content: center;
             gap: 6px;
         }
-        .scanner-mode-btn:hover {
-            border-color: var(--text-muted);
-        }
+        .scanner-mode-btn:hover { border-color: var(--text-muted); }
         .scanner-mode-btn.active-add {
             border-color: var(--success);
             background: rgba(46,204,113,0.1);
@@ -145,15 +141,8 @@
             background: rgba(231,76,60,0.1);
             color: var(--danger);
         }
-        .scanner-mode-btn .mode-icon {
-            font-size: 16px;
-        }
-
-        .scanner-actions {
-            display: flex;
-            flex-direction: column;
-            gap: 8px;
-        }
+        .scanner-mode-btn .mode-icon { font-size: 16px; }
+        .scanner-actions { display: flex; flex-direction: column; gap: 8px; }
         .scanner-btn {
             display: flex;
             align-items: center;
@@ -187,12 +176,8 @@
             top: -100px;
             left: -100px;
         }
-        .scanner-btn .btn-icon {
-            font-size: 20px;
-        }
-        .scanner-btn .btn-text {
-            font-size: 14px;
-        }
+        .scanner-btn .btn-icon { font-size: 20px; }
+        .scanner-btn .btn-text { font-size: 14px; }
         .scanner-btn .btn-badge {
             background: rgba(255,255,255,0.25);
             padding: 2px 10px;
@@ -200,7 +185,6 @@
             font-size: 10px;
             font-weight: 600;
         }
-
         .scanner-btn-primary {
             background: linear-gradient(135deg, #6c5ce7, #a29bfe);
             box-shadow: 0 4px 12px rgba(108, 92, 231, 0.3);
@@ -209,10 +193,6 @@
             transform: translateY(-2px);
             box-shadow: 0 6px 20px rgba(108, 92, 231, 0.4);
         }
-        .scanner-btn-primary:active {
-            transform: translateY(0);
-        }
-
         .scanner-btn-secondary {
             background: linear-gradient(135deg, #00b894, #55efc4);
             box-shadow: 0 4px 12px rgba(0, 184, 148, 0.3);
@@ -221,10 +201,6 @@
             transform: translateY(-2px);
             box-shadow: 0 6px 20px rgba(0, 184, 148, 0.4);
         }
-        .scanner-btn-secondary:active {
-            transform: translateY(0);
-        }
-
         .scanner-btn-danger {
             background: linear-gradient(135deg, #fd79a8, #e74c3c);
             box-shadow: 0 4px 12px rgba(231, 76, 60, 0.3);
@@ -233,10 +209,6 @@
             transform: translateY(-2px);
             box-shadow: 0 6px 20px rgba(231, 76, 60, 0.4);
         }
-        .scanner-btn-danger:active {
-            transform: translateY(0);
-        }
-
         .scanner-btn-warning {
             background: linear-gradient(135deg, #fdcb6e, #f39c12);
             box-shadow: 0 4px 12px rgba(243, 156, 18, 0.3);
@@ -246,15 +218,11 @@
             transform: translateY(-2px);
             box-shadow: 0 6px 20px rgba(243, 156, 18, 0.4);
         }
-        .scanner-btn-warning:active {
-            transform: translateY(0);
-        }
         @keyframes pulseScan {
             0% { opacity: 1; }
             50% { opacity: 0.7; }
             100% { opacity: 1; }
         }
-
         .scanner-btn .scanning-dot {
             display: inline-block;
             width: 8px;
@@ -268,7 +236,6 @@
             0%, 100% { opacity: 1; transform: scale(1); }
             50% { opacity: 0.4; transform: scale(0.8); }
         }
-
         .scanner-status {
             display: flex;
             align-items: center;
@@ -311,7 +278,6 @@
         .scanner-status.error .status-dot {
             background: var(--danger);
         }
-
         #reader { width: 100%; border: none; min-height: 200px; border-radius: 12px; overflow: hidden; margin-top: 10px; display: none; }
 
         /* ===== ESTOQUE ===== */
@@ -338,7 +304,6 @@
         .produto-item.vencendo { border-color: var(--warning); background: rgba(243,156,18,0.05); }
         .produto-item.vencido { border-color: var(--danger); background: rgba(231,76,60,0.05); }
         .produto-item.esgotado { opacity: 0.4; }
-        
         .produto-info { flex: 1; min-width: 0; }
         .produto-nome { font-weight: 600; font-size: 14px; margin-bottom: 2px; display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
         .produto-detalhes { display: flex; gap: 10px; font-size: 11px; color: var(--text-muted); flex-wrap: wrap; }
@@ -346,7 +311,6 @@
         .produto-qtd { font-weight: 700; font-size: 18px; color: var(--text-primary); margin-right: 8px; }
         .produto-qtd.low { color: var(--warning); }
         .produto-qtd.zero { color: var(--danger); }
-        
         .produto-acoes { display: flex; gap: 4px; align-items: center; }
         .produto-acoes button { background: none; border: none; width: 32px; height: 32px; border-radius: 8px; font-size: 14px; cursor: pointer; transition: var(--transition); color: var(--text-muted); display: flex; align-items: center; justify-content: center; }
         .produto-acoes button:hover { background: var(--hover-bg); transform: scale(0.92); }
@@ -552,13 +516,12 @@
             <div class="estoque-resumo-item"><strong>⏰ Vencem</strong> <span id="produtosVencendo">0</span></div>
         </div>
         
-        <!-- SCANNER SECTION - NOVO DESIGN -->
+        <!-- SCANNER SECTION -->
         <div class="scanner-section">
             <div class="scanner-header">
                 <h4>📷 Scanner Inteligente</h4>
                 <span class="badge-scanner">v2.0</span>
             </div>
-            
             <div class="scanner-modes">
                 <button id="modoAdicionar" class="scanner-mode-btn active-add">
                     <span class="mode-icon">➕</span> Adicionar
@@ -567,28 +530,23 @@
                     <span class="mode-icon">➖</span> Remover
                 </button>
             </div>
-            
             <div class="scanner-actions">
                 <button id="startScannerBtn" class="scanner-btn scanner-btn-primary">
                     <span class="btn-icon">📷</span>
                     <span class="btn-text" id="scanBtnText">Scanear Código</span>
                     <span class="btn-badge" id="scanBtnBadge">Rápido</span>
                 </button>
-                
                 <button id="startScannerValidade" class="scanner-btn scanner-btn-secondary">
                     <span class="btn-icon">📋</span>
                     <span class="btn-text" id="scanValidadeBtnText">Scanear + Validade</span>
                     <span class="btn-badge">Completo</span>
                 </button>
             </div>
-            
             <div id="scanDuploStatus" class="scan-duplo-status" style="display:none;"></div>
-            
             <div class="scanner-status" id="scannerStatus">
                 <span class="status-dot"></span>
                 <span id="scannerStatusText">Pronto para escanear</span>
             </div>
-            
             <div id="reader" style="width:100%; display:none;"></div>
         </div>
         
@@ -743,7 +701,7 @@
     let html5QrCode=null, scannerAtivo=false, ultimoCodigoLido="", ultimoTempoLeitura=0;
     let modoScanner='adicionar', scanDuploProduto=null, scanDuploAguardandoValidade=false;
     let aguardandoData = false, termoPesquisa = '';
-    let scannerTipo = 'normal'; // 'normal' ou 'validade'
+    let scannerTipo = 'normal';
 
     function identificarProduto(codigo) {
         const p=produtos.find(x=>x.codigo===codigo);
@@ -1272,6 +1230,432 @@
         saveCurrentUser(); renderEstoque();
     }
 
+    // ==================== GERAR PDF COM ALTO CONTRASTE ====================
+    function gerarPDF() {
+        if(!transacoes.length){ alert("Nenhuma movimentação"); return; }
+        let ent=transacoes.filter(t=>t.tipo==='entrada').reduce((s,t)=>s+t.valor,0);
+        let sai=transacoes.filter(t=>t.tipo==='saida').reduce((s,t)=>s+t.valor,0);
+        let html=`<!DOCTYPE html>
+        <html>
+        <head>
+            <meta charset="UTF-8">
+            <title>Extrato Financeiro</title>
+            <style>
+                * { margin: 0; padding: 0; box-sizing: border-box; }
+                body { 
+                    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Arial, sans-serif; 
+                    padding: 30px; 
+                    background: #ffffff; 
+                    color: #1a1a2e;
+                    line-height: 1.6;
+                }
+                .header { 
+                    text-align: center; 
+                    padding-bottom: 20px; 
+                    border-bottom: 3px solid #2ecc71;
+                    margin-bottom: 25px;
+                }
+                .header h1 { 
+                    font-size: 28px; 
+                    font-weight: 800; 
+                    color: #1a1a2e;
+                    letter-spacing: -0.5px;
+                }
+                .header .sub { 
+                    color: #4a4a5a; 
+                    font-size: 14px; 
+                    margin-top: 4px;
+                }
+                .summary {
+                    display: grid;
+                    grid-template-columns: 1fr 1fr 1fr;
+                    gap: 16px;
+                    margin-bottom: 25px;
+                    background: #f8f9fa;
+                    padding: 20px;
+                    border-radius: 12px;
+                    border: 1px solid #e8ecf0;
+                }
+                .summary-item {
+                    text-align: center;
+                }
+                .summary-item .label {
+                    font-size: 11px;
+                    text-transform: uppercase;
+                    letter-spacing: 0.5px;
+                    color: #6c757d;
+                    font-weight: 700;
+                }
+                .summary-item .value {
+                    font-size: 22px;
+                    font-weight: 800;
+                    margin-top: 2px;
+                }
+                .summary-item .value.entrada { color: #2ecc71; }
+                .summary-item .value.saida { color: #e74c3c; }
+                .summary-item .value.saldo { color: #3498db; }
+                table {
+                    width: 100%;
+                    border-collapse: collapse;
+                    background: #ffffff;
+                    border-radius: 12px;
+                    overflow: hidden;
+                    box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+                    margin-top: 10px;
+                }
+                thead {
+                    background: #1a1a2e;
+                    color: #ffffff;
+                }
+                thead th {
+                    padding: 14px 16px;
+                    text-align: left;
+                    font-size: 12px;
+                    font-weight: 700;
+                    text-transform: uppercase;
+                    letter-spacing: 0.5px;
+                }
+                tbody tr {
+                    border-bottom: 1px solid #e8ecf0;
+                    transition: background 0.15s;
+                }
+                tbody tr:last-child { border-bottom: none; }
+                tbody tr:hover { background: #f8f9fa; }
+                tbody td {
+                    padding: 12px 16px;
+                    font-size: 13px;
+                    color: #1a1a2e;
+                }
+                tbody td.valor-entrada { 
+                    color: #2ecc71; 
+                    font-weight: 700;
+                }
+                tbody td.valor-saida { 
+                    color: #e74c3c; 
+                    font-weight: 700;
+                }
+                tbody td .codigo {
+                    font-family: monospace;
+                    font-size: 11px;
+                    color: #6c757d;
+                }
+                .footer {
+                    text-align: center;
+                    color: #6c757d;
+                    font-size: 11px;
+                    margin-top: 25px;
+                    padding-top: 15px;
+                    border-top: 1px solid #e8ecf0;
+                }
+                .badge-tipo {
+                    display: inline-block;
+                    padding: 2px 10px;
+                    border-radius: 12px;
+                    font-size: 10px;
+                    font-weight: 700;
+                    text-transform: uppercase;
+                    letter-spacing: 0.3px;
+                }
+                .badge-tipo.entrada { background: rgba(46,204,113,0.15); color: #2ecc71; }
+                .badge-tipo.saida { background: rgba(231,76,60,0.15); color: #e74c3c; }
+                .empty-state { text-align: center; padding: 40px; color: #6c757d; font-size: 14px; }
+                @media print {
+                    body { padding: 15px; }
+                    .summary { background: #f8f9fa; }
+                    thead { background: #1a1a2e !important; color: #ffffff !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+                    tbody tr:hover { background: transparent; }
+                }
+            </style>
+        </head>
+        <body>
+            <div class="header">
+                <h1>💰 Extrato Financeiro</h1>
+                <div class="sub">Usuário: ${escapeHtml(currentUser)} • Gerado em ${new Date().toLocaleString('pt-BR')}</div>
+            </div>
+            <div class="summary">
+                <div class="summary-item">
+                    <div class="label">📥 Entradas</div>
+                    <div class="value entrada">${formatMoney(ent)}</div>
+                </div>
+                <div class="summary-item">
+                    <div class="label">📤 Saídas</div>
+                    <div class="value saida">${formatMoney(sai)}</div>
+                </div>
+                <div class="summary-item">
+                    <div class="label">💰 Saldo</div>
+                    <div class="value saldo">${formatMoney(ent-sai)}</div>
+                </div>
+            </div>
+            <table>
+                <thead>
+                    <tr>
+                        <th>Data</th>
+                        <th>Descrição</th>
+                        <th>Caixa</th>
+                        <th>Tipo</th>
+                        <th style="text-align:right;">Valor</th>
+                    </tr>
+                </thead>
+                <tbody>`;
+        if(transacoes.length){
+            for(let t of transacoes.sort((a,b)=>b.data.localeCompare(a.data))){
+                let tipoCls = t.tipo === 'entrada' ? 'entrada' : 'saida';
+                let valorCls = t.tipo === 'entrada' ? 'valor-entrada' : 'valor-saida';
+                let sinal = t.tipo === 'entrada' ? '' : '- ';
+                html+=`<tr>
+                    <td>${formatDateBR(t.data)}</td>
+                    <td><strong>${escapeHtml(t.descricao)}</strong></td>
+                    <td>🏦 ${escapeHtml(t.caixa)}</td>
+                    <td><span class="badge-tipo ${tipoCls}">${t.tipo === 'entrada' ? 'Entrada' : 'Saída'}</span></td>
+                    <td style="text-align:right; font-weight:700;" class="${valorCls}">${sinal}${formatMoney(t.valor)}</td>
+                </tr>`;
+            }
+        } else {
+            html+=`<tr><td colspan="5" class="empty-state">Nenhuma movimentação registrada</td></tr>`;
+        }
+        html+=`</tbody></table>
+            <div class="footer">
+                📄 Documento gerado automaticamente • Sistema Integrado de Caixa + Estoque
+            </div>
+        </body></html>`;
+        
+        let div=document.createElement('div'); 
+        div.innerHTML=html; 
+        document.body.appendChild(div);
+        html2pdf().set({ 
+            margin: 0.5, 
+            filename: `Extrato_${currentUser}_${new Date().toISOString().slice(0,10)}.pdf`, 
+            image: { type: 'jpeg', quality: 0.98 }, 
+            html2canvas: { scale: 2, useCORS: true, backgroundColor: '#ffffff' }, 
+            jsPDF: { unit: 'in', format: 'a4', orientation: 'portrait' } 
+        }).from(div).save().then(()=>{ 
+            document.body.removeChild(div); 
+            alert("✅ PDF gerado com sucesso!"); 
+        }).catch(()=>{ 
+            document.body.removeChild(div); 
+            alert("❌ Erro ao gerar PDF"); 
+        });
+    }
+
+    function gerarEstoquePDF() {
+        if(!produtos.length){ alert("Nenhum produto"); return; }
+        let total=produtos.reduce((s,p)=>s+p.quantidade,0);
+        let valor=produtos.reduce((s,p)=>s+(p.preco?p.preco*p.quantidade:0),0);
+        let html=`<!DOCTYPE html>
+        <html>
+        <head>
+            <meta charset="UTF-8">
+            <title>Relatório de Estoque</title>
+            <style>
+                * { margin: 0; padding: 0; box-sizing: border-box; }
+                body { 
+                    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Arial, sans-serif; 
+                    padding: 30px; 
+                    background: #ffffff; 
+                    color: #1a1a2e;
+                    line-height: 1.6;
+                }
+                .header { 
+                    text-align: center; 
+                    padding-bottom: 20px; 
+                    border-bottom: 3px solid #2ecc71;
+                    margin-bottom: 25px;
+                }
+                .header h1 { 
+                    font-size: 28px; 
+                    font-weight: 800; 
+                    color: #1a1a2e;
+                    letter-spacing: -0.5px;
+                }
+                .header .sub { 
+                    color: #4a4a5a; 
+                    font-size: 14px; 
+                    margin-top: 4px;
+                }
+                .summary {
+                    display: grid;
+                    grid-template-columns: 1fr 1fr 1fr 1fr;
+                    gap: 12px;
+                    margin-bottom: 25px;
+                    background: #f8f9fa;
+                    padding: 20px;
+                    border-radius: 12px;
+                    border: 1px solid #e8ecf0;
+                }
+                .summary-item {
+                    text-align: center;
+                }
+                .summary-item .label {
+                    font-size: 10px;
+                    text-transform: uppercase;
+                    letter-spacing: 0.5px;
+                    color: #6c757d;
+                    font-weight: 700;
+                }
+                .summary-item .value {
+                    font-size: 20px;
+                    font-weight: 800;
+                    margin-top: 2px;
+                    color: #1a1a2e;
+                }
+                .summary-item .value.primary { color: #2ecc71; }
+                .summary-item .value.warning { color: #f39c12; }
+                .summary-item .value.danger { color: #e74c3c; }
+                table {
+                    width: 100%;
+                    border-collapse: collapse;
+                    background: #ffffff;
+                    border-radius: 12px;
+                    overflow: hidden;
+                    box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+                    margin-top: 10px;
+                }
+                thead {
+                    background: #1a1a2e;
+                    color: #ffffff;
+                }
+                thead th {
+                    padding: 12px 14px;
+                    text-align: left;
+                    font-size: 11px;
+                    font-weight: 700;
+                    text-transform: uppercase;
+                    letter-spacing: 0.5px;
+                }
+                tbody tr {
+                    border-bottom: 1px solid #e8ecf0;
+                    transition: background 0.15s;
+                }
+                tbody tr:last-child { border-bottom: none; }
+                tbody tr:hover { background: #f8f9fa; }
+                tbody td {
+                    padding: 10px 14px;
+                    font-size: 12px;
+                    color: #1a1a2e;
+                }
+                tbody td .qtd-badge {
+                    display: inline-block;
+                    padding: 2px 10px;
+                    border-radius: 12px;
+                    font-weight: 700;
+                    font-size: 13px;
+                }
+                tbody td .qtd-badge.normal { background: rgba(46,204,113,0.12); color: #2ecc71; }
+                tbody td .qtd-badge.low { background: rgba(243,156,18,0.12); color: #f39c12; }
+                tbody td .qtd-badge.zero { background: rgba(231,76,60,0.12); color: #e74c3c; }
+                tbody td .status-badge {
+                    display: inline-block;
+                    padding: 2px 10px;
+                    border-radius: 12px;
+                    font-size: 9px;
+                    font-weight: 700;
+                    text-transform: uppercase;
+                    letter-spacing: 0.3px;
+                }
+                tbody td .status-badge.ok { background: rgba(46,204,113,0.12); color: #2ecc71; }
+                tbody td .status-badge.warning { background: rgba(243,156,18,0.12); color: #f39c12; }
+                tbody td .status-badge.danger { background: rgba(231,76,60,0.12); color: #e74c3c; }
+                .codigo-cell {
+                    font-family: monospace;
+                    font-size: 10px;
+                    color: #6c757d;
+                }
+                .footer {
+                    text-align: center;
+                    color: #6c757d;
+                    font-size: 11px;
+                    margin-top: 25px;
+                    padding-top: 15px;
+                    border-top: 1px solid #e8ecf0;
+                }
+                .empty-state { text-align: center; padding: 40px; color: #6c757d; font-size: 14px; }
+                @media print {
+                    body { padding: 15px; }
+                    .summary { background: #f8f9fa; }
+                    thead { background: #1a1a2e !important; color: #ffffff !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+                    tbody tr:hover { background: transparent; }
+                }
+            </style>
+        </head>
+        <body>
+            <div class="header">
+                <h1>📦 Relatório de Estoque</h1>
+                <div class="sub">Usuário: ${escapeHtml(currentUser)} • Gerado em ${new Date().toLocaleString('pt-BR')}</div>
+            </div>
+            <div class="summary">
+                <div class="summary-item">
+                    <div class="label">📦 Total de Itens</div>
+                    <div class="value primary">${total}</div>
+                </div>
+                <div class="summary-item">
+                    <div class="label">💰 Valor Total</div>
+                    <div class="value primary">${formatMoney(valor)}</div>
+                </div>
+                <div class="summary-item">
+                    <div class="label">⚠️ Baixo Estoque</div>
+                    <div class="value warning">${produtos.filter(p=>p.quantidade<5&&p.quantidade>0).length}</div>
+                </div>
+                <div class="summary-item">
+                    <div class="label">⏰ Vencem</div>
+                    <div class="value danger">${produtos.filter(p=>p.validade&&isVencendo(p.validade)).length}</div>
+                </div>
+            </div>
+            <table>
+                <thead>
+                    <tr>
+                        <th>Código</th>
+                        <th>Produto</th>
+                        <th style="text-align:center;">Qtd</th>
+                        <th style="text-align:right;">Preço</th>
+                        <th style="text-align:right;">Valor Total</th>
+                        <th>Validade</th>
+                        <th>Status</th>
+                    </tr>
+                </thead>
+                <tbody>`;
+        if(produtos.length){
+            for(let p of produtos.sort((a,b)=>a.nome.localeCompare(b.nome))){
+                let qtdClass = p.quantidade === 0 ? 'zero' : p.quantidade < 5 ? 'low' : 'normal';
+                let statusClass = isVencido(p.validade) ? 'danger' : isVencendo(p.validade) ? 'warning' : 'ok';
+                let statusText = isVencido(p.validade) ? 'Vencido' : isVencendo(p.validade) ? `Vence em ${diasAteVencimento(p.validade)}d` : 'OK';
+                let qtdDisplay = p.quantidade > 0 ? p.quantidade : '0';
+                html+=`<tr>
+                    <td class="codigo-cell">${escapeHtml(p.codigo||'---')}</td>
+                    <td><strong>${escapeHtml(p.nome)}</strong></td>
+                    <td style="text-align:center;"><span class="qtd-badge ${qtdClass}">${qtdDisplay}</span></td>
+                    <td style="text-align:right;">${p.preco?formatMoney(p.preco):'---'}</td>
+                    <td style="text-align:right; font-weight:700;">${p.preco?formatMoney(p.preco*p.quantidade):'---'}</td>
+                    <td>${p.validade?formatDateBR(p.validade):'---'}</td>
+                    <td><span class="status-badge ${statusClass}">${statusText}</span></td>
+                </tr>`;
+            }
+        } else {
+            html+=`<tr><td colspan="7" class="empty-state">Nenhum produto cadastrado</td></tr>`;
+        }
+        html+=`</tbody></table>
+            <div class="footer">
+                📄 Documento gerado automaticamente • Sistema Integrado de Caixa + Estoque
+            </div>
+        </body></html>`;
+        
+        let div=document.createElement('div'); 
+        div.innerHTML=html; 
+        document.body.appendChild(div);
+        html2pdf().set({ 
+            margin: 0.5, 
+            filename: `Estoque_${currentUser}_${new Date().toISOString().slice(0,10)}.pdf`, 
+            image: { type: 'jpeg', quality: 0.98 }, 
+            html2canvas: { scale: 2, useCORS: true, backgroundColor: '#ffffff' }, 
+            jsPDF: { unit: 'in', format: 'a4', orientation: 'landscape' } 
+        }).from(div).save().then(()=>{ 
+            document.body.removeChild(div); 
+            alert("✅ PDF do estoque gerado com sucesso!"); 
+        }).catch(()=>{ 
+            document.body.removeChild(div); 
+            alert("❌ Erro ao gerar PDF do estoque"); 
+        });
+    }
+
     // ==================== EVENTOS ====================
     document.addEventListener('DOMContentLoaded', function() {
         document.getElementById('loginBtn').onclick = () => { try { loginUser(document.getElementById('loginNome').value.trim(), document.getElementById('loginSenha').value); document.getElementById('loginScreen').style.display='none'; document.getElementById('mainApp').style.display='block'; document.getElementById('userNameDisplay').innerText=currentUser; atualizarSelectCaixas(); refreshAll(); if(localStorage.getItem('themePreference')==='dark')document.body.classList.add('dark-theme'); if(localStorage.getItem('hideValuesPreference')==='true')document.body.classList.add('value-hidden'); document.getElementById('hideValuesBtn').innerHTML=document.body.classList.contains('value-hidden')?'🔓':'🔒'; } catch(e){ document.getElementById('loginErrorMsg').innerText=e.message; } };
@@ -1303,10 +1687,8 @@
         document.getElementById('cancelDeleteAccountBtn').onclick = () => document.getElementById('deleteAccountModal').classList.remove('active');
         document.getElementById('forceUpdateBtn').onclick = () => { let np=document.getElementById('forceNewPassword').value; let cp=document.getElementById('forceConfirmPassword').value; if(!np||!cp)return document.getElementById('forceErrorMsg').innerText="Preencha todos!"; if(np!==cp)return document.getElementById('forceErrorMsg').innerText="Senhas não coincidem!"; if(!isStrongPassword(np))return document.getElementById('forceErrorMsg').innerText="Senha fraca!"; let u=loadUsers(); u[currentUser].senha=np; saveUsers(u); document.getElementById('forceUpdateModal').style.display='none'; document.getElementById('mainApp').style.display='block'; refreshAll(); alert("✅ Senha atualizada!"); };
         
-        // Scanner buttons - novos handlers
         document.getElementById('startScannerValidade').onclick = iniciarScannerValidade;
         document.getElementById('startScannerBtn').onclick = iniciarScannerNormal;
-        
         document.getElementById('salvarNovoLoteBtn').onclick = salvarNovoLote;
         document.getElementById('cancelarNovoLoteBtn').onclick = () => { document.getElementById('formNovoLote').style.display='none'; ['produtoCodigo','produtoNome','produtoPreco','produtoValidade','produtoLote'].forEach(id=>document.getElementById(id).value=''); document.getElementById('produtoQuantidade').value='1'; };
         document.getElementById('editarEstoqueBtn').onclick = () => { document.getElementById('formNovoLote').style.display='block'; document.getElementById('produtoCodigo').focus(); };
@@ -1321,7 +1703,6 @@
             renderEstoque();
         };
         
-        // Modos scanner - novo estilo
         document.getElementById('modoAdicionar').onclick = () => { 
             modoScanner='adicionar'; 
             document.getElementById('modoAdicionar').className='scanner-mode-btn active-add'; 
@@ -1353,7 +1734,6 @@
         document.getElementById('mobileData').value = new Date().toISOString().slice(0,10);
         atualizarSelectCaixas();
         
-        // Status inicial
         updateScannerStatus('Pronto para escanear', '');
     });
 
@@ -1390,31 +1770,6 @@
         transacoes[idx]={...transacoes[idx], descricao:desc, valor:val, caixa, data, tipo};
         document.getElementById('editModal').classList.remove('active');
         refreshAll();
-    }
-
-    function gerarPDF(){
-        if(!transacoes.length){ alert("Nenhuma movimentação"); return; }
-        let ent=transacoes.filter(t=>t.tipo==='entrada').reduce((s,t)=>s+t.valor,0);
-        let sai=transacoes.filter(t=>t.tipo==='saida').reduce((s,t)=>s+t.valor,0);
-        let html=`<!DOCTYPE html><html><head><meta charset="UTF-8"><title>Extrato</title><style>body{font-family:-apple-system,BlinkMacSystemFont,sans-serif;padding:20px;background:#f5f7fa;}table{width:100%;border-collapse:collapse;background:white;border-radius:12px;overflow:hidden;box-shadow:0 2px 8px rgba(0,0,0,0.06);}th,td{border:1px solid #e8ecf0;padding:10px 12px;text-align:left;}th{background:#2ecc71;color:white;font-weight:600;}</style></head><body><h1>💰 Extrato</h1><p style="color:#4a4a5a;">Usuário: ${currentUser}</p><p>Entradas: <span style="color:#2ecc71;font-weight:700;">${formatMoney(ent)}</span> | Saídas: <span style="color:#e74c3c;font-weight:700;">${formatMoney(sai)}</span> | Saldo: <span style="color:#3498db;font-weight:700;">${formatMoney(ent-sai)}</span></p><table><thead><tr><th>Data</th><th>Descrição</th><th>Caixa</th><th>Valor</th></tr></thead><tbody>`;
-        for(let t of transacoes.sort((a,b)=>b.data.localeCompare(a.data))){
-            html+=`<tr><td>${formatDateBR(t.data)}</td><td>${escapeHtml(t.descricao)}</td><td>${escapeHtml(t.caixa)}</td><td style="color:${t.tipo==='entrada'?'#2ecc71':'#e74c3c'};font-weight:700;">${t.tipo==='entrada'?formatMoney(t.valor):'- '+formatMoney(t.valor)}</td></tr>`;
-        }
-        html+=`</tbody></table><footer style="text-align:center;color:#8e8ea0;font-size:12px;margin-top:16px;">Gerado em ${new Date().toLocaleString('pt-BR')}</footer></body></html>`;
-        let div=document.createElement('div'); div.innerHTML=html; document.body.appendChild(div);
-        html2pdf().set({ margin:0.5, filename:`Extrato_${currentUser}.pdf`, image:{type:'jpeg',quality:0.98}, html2canvas:{scale:2,useCORS:true}, jsPDF:{unit:'in',format:'a4',orientation:'portrait'} }).from(div).save().then(()=>{ document.body.removeChild(div); alert("✅ PDF gerado!"); }).catch(()=>{ document.body.removeChild(div); alert("❌ Erro"); });
-    }
-    function gerarEstoquePDF(){
-        if(!produtos.length){ alert("Nenhum produto"); return; }
-        let total=produtos.reduce((s,p)=>s+p.quantidade,0);
-        let valor=produtos.reduce((s,p)=>s+(p.preco?p.preco*p.quantidade:0),0);
-        let html=`<!DOCTYPE html><html><head><meta charset="UTF-8"><title>Estoque</title><style>body{font-family:-apple-system,BlinkMacSystemFont,sans-serif;padding:20px;background:#f5f7fa;}table{width:100%;border-collapse:collapse;background:white;border-radius:12px;overflow:hidden;box-shadow:0 2px 8px rgba(0,0,0,0.06);}th,td{border:1px solid #e8ecf0;padding:10px 12px;text-align:left;}th{background:#2ecc71;color:white;font-weight:600;}</style></head><body><h1>📦 Estoque</h1><p style="color:#4a4a5a;">Usuário: ${currentUser}</p><p>Total Itens: <strong>${total}</strong> | Valor Total: <strong>${formatMoney(valor)}</strong></p><table><thead><tr><th>Código</th><th>Produto</th><th>Qtd</th><th>Preço</th><th>Valor Total</th><th>Validade</th><th>Lote</th></tr></thead><tbody>`;
-        for(let p of produtos.sort((a,b)=>a.nome.localeCompare(b.nome))){
-            html+=`<tr><td style="font-family:monospace;font-size:12px;">${escapeHtml(p.codigo||'---')}</td><td>${escapeHtml(p.nome)}</td><td style="font-weight:700;">${p.quantidade}</td><td>${p.preco?formatMoney(p.preco):'---'}</td><td>${p.preco?formatMoney(p.preco*p.quantidade):'---'}</td><td>${p.validade?formatDateBR(p.validade):'---'}</td><td>${escapeHtml(p.numeroLote||'---')}</td></tr>`;
-        }
-        html+=`</tbody></table><footer style="text-align:center;color:#8e8ea0;font-size:12px;margin-top:16px;">Gerado em ${new Date().toLocaleString('pt-BR')}</footer></body></html>`;
-        let div=document.createElement('div'); div.innerHTML=html; document.body.appendChild(div);
-        html2pdf().set({ margin:0.5, filename:`Estoque_${currentUser}.pdf`, image:{type:'jpeg',quality:0.98}, html2canvas:{scale:2,useCORS:true}, jsPDF:{unit:'in',format:'a4',orientation:'landscape'} }).from(div).save().then(()=>{ document.body.removeChild(div); alert("✅ PDF gerado!"); }).catch(()=>{ document.body.removeChild(div); alert("❌ Erro"); });
     }
 </script>
 </body>
