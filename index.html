@@ -17,7 +17,9 @@
             --radius-card: 16px; --radius-btn: 12px; --hover-bg: #eef1f5;
             --transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
             --scan-primary: #6c5ce7;
+            --scan-primary-dark: #5a4bd1;
             --scan-secondary: #00b894;
+            --scan-danger: #fd79a8;
         }
         body.dark-theme {
             --bg-page: #0d1117; --bg-surface: #161b22; --bg-card: #1c2333;
@@ -25,7 +27,9 @@
             --text-muted: #8b949e; --border: #30363d; --shadow: 0 4px 16px rgba(0,0,0,0.4);
             --hover-bg: #2d3548;
             --scan-primary: #a29bfe;
+            --scan-primary-dark: #6c5ce7;
             --scan-secondary: #55efc4;
+            --scan-danger: #fd79a8;
         }
         body { background-color: var(--bg-page); font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, system-ui, sans-serif; color: var(--text-primary); padding: 0; margin: 0; min-height: 100vh; transition: var(--transition); }
         
@@ -390,6 +394,36 @@
         ::-webkit-scrollbar { width: 4px; }
         ::-webkit-scrollbar-track { background: var(--bg-elevated); }
         ::-webkit-scrollbar-thumb { background: var(--text-muted); border-radius: 4px; }
+
+        /* Security badge */
+        .security-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 4px;
+            background: rgba(46,204,113,0.1);
+            color: var(--success);
+            padding: 2px 8px;
+            border-radius: 12px;
+            font-size: 9px;
+            font-weight: 700;
+            text-transform: uppercase;
+        }
+        .security-badge.locked {
+            background: rgba(231,76,60,0.1);
+            color: var(--danger);
+        }
+        .produto-acoes .btn-remove.locked {
+            opacity: 0.5;
+            cursor: not-allowed;
+            position: relative;
+        }
+        .produto-acoes .btn-remove.locked::after {
+            content: '🔒';
+            position: absolute;
+            font-size: 10px;
+            top: -6px;
+            right: -6px;
+        }
     </style>
 </head>
 <body class="value-hidden">
@@ -448,6 +482,8 @@
                     <button id="menuRestore">📥 Restaurar</button>
                     <div class="menu-divider"></div>
                     <button id="menuTheme">🌓 Tema</button>
+                    <div class="menu-divider"></div>
+                    <button id="menuSecurity">🔒 Segurança Remoção</button>
                     <div class="menu-divider"></div>
                     <button id="menuClearAll" style="color:var(--danger);">⚠️ Limpar Transações</button>
                     <button id="menuDeleteAccount" class="danger-item">🗑️ Excluir Conta</button>
@@ -629,6 +665,43 @@
     </div>
 </div>
 
+<!-- Security Modals -->
+<div id="securityModal" class="modal-mobile">
+    <div class="modal-card">
+        <h3>🔒 Segurança Remoção</h3>
+        <div id="securityStatus" style="background:var(--bg-elevated); border-radius:12px; padding:12px; margin-bottom:16px; text-align:center; font-size:14px; font-weight:600;"></div>
+        <div class="input-field">
+            <label>🔑 Senha para confirmar</label>
+            <input type="password" id="securityPassword" class="auth-input" placeholder="Digite sua senha">
+        </div>
+        <div class="input-field">
+            <label>📷 Código de autorização</label>
+            <input type="text" id="securityAuthCode" class="auth-input" placeholder="Código para escanear na remoção">
+            <div style="font-size:11px; color:var(--text-muted); margin-top:4px;">Deixe em branco para desativar</div>
+        </div>
+        <div style="display:flex; gap:10px; margin-top:8px;">
+            <button id="saveSecurityBtn" class="auth-btn">💾 Salvar</button>
+            <button id="cancelSecurityBtn" class="auth-btn" style="background:var(--text-muted);">Cancelar</button>
+        </div>
+        <div id="securityErrorMsg" style="color:var(--danger); font-size:12px; margin-top:10px;"></div>
+    </div>
+</div>
+
+<div id="authCodeModal" class="modal-mobile">
+    <div class="modal-card">
+        <h3>🔑 Autorização Necessária</h3>
+        <p class="sub">Escaneie o código de autorização para remover este item</p>
+        <div style="background:var(--bg-elevated); border-radius:12px; padding:12px; margin-bottom:12px; border:1px solid var(--border); text-align:center;">
+            <div style="font-weight:700;" id="authCodeProductName">Produto</div>
+            <div style="font-size:11px; color:var(--text-muted);">Para remover, escaneie o código autorizado</div>
+        </div>
+        <div id="authCodeReader" style="width:100%; min-height:150px; border-radius:12px; overflow:hidden; margin-bottom:12px; display:none; background:var(--bg-elevated);"></div>
+        <button id="startAuthCodeBtn" class="auth-btn" style="background:var(--scan-primary);">📷 Escanear Código</button>
+        <button id="cancelAuthCodeBtn" class="auth-btn" style="background:var(--text-muted); margin-top:8px;">Cancelar</button>
+        <div id="authCodeStatus" style="margin-top:8px; font-size:12px; text-align:center; color:var(--text-muted);"></div>
+    </div>
+</div>
+
 <script>
     // ==================== CORE ====================
     const baseProdutos = {
@@ -644,6 +717,39 @@
         '7896015505808': { nome: 'Sal', preco: 2.50 },
     };
 
+    // ==================== SECURITY CONFIG ====================
+    let securityConfig = {
+        enabled: false,
+        authCode: ''
+    };
+
+    function loadSecurityConfig() {
+        try {
+            const saved = localStorage.getItem('securityConfig_' + (currentUser || 'default'));
+            if (saved) {
+                securityConfig = JSON.parse(saved);
+            } else {
+                securityConfig = { enabled: false, authCode: '' };
+            }
+        } catch(e) {
+            securityConfig = { enabled: false, authCode: '' };
+        }
+    }
+
+    function saveSecurityConfig() {
+        localStorage.setItem('securityConfig_' + (currentUser || 'default'), JSON.stringify(securityConfig));
+    }
+
+    function isRemovalLocked() {
+        return securityConfig.enabled && securityConfig.authCode && securityConfig.authCode.trim().length > 0;
+    }
+
+    function checkAuthCode(code) {
+        if (!securityConfig.enabled || !securityConfig.authCode) return true;
+        return code === securityConfig.authCode;
+    }
+
+    // ==================== FUNÇÕES AUXILIARES ====================
     function parseMoney(v) { if(!v) return null; let str=String(v).trim().replace(/\./g,'').replace(',','.'); let n=parseFloat(str); return isNaN(n)||n<=0?null:n; }
     function formatMoney(v) { return v.toLocaleString('pt-BR',{style:'currency',currency:'BRL'}); }
     function formatDateBR(d) { if(!d) return ''; const [y,m,d2]=d.split('-'); return `${d2}/${m}/${y}`; }
@@ -656,7 +762,6 @@
     function reconhecerData(texto) {
         if(!texto) return null;
         const t = texto.trim();
-        // Formatos de data
         let match = t.match(/^(\d{4})-(\d{2})-(\d{2})$/);
         if(match) { const data = new Date(parseInt(match[1]), parseInt(match[2])-1, parseInt(match[3])); if(!isNaN(data.getTime())) return data; }
         match = t.match(/^(\d{2})\/(\d{2})\/(\d{4})$/);
@@ -671,7 +776,6 @@
         if(match) { const ano = parseInt(match[3]) + (parseInt(match[3]) < 30 ? 2000 : 1900); const data = new Date(ano, parseInt(match[2])-1, parseInt(match[1])); if(!isNaN(data.getTime())) return data; }
         match = t.match(/^(\d{2})-(\d{2})-(\d{2})$/);
         if(match) { const ano = parseInt(match[3]) + (parseInt(match[3]) < 30 ? 2000 : 1900); const data = new Date(ano, parseInt(match[2])-1, parseInt(match[1])); if(!isNaN(data.getTime())) return data; }
-        // Formato textual
         const meses = { 'janeiro':0,'fevereiro':1,'março':2,'abril':3,'maio':4,'junho':5,'julho':6,'agosto':7,'setembro':8,'outubro':9,'novembro':10,'dezembro':11 };
         const tLower = t.toLowerCase();
         for(let [mes, idx] of Object.entries(meses)) {
@@ -700,6 +804,8 @@
     let modoScanner='adicionar', scanDuploProduto=null, scanDuploAguardandoValidade=false;
     let aguardandoData = false, termoPesquisa = '';
     let scannerTipo = 'normal';
+    let authCodeHtml5Qr = null;
+    let pendingRemoveProduct = null;
 
     function identificarProduto(codigo) {
         const p=produtos.find(x=>x.codigo===codigo);
@@ -713,7 +819,7 @@
     function loadUsers() { return JSON.parse(localStorage.getItem("appUsers")||"{}"); }
     function saveUsers(u) { localStorage.setItem("appUsers",JSON.stringify(u)); }
     function registerUser(n,s) { let u=loadUsers(); if(u[n]) throw new Error("Usuário já existe!"); if(!isStrongPassword(s)) throw new Error("Senha deve ter 4-6 números"); u[n]={ senha:s, transacoes:[], produtos:[], caixas:["Carteira","Banco","PicPay","Nubank"] }; saveUsers(u); return true; }
-    function loginUser(n,s) { let u=loadUsers(); if(!u[n]) throw new Error("Usuário não encontrado!"); if(u[n].senha!==s) throw new Error("Senha incorreta!"); currentUser=n; transacoes=u[n].transacoes||[]; produtos=u[n].produtos||[]; caixas=u[n].caixas||["Carteira","Banco","PicPay","Nubank"]; return true; }
+    function loginUser(n,s) { let u=loadUsers(); if(!u[n]) throw new Error("Usuário não encontrado!"); if(u[n].senha!==s) throw new Error("Senha incorreta!"); currentUser=n; transacoes=u[n].transacoes||[]; produtos=u[n].produtos||[]; caixas=u[n].caixas||["Carteira","Banco","PicPay","Nubank"]; loadSecurityConfig(); return true; }
     function saveCurrentUser() { if(!currentUser) return; let u=loadUsers(); if(u[currentUser]) { u[currentUser].transacoes=transacoes; u[currentUser].produtos=produtos; u[currentUser].caixas=caixas; saveUsers(u); } }
 
     function getSaldoPorCaixa() { let s={}; caixas.forEach(c=>s[c]=0); transacoes.forEach(t=>{ if(s.hasOwnProperty(t.caixa)) t.tipo==='entrada'?s[t.caixa]+=t.valor:s[t.caixa]-=t.valor; }); return s; }
@@ -725,15 +831,29 @@
         if(idx!==-1){ produtos[idx].quantidade+=qtd; saveCurrentUser(); renderEstoque(); destacarNaLista(codigo); mostrarAnimacao(window.innerWidth/2,window.innerHeight/2,produtos[idx].nome,qtd,'adicionar'); return true; }
         return false;
     }
+
     function removerQtd(codigo,qtd=1) {
         let idx=produtos.findIndex(p=>p.codigo===codigo);
         if(idx!==-1){ 
             if(produtos[idx].quantidade<qtd){ alert(`❌ Estoque insuficiente!`); return false; } 
+            
+            // Check security
+            if (isRemovalLocked()) {
+                // Save pending product and show auth modal
+                pendingRemoveProduct = { codigo, qtd, idx };
+                document.getElementById('authCodeProductName').innerText = produtos[idx].nome + ' (x' + qtd + ')';
+                document.getElementById('authCodeModal').classList.add('active');
+                document.getElementById('authCodeStatus').innerText = 'Escaneie o código de autorização';
+                document.getElementById('authCodeStatus').style.color = 'var(--text-muted)';
+                return false;
+            }
+            
             produtos[idx].quantidade-=qtd; 
             saveCurrentUser(); renderEstoque(); destacarNaLista(codigo); mostrarAnimacao(window.innerWidth/2,window.innerHeight/2,produtos[idx].nome,qtd,'remover'); return true; 
         }
         return false;
     }
+
     function adicionarComValidade(codigo,validade,qtd,lote) {
         let idx=produtos.findIndex(p=>p.codigo===codigo);
         if(idx!==-1){ produtos[idx].quantidade+=qtd; produtos[idx].validade=validade; if(lote) produtos[idx].numeroLote=lote; saveCurrentUser(); renderEstoque(); mostrarAnimacao(window.innerWidth/2,window.innerHeight/2,produtos[idx].nome,qtd,'adicionar'); alert(`✅ Adicionado!`); return true; }
@@ -774,6 +894,8 @@
             return a.nome.localeCompare(b.nome); 
         });
         
+        let isLocked = isRemovalLocked();
+        
         container.innerHTML=ordenados.map(p=>{
             let vencendo=isVencendo(p.validade), vencido=isVencido(p.validade);
             let cls = vencido ? 'vencido' : vencendo ? 'vencendo' : '';
@@ -783,10 +905,11 @@
             let low = p.quantidade < 5 && p.quantidade > 0 ? '<span class="badge badge-low">⚠️ Baixo</span>' : '';
             let qtdClass = p.quantidade < 5 ? 'low' : '';
             let qtdDisplay = p.quantidade > 0 ? p.quantidade : '0';
+            let securityBadge = isLocked ? '<span class="security-badge locked">🔒 Seguro</span>' : '';
             
             return `<div class="produto-item ${cls}">
                 <div class="produto-info">
-                    <div class="produto-nome">${escapeHtml(p.nome)} ${badge} ${low}</div>
+                    <div class="produto-nome">${escapeHtml(p.nome)} ${badge} ${low} ${securityBadge}</div>
                     <div class="produto-detalhes">
                         <span>📷 ${escapeHtml(p.codigo||'---')}</span>
                         <span>💰 ${p.preco?formatMoney(p.preco):'---'}</span>
@@ -798,7 +921,7 @@
                     <span class="produto-qtd ${qtdClass}">${qtdDisplay}</span>
                     <div class="produto-acoes">
                         <button class="btn-add" data-codigo="${escapeHtml(p.codigo)}" title="Adicionar">➕</button>
-                        <button class="btn-remove" data-codigo="${escapeHtml(p.codigo)}" title="Remover">➖</button>
+                        <button class="btn-remove ${isLocked ? 'locked' : ''}" data-codigo="${escapeHtml(p.codigo)}" title="${isLocked ? '🔒 Requer autorização' : 'Remover'}">➖</button>
                         <button class="btn-edit" data-codigo="${escapeHtml(p.codigo)}" title="Editar">✏️</button>
                         <button class="btn-delete" data-codigo="${escapeHtml(p.codigo)}" title="Excluir">🗑️</button>
                     </div>
@@ -876,7 +999,7 @@
         });
     }
 
-    // ==================== SCANNERS CORRIGIDOS ====================
+    // ==================== SCANNERS ====================
     function updateScannerStatus(text, type='active') {
         const status = document.getElementById('scannerStatus');
         const textEl = document.getElementById('scannerStatusText');
@@ -884,356 +1007,324 @@
         textEl.textContent = text;
     }
 
-    // Scanner com Validade (2 etapas)
     function iniciarScannerValidade() {
-        const rd = document.getElementById('reader');
-        const st = document.getElementById('startScannerValidade');
-        const stText = document.getElementById('scanValidadeBtnText');
-        const sd = document.getElementById('scanDuploStatus');
+        const rd=document.getElementById('reader');
+        const st=document.getElementById('startScannerValidade');
+        const stText=document.getElementById('scanValidadeBtnText');
+        const sd=document.getElementById('scanDuploStatus');
         
-        // Se já está ativo, para o scanner
-        if (scannerAtivo) {
-            if (html5QrCode) {
-                html5QrCode.stop().then(() => {
-                    rd.style.display = 'none';
-                    stText.innerHTML = 'Scanear + Validade';
-                    st.className = 'scanner-btn scanner-btn-secondary';
-                    scannerAtivo = false;
-                    html5QrCode = null;
-                    sd.style.display = 'none';
+        if(scannerAtivo){ 
+            if(html5QrCode){ 
+                html5QrCode.stop().then(()=>{ 
+                    rd.style.display='none'; 
+                    stText.innerHTML='Scanear + Validade';
+                    st.className='scanner-btn scanner-btn-secondary';
+                    scannerAtivo=false; 
+                    html5QrCode=null; 
+                    aguardandoData=false;
+                    sd.style.display='none';
                     updateScannerStatus('Pronto para escanear', '');
-                }).catch(e => {});
-            }
-            return;
+                }).catch(e=>{}); 
+            } 
+            return; 
         }
         
-        // Inicia o scanner
-        rd.style.display = 'block';
-        sd.style.display = 'block';
-        sd.className = 'scan-duplo-status aguardando';
-        sd.innerHTML = '📷 Aguardando código do produto...';
-        stText.innerHTML = '🛑 Parar';
-        st.className = 'scanner-btn scanner-btn-warning';
+        rd.style.display='block';
+        sd.style.display='block';
+        sd.className='scan-duplo-status aguardando';
+        sd.innerHTML='📷 Aguardando código do produto...';
+        stText.innerHTML='🛑 Parar';
+        st.className='scanner-btn scanner-btn-warning';
         updateScannerStatus('Aguardando escaneamento...', 'active');
         
-        scanDuploProduto = null;
-        scanDuploAguardandoValidade = false;
-        aguardandoData = false;
+        scanDuploProduto=null; 
+        scanDuploAguardandoValidade=false; 
+        aguardandoData=false;
         scannerTipo = 'validade';
         
-        html5QrCode = new Html5Qrcode("reader");
-        html5QrCode.start(
-            { facingMode: "environment" },
-            { fps: 10, qrbox: { width: 250, height: 200 } },
-            onScanSuccess,
-            onScanError
-        );
-        scannerAtivo = true;
-        
-        function onScanSuccess(decodedText, decodedResult) {
-            let agora = Date.now();
-            if (decodedText === ultimoCodigoLido && agora - ultimoTempoLeitura < 1500) return;
-            ultimoCodigoLido = decodedText;
-            ultimoTempoLeitura = agora;
+        html5QrCode=new Html5Qrcode("reader");
+        html5QrCode.start({ facingMode:"environment" },{ fps:10, qrbox:{width:250,height:200} }, (decoded)=>{
+            let agora=Date.now();
+            if(decoded===ultimoCodigoLido&&agora-ultimoTempoLeitura<1500)return;
+            ultimoCodigoLido=decoded; ultimoTempoLeitura=agora;
             
-            // Se não está aguardando validade, é o primeiro scan (produto)
-            if (!scanDuploAguardandoValidade && !aguardandoData) {
-                let ident = identificarProduto(decodedText);
-                if (ident.encontrado) {
-                    scanDuploProduto = ident.produto;
-                    scanDuploAguardandoValidade = true;
-                    let msg = `✅ ${ident.produto.nome}`;
-                    if (ident.origem === 'estoque') {
-                        msg += ` (${ident.produto.quantidade} un.)`;
-                        sd.className = 'scan-duplo-status lido';
-                    } else {
-                        sd.className = 'scan-duplo-status identificado';
+            if(!scanDuploAguardandoValidade && !aguardandoData){
+                let ident=identificarProduto(decoded);
+                if(ident.encontrado){
+                    scanDuploProduto=ident.produto; 
+                    scanDuploAguardandoValidade=true;
+                    let msg=`✅ ${ident.produto.nome}`;
+                    if(ident.origem==='estoque'){ 
+                        msg+=` (${ident.produto.quantidade} un.)`; 
+                        sd.className='scan-duplo-status lido'; 
+                    } else { 
+                        sd.className='scan-duplo-status identificado'; 
                     }
-                    sd.innerHTML = `${msg}<br>📷 Agora escaneie a data de validade`;
+                    sd.innerHTML=`${msg}<br>📷 Agora escaneie a data de validade`;
                     updateScannerStatus(`Produto: ${ident.produto.nome} - Aguardando data`, 'success');
                     
-                    // Preenche o modal
-                    document.getElementById('validadeProdutoNome').innerText = ident.produto.nome;
-                    document.getElementById('validadeProdutoCodigo').innerHTML = `Código: ${ident.produto.codigo}`;
-                    let detalhes = `Quantidade: ${ident.produto.quantidade || 0}`;
-                    if (ident.produto.validade) detalhes += ` | Validade: ${formatDateBR(ident.produto.validade)}`;
-                    if (ident.produto.preco) detalhes += ` | Preço: ${formatMoney(ident.produto.preco)}`;
-                    document.getElementById('validadeProdutoDetalhes').innerHTML = detalhes;
-                    document.getElementById('validadeProdutoStatus').innerHTML = ident.origem === 'estoque' ? 
-                        '<span style="color:var(--success);">✅ No estoque</span>' : 
-                        '<span style="color:var(--info);">💡 Será cadastrado</span>';
-                    document.getElementById('validadeDataInput').value = '';
-                    document.getElementById('validadeQuantidade').value = '1';
-                    document.getElementById('validadeLote').value = ident.produto.numeroLote || '';
+                    document.getElementById('validadeProdutoNome').innerText=ident.produto.nome;
+                    document.getElementById('validadeProdutoCodigo').innerHTML=`Código: ${ident.produto.codigo}`;
+                    let detalhes=`Quantidade: ${ident.produto.quantidade||0}`;
+                    if(ident.produto.validade) detalhes+=` | Validade: ${formatDateBR(ident.produto.validade)}`;
+                    if(ident.produto.preco) detalhes+=` | Preço: ${formatMoney(ident.produto.preco)}`;
+                    document.getElementById('validadeProdutoDetalhes').innerHTML=detalhes;
+                    document.getElementById('validadeProdutoStatus').innerHTML=ident.origem==='estoque'?'<span style="color:var(--success);">✅ No estoque</span>':'<span style="color:var(--info);">💡 Será cadastrado</span>';
+                    document.getElementById('validadeDataInput').value='';
+                    document.getElementById('validadeQuantidade').value='1';
+                    document.getElementById('validadeLote').value=ident.produto.numeroLote||'';
                     document.getElementById('validadeModal').classList.add('active');
-                    
-                    // Feedback sonoro
-                    try {
-                        let ctx = new AudioContext();
-                        let o = ctx.createOscillator();
-                        o.frequency.value = 800;
-                        o.start();
-                        o.stop(ctx.currentTime + 0.1);
-                    } catch(e) {}
+                    try { new AudioContext().createOscillator().start(); } catch(e){}
                 } else {
-                    // Verifica se o código é uma data
-                    let dataTeste = reconhecerData(decodedText);
-                    if (dataTeste) {
-                        sd.className = 'scan-duplo-status erro';
-                        sd.innerHTML = `📅 Data reconhecida: ${formatDateBR(formatarDataParaInput(dataTeste))}<br>⚠️ Escaneie o produto primeiro!`;
+                    let dataTeste = reconhecerData(decoded);
+                    if(dataTeste){
+                        sd.className='scan-duplo-status erro';
+                        sd.innerHTML=`📅 Data reconhecida: ${formatDateBR(formatarDataParaInput(dataTeste))}<br>⚠️ Escaneie o produto primeiro!`;
                         updateScannerStatus('Data reconhecida, mas aguarde o produto', 'error');
-                        setTimeout(() => {
-                            if (!scanDuploAguardandoValidade) {
-                                sd.className = 'scan-duplo-status aguardando';
-                                sd.innerHTML = '📷 Aguardando código do produto...';
+                        setTimeout(()=>{ 
+                            if(!scanDuploAguardandoValidade){ 
+                                sd.className='scan-duplo-status aguardando'; 
+                                sd.innerHTML='📷 Aguardando código do produto...';
                                 updateScannerStatus('Aguardando escaneamento...', 'active');
-                            }
-                        }, 2000);
+                            } 
+                        },2000);
                     } else {
-                        sd.className = 'scan-duplo-status erro';
-                        sd.innerHTML = `❌ Produto não encontrado!<br>${decodedText}`;
+                        sd.className='scan-duplo-status erro';
+                        sd.innerHTML=`❌ Produto não encontrado!<br>${decoded}`;
                         updateScannerStatus('Produto não encontrado', 'error');
-                        if (confirm(`📷 Código: ${decodedText}\n\nProduto não encontrado!\nCadastrar?`)) {
-                            document.getElementById('produtoCodigo').value = decodedText;
-                            document.getElementById('formNovoLote').style.display = 'block';
+                        if(confirm(`📷 Código: ${decoded}\n\nProduto não encontrado!\nCadastrar?`)){
+                            document.getElementById('produtoCodigo').value=decoded;
+                            document.getElementById('formNovoLote').style.display='block';
                             document.getElementById('produtoNome').focus();
-                            // Para o scanner
-                            if (html5QrCode) {
-                                html5QrCode.stop().then(() => {
-                                    rd.style.display = 'none';
-                                    sd.style.display = 'none';
-                                    stText.innerHTML = 'Scanear + Validade';
-                                    st.className = 'scanner-btn scanner-btn-secondary';
-                                    scannerAtivo = false;
-                                    html5QrCode = null;
+                            if(html5QrCode){ 
+                                html5QrCode.stop().then(()=>{ 
+                                    rd.style.display='none'; 
+                                    sd.style.display='none';
+                                    stText.innerHTML='Scanear + Validade';
+                                    st.className='scanner-btn scanner-btn-secondary';
+                                    scannerAtivo=false; 
+                                    html5QrCode=null;
                                     updateScannerStatus('Pronto para escanear', '');
-                                }).catch(e => {});
+                                }).catch(e=>{}); 
                             }
                         }
                     }
                 }
-            } else if (scanDuploAguardandoValidade) {
-                // Segundo scan - aguardando data de validade
-                let dataReconhecida = reconhecerData(decodedText);
-                if (dataReconhecida) {
+            } else if(scanDuploAguardandoValidade) {
+                let dataReconhecida = reconhecerData(decoded);
+                if(dataReconhecida){
                     let dataFormatada = formatarDataParaInput(dataReconhecida);
                     document.getElementById('validadeDataInput').value = dataFormatada;
                     let qtd = parseInt(document.getElementById('validadeQuantidade').value) || 1;
                     let lote = document.getElementById('validadeLote').value.trim() || null;
-                    
-                    if (scanDuploProduto) {
+                    if(scanDuploProduto){
                         adicionarComValidade(scanDuploProduto.codigo, dataFormatada, qtd, lote);
                         document.getElementById('validadeModal').classList.remove('active');
-                        scanDuploProduto = null;
-                        scanDuploAguardandoValidade = false;
-                        sd.className = 'scan-duplo-status aguardando';
-                        sd.innerHTML = '📷 Aguardando próximo código...';
+                        scanDuploProduto=null; 
+                        scanDuploAguardandoValidade=false;
+                        sd.className='scan-duplo-status aguardando';
+                        sd.innerHTML='📷 Aguardando próximo código...';
                         updateScannerStatus('Produto adicionado com sucesso!', 'success');
-                        
-                        // Feedback sonoro
-                        try {
-                            let ctx = new AudioContext();
-                            let o = ctx.createOscillator();
-                            o.frequency.value = 1100;
-                            o.start();
-                            o.stop(ctx.currentTime + 0.15);
-                        } catch(e) {}
-                        
+                        try { let ctx=new AudioContext(); let o=ctx.createOscillator(); o.frequency.value=1100; o.start(); o.stop(ctx.currentTime+0.1); } catch(e){}
                         setTimeout(() => updateScannerStatus('Aguardando escaneamento...', 'active'), 1500);
                     }
                 } else {
-                    // Verifica se o código é outro produto (permite trocar)
-                    let ident = identificarProduto(decodedText);
-                    if (ident.encontrado) {
-                        scanDuploProduto = ident.produto;
-                        document.getElementById('validadeProdutoNome').innerText = ident.produto.nome;
-                        document.getElementById('validadeProdutoCodigo').innerHTML = `Código: ${ident.produto.codigo}`;
-                        let detalhes = `Quantidade: ${ident.produto.quantidade || 0}`;
-                        if (ident.produto.validade) detalhes += ` | Validade: ${formatDateBR(ident.produto.validade)}`;
-                        document.getElementById('validadeProdutoDetalhes').innerHTML = detalhes;
-                        sd.className = 'scan-duplo-status lido';
-                        sd.innerHTML = `✅ Produto alterado: ${ident.produto.nome}<br>📷 Agora escaneie a data`;
+                    let ident=identificarProduto(decoded);
+                    if(ident.encontrado){
+                        scanDuploProduto=ident.produto;
+                        document.getElementById('validadeProdutoNome').innerText=ident.produto.nome;
+                        document.getElementById('validadeProdutoCodigo').innerHTML=`Código: ${ident.produto.codigo}`;
+                        let detalhes=`Quantidade: ${ident.produto.quantidade||0}`;
+                        if(ident.produto.validade) detalhes+=` | Validade: ${formatDateBR(ident.produto.validade)}`;
+                        document.getElementById('validadeProdutoDetalhes').innerHTML=detalhes;
+                        sd.className='scan-duplo-status lido';
+                        sd.innerHTML=`✅ Produto: ${ident.produto.nome}<br>📷 Agora escaneie a data`;
                         updateScannerStatus(`Produto alterado: ${ident.produto.nome}`, 'success');
-                        try {
-                            let ctx = new AudioContext();
-                            let o = ctx.createOscillator();
-                            o.frequency.value = 660;
-                            o.start();
-                            o.stop(ctx.currentTime + 0.1);
-                        } catch(e) {}
+                        try { let ctx=new AudioContext(); let o=ctx.createOscillator(); o.frequency.value=660; o.start(); o.stop(ctx.currentTime+0.1); } catch(e){}
                     } else {
-                        // Tenta interpretar como data novamente
-                        let dataTeste = reconhecerData(decodedText);
-                        if (dataTeste) {
-                            let dataFormatada = formatarDataParaInput(dataTeste);
-                            document.getElementById('validadeDataInput').value = dataFormatada;
-                            sd.className = 'scan-duplo-status lido';
-                            sd.innerHTML = `📅 Data reconhecida: ${formatDateBR(dataFormatada)}<br>✅ Clique em "Adicionar" para confirmar`;
-                            updateScannerStatus('Data reconhecida!', 'success');
-                            try {
-                                let ctx = new AudioContext();
-                                let o = ctx.createOscillator();
-                                o.frequency.value = 900;
-                                o.start();
-                                o.stop(ctx.currentTime + 0.1);
-                            } catch(e) {}
-                        } else {
-                            sd.className = 'scan-duplo-status erro';
-                            sd.innerHTML = `❌ Data inválida: ${decodedText}`;
-                            updateScannerStatus('Data inválida, tente novamente', 'error');
-                            setTimeout(() => {
-                                if (scanDuploAguardandoValidade && scanDuploProduto) {
-                                    sd.className = 'scan-duplo-status lido';
-                                    sd.innerHTML = `✅ Produto: ${scanDuploProduto.nome}<br>📷 Agora escaneie a data`;
-                                    updateScannerStatus(`Aguardando data para ${scanDuploProduto.nome}`, 'active');
-                                }
-                            }, 2000);
-                        }
+                        sd.className='scan-duplo-status erro';
+                        sd.innerHTML=`❌ Data inválida: ${decoded}`;
+                        updateScannerStatus('Data inválida, tente novamente', 'error');
+                        setTimeout(()=>{
+                            if(scanDuploAguardandoValidade && scanDuploProduto){
+                                sd.className='scan-duplo-status lido';
+                                sd.innerHTML=`✅ Produto: ${scanDuploProduto.nome}<br>📷 Agora escaneie a data`;
+                                updateScannerStatus(`Aguardando data para ${scanDuploProduto.nome}`, 'active');
+                            }
+                        },2000);
                     }
                 }
             }
-        }
-        
-        function onScanError(error) {
-            // Ignora erros de leitura
-        }
+        }, (error)=>{});
+        scannerAtivo=true;
     }
 
-    // Scanner Normal (1 etapa)
     function iniciarScannerNormal() {
-        const rd = document.getElementById('reader');
-        const st = document.getElementById('startScannerBtn');
-        const stText = document.getElementById('scanBtnText');
-        const badge = document.getElementById('scanBtnBadge');
+        const rd=document.getElementById('reader');
+        const st=document.getElementById('startScannerBtn');
+        const stText=document.getElementById('scanBtnText');
+        const badge=document.getElementById('scanBtnBadge');
         
-        // Se já está ativo, para o scanner
-        if (scannerAtivo) {
-            if (html5QrCode) {
-                html5QrCode.stop().then(() => {
-                    rd.style.display = 'none';
-                    stText.innerHTML = 'Scanear Código';
-                    badge.innerHTML = 'Rápido';
-                    st.className = 'scanner-btn scanner-btn-primary';
-                    scannerAtivo = false;
-                    html5QrCode = null;
+        if(scannerAtivo){ 
+            if(html5QrCode){ 
+                html5QrCode.stop().then(()=>{ 
+                    rd.style.display='none'; 
+                    stText.innerHTML='Scanear Código';
+                    badge.innerHTML='Rápido';
+                    st.className='scanner-btn scanner-btn-primary';
+                    scannerAtivo=false; 
+                    html5QrCode=null;
+                    document.getElementById('startScannerValidade').innerHTML='📋 Scanear + Validade';
+                    document.getElementById('startScannerValidade').className='scanner-btn scanner-btn-secondary';
+                    document.getElementById('scanValidadeBtnText').innerHTML='Scanear + Validade';
                     updateScannerStatus('Pronto para escanear', '');
-                }).catch(e => {});
-            }
-            return;
+                }).catch(e=>{}); 
+            } 
+            return; 
         }
         
-        // Inicia o scanner
-        rd.style.display = 'block';
-        stText.innerHTML = '🛑 Parar';
-        badge.innerHTML = 'Escanendo...';
-        st.className = 'scanner-btn scanner-btn-warning';
+        rd.style.display='block';
+        stText.innerHTML='🛑 Parar';
+        badge.innerHTML='Escanendo...';
+        st.className='scanner-btn scanner-btn-warning';
         updateScannerStatus('Escanendo...', 'active');
         scannerTipo = 'normal';
         
-        html5QrCode = new Html5Qrcode("reader");
-        html5QrCode.start(
-            { facingMode: "environment" },
-            { fps: 10, qrbox: { width: 250, height: 200 } },
-            onScanSuccess,
-            onScanError
-        );
-        scannerAtivo = true;
-        
-        function onScanSuccess(decodedText, decodedResult) {
-            let agora = Date.now();
-            if (decodedText === ultimoCodigoLido && agora - ultimoTempoLeitura < 1000) return;
-            ultimoCodigoLido = decodedText;
-            ultimoTempoLeitura = agora;
-            
-            let ident = identificarProduto(decodedText);
-            
-            if (ident.encontrado) {
-                let nome = ident.produto.nome;
-                if (modoScanner === 'adicionar') {
-                    let p = produtos.find(x => x.codigo === decodedText);
-                    if (p) {
-                        adicionarQtd(decodedText, 1);
+        html5QrCode=new Html5Qrcode("reader");
+        html5QrCode.start({ facingMode:"environment" },{ fps:10, qrbox:{width:250,height:200} }, (decoded)=>{
+            let agora=Date.now();
+            if(decoded===ultimoCodigoLido&&agora-ultimoTempoLeitura<1000)return;
+            ultimoCodigoLido=decoded; ultimoTempoLeitura=agora;
+            let ident=identificarProduto(decoded);
+            if(ident.encontrado){
+                let nome=ident.produto.nome;
+                if(modoScanner==='adicionar'){
+                    let p=produtos.find(x=>x.codigo===decoded);
+                    if(p){ 
+                        adicionarQtd(decoded,1); 
                         updateScannerStatus(`+1 ${nome} adicionado!`, 'success');
                     } else {
-                        if (confirm(`📦 "${nome}" encontrado!\n\nAdicionar ao estoque?`)) {
-                            produtos.push({
-                                codigo: decodedText,
-                                nome: ident.produto.nome,
-                                preco: ident.produto.preco || null,
-                                quantidade: 1,
-                                validade: null,
-                                numeroLote: null
-                            });
-                            saveCurrentUser();
-                            renderEstoque();
-                            mostrarAnimacao(window.innerWidth/2, window.innerHeight/2, nome, 1, 'adicionar');
+                        if(confirm(`📦 "${nome}" encontrado!\n\nAdicionar ao estoque?`)){
+                            produtos.push({ codigo:decoded, nome:ident.produto.nome, preco:ident.produto.preco||null, quantidade:1, validade:null, numeroLote:null });
+                            saveCurrentUser(); renderEstoque(); mostrarAnimacao(window.innerWidth/2,window.innerHeight/2,nome,1,'adicionar');
                             updateScannerStatus(`✅ "${nome}" adicionado!`, 'success');
                         }
                     }
                 } else {
-                    // Modo Remover
-                    let p = produtos.find(x => x.codigo === decodedText);
-                    if (p) {
-                        removerQtd(decodedText, 1);
+                    let p=produtos.find(x=>x.codigo===decoded);
+                    if(p){ 
+                        removerQtd(decoded,1); 
                         updateScannerStatus(`-1 ${nome} removido!`, 'success');
-                    } else {
+                    } else { 
                         alert(`❌ "${nome}" não está no estoque.`);
                         updateScannerStatus('Produto não encontrado no estoque', 'error');
                     }
                 }
-                
-                // Feedback sonoro
-                try {
-                    let ctx = new AudioContext();
-                    let o = ctx.createOscillator();
-                    o.frequency.value = 880;
-                    o.start();
-                    o.stop(ctx.currentTime + 0.1);
-                } catch(e) {}
-                
+                try { let ctx=new AudioContext(); let o=ctx.createOscillator(); o.frequency.value=880; o.start(); o.stop(ctx.currentTime+0.1); } catch(e){}
                 setTimeout(() => updateScannerStatus('Escanendo...', 'active'), 1000);
             } else {
-                // Produto não encontrado
-                if (modoScanner === 'adicionar') {
-                    if (confirm(`📷 Código: ${decodedText}\n\nProduto não encontrado!\nCadastrar?`)) {
-                        document.getElementById('produtoCodigo').value = decodedText;
-                        document.getElementById('formNovoLote').style.display = 'block';
+                if(modoScanner==='adicionar'){
+                    if(confirm(`📷 Código: ${decoded}\n\nProduto não encontrado!\nCadastrar?`)){
+                        document.getElementById('produtoCodigo').value=decoded;
+                        document.getElementById('formNovoLote').style.display='block';
                         document.getElementById('produtoNome').focus();
-                        // Para o scanner
-                        if (html5QrCode) {
-                            html5QrCode.stop().then(() => {
-                                rd.style.display = 'none';
-                                stText.innerHTML = 'Scanear Código';
-                                badge.innerHTML = 'Rápido';
-                                st.className = 'scanner-btn scanner-btn-primary';
-                                scannerAtivo = false;
-                                html5QrCode = null;
+                        if(html5QrCode){ 
+                            html5QrCode.stop().then(()=>{ 
+                                rd.style.display='none'; 
+                                stText.innerHTML='Scanear Código';
+                                badge.innerHTML='Rápido';
+                                st.className='scanner-btn scanner-btn-primary';
+                                scannerAtivo=false; 
+                                html5QrCode=null;
                                 updateScannerStatus('Pronto para escanear', '');
-                            }).catch(e => {});
+                            }).catch(e=>{}); 
                         }
                     } else {
                         updateScannerStatus('Produto não cadastrado', 'error');
                         setTimeout(() => updateScannerStatus('Escanendo...', 'active'), 1000);
                     }
                 } else {
-                    // Modo remover - produto não encontrado
-                    let div = document.createElement('div');
-                    div.className = 'warning-animation';
-                    div.innerHTML = `❌ Produto não encontrado!`;
-                    div.style.left = '10%';
-                    div.style.width = '80%';
-                    div.style.top = '40%';
-                    document.body.appendChild(div);
-                    setTimeout(() => div.remove(), 3000);
+                    let div=document.createElement('div'); 
+                    div.className='warning-animation'; 
+                    div.innerHTML=`❌ Produto não encontrado!`; 
+                    div.style.left='10%'; 
+                    div.style.width='80%'; 
+                    div.style.top='40%'; 
+                    document.body.appendChild(div); 
+                    setTimeout(()=>div.remove(),3000);
                     updateScannerStatus('Produto não encontrado', 'error');
                     setTimeout(() => updateScannerStatus('Escanendo...', 'active'), 1000);
                 }
             }
+        }, (error)=>{});
+        scannerAtivo=true;
+    }
+
+    // ==================== AUTH CODE SCANNER ====================
+    function startAuthCodeScanner() {
+        const reader = document.getElementById('authCodeReader');
+        const status = document.getElementById('authCodeStatus');
+        const btn = document.getElementById('startAuthCodeBtn');
+        
+        if (authCodeHtml5Qr) {
+            authCodeHtml5Qr.stop().then(() => {
+                authCodeHtml5Qr = null;
+                reader.style.display = 'none';
+                btn.innerHTML = '📷 Escanear Código';
+                status.innerText = 'Scaner parado';
+            }).catch(() => {});
+            return;
         }
         
-        function onScanError(error) {
-            // Ignora erros de leitura
-        }
+        reader.style.display = 'block';
+        btn.innerHTML = '🛑 Parar';
+        status.innerText = '📷 Aguardando código...';
+        status.style.color = 'var(--text-muted)';
+        
+        authCodeHtml5Qr = new Html5Qrcode("authCodeReader");
+        authCodeHtml5Qr.start({ facingMode:"environment" }, { fps:10, qrbox:{width:200,height:200} }, (decoded) => {
+            let now = Date.now();
+            if (decoded === ultimoCodigoLido && now - ultimoTempoLeitura < 1500) return;
+            ultimoCodigoLido = decoded;
+            ultimoTempoLeitura = now;
+            
+            if (checkAuthCode(decoded)) {
+                status.innerText = '✅ Código autorizado!';
+                status.style.color = 'var(--success)';
+                try { let ctx=new AudioContext(); let o=ctx.createOscillator(); o.frequency.value=1100; o.start(); o.stop(ctx.currentTime+0.15); } catch(e){}
+                
+                // Execute the pending removal
+                if (pendingRemoveProduct) {
+                    const p = pendingRemoveProduct;
+                    produtos[p.idx].quantidade -= p.qtd;
+                    saveCurrentUser();
+                    renderEstoque();
+                    destacarNaLista(p.codigo);
+                    mostrarAnimacao(window.innerWidth/2, window.innerHeight/2, produtos[p.idx].nome, p.qtd, 'remover');
+                    pendingRemoveProduct = null;
+                }
+                
+                // Close modal after success
+                setTimeout(() => {
+                    document.getElementById('authCodeModal').classList.remove('active');
+                    if (authCodeHtml5Qr) {
+                        authCodeHtml5Qr.stop().then(() => {
+                            authCodeHtml5Qr = null;
+                            reader.style.display = 'none';
+                            btn.innerHTML = '📷 Escanear Código';
+                        }).catch(() => {});
+                    }
+                }, 800);
+            } else {
+                status.innerText = '❌ Código inválido! Tente novamente.';
+                status.style.color = 'var(--danger)';
+                try { let ctx=new AudioContext(); let o=ctx.createOscillator(); o.frequency.value=200; o.start(); o.stop(ctx.currentTime+0.1); } catch(e){}
+                setTimeout(() => {
+                    status.innerText = '📷 Aguardando código...';
+                    status.style.color = 'var(--text-muted)';
+                }, 2000);
+            }
+        }, (error) => {});
     }
 
     // ==================== LISTA COMPLETA ====================
@@ -1327,7 +1418,7 @@
         saveCurrentUser(); renderEstoque();
     }
 
-    // ==================== GERAR PDF ====================
+    // ==================== GERAR PDF COM ALTO CONTRASTE ====================
     function gerarPDF() {
         if(!transacoes.length){ alert("Nenhuma movimentação"); return; }
         let ent=transacoes.filter(t=>t.tipo==='entrada').reduce((s,t)=>s+t.valor,0);
@@ -1339,30 +1430,122 @@
             <title>Extrato Financeiro</title>
             <style>
                 * { margin: 0; padding: 0; box-sizing: border-box; }
-                body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Arial, sans-serif; padding: 30px; background: #ffffff; color: #1a1a2e; line-height: 1.6; }
-                .header { text-align: center; padding-bottom: 20px; border-bottom: 3px solid #2ecc71; margin-bottom: 25px; }
-                .header h1 { font-size: 28px; font-weight: 800; color: #1a1a2e; letter-spacing: -0.5px; }
-                .header .sub { color: #4a4a5a; font-size: 14px; margin-top: 4px; }
-                .summary { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 16px; margin-bottom: 25px; background: #f8f9fa; padding: 20px; border-radius: 12px; border: 1px solid #e8ecf0; }
-                .summary-item { text-align: center; }
-                .summary-item .label { font-size: 11px; text-transform: uppercase; letter-spacing: 0.5px; color: #6c757d; font-weight: 700; }
-                .summary-item .value { font-size: 22px; font-weight: 800; margin-top: 2px; }
+                body { 
+                    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Arial, sans-serif; 
+                    padding: 30px; 
+                    background: #ffffff; 
+                    color: #1a1a2e;
+                    line-height: 1.6;
+                }
+                .header { 
+                    text-align: center; 
+                    padding-bottom: 20px; 
+                    border-bottom: 3px solid #2ecc71;
+                    margin-bottom: 25px;
+                }
+                .header h1 { 
+                    font-size: 28px; 
+                    font-weight: 800; 
+                    color: #1a1a2e;
+                    letter-spacing: -0.5px;
+                }
+                .header .sub { 
+                    color: #4a4a5a; 
+                    font-size: 14px; 
+                    margin-top: 4px;
+                }
+                .summary {
+                    display: grid;
+                    grid-template-columns: 1fr 1fr 1fr;
+                    gap: 16px;
+                    margin-bottom: 25px;
+                    background: #f8f9fa;
+                    padding: 20px;
+                    border-radius: 12px;
+                    border: 1px solid #e8ecf0;
+                }
+                .summary-item {
+                    text-align: center;
+                }
+                .summary-item .label {
+                    font-size: 11px;
+                    text-transform: uppercase;
+                    letter-spacing: 0.5px;
+                    color: #6c757d;
+                    font-weight: 700;
+                }
+                .summary-item .value {
+                    font-size: 22px;
+                    font-weight: 800;
+                    margin-top: 2px;
+                }
                 .summary-item .value.entrada { color: #2ecc71; }
                 .summary-item .value.saida { color: #e74c3c; }
                 .summary-item .value.saldo { color: #3498db; }
-                table { width: 100%; border-collapse: collapse; background: #ffffff; border-radius: 12px; overflow: hidden; box-shadow: 0 2px 8px rgba(0,0,0,0.06); margin-top: 10px; }
-                thead { background: #1a1a2e; color: #ffffff; }
-                thead th { padding: 14px 16px; text-align: left; font-size: 12px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; }
-                tbody tr { border-bottom: 1px solid #e8ecf0; transition: background 0.15s; }
+                table {
+                    width: 100%;
+                    border-collapse: collapse;
+                    background: #ffffff;
+                    border-radius: 12px;
+                    overflow: hidden;
+                    box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+                    margin-top: 10px;
+                }
+                thead {
+                    background: #1a1a2e;
+                    color: #ffffff;
+                }
+                thead th {
+                    padding: 14px 16px;
+                    text-align: left;
+                    font-size: 12px;
+                    font-weight: 700;
+                    text-transform: uppercase;
+                    letter-spacing: 0.5px;
+                }
+                tbody tr {
+                    border-bottom: 1px solid #e8ecf0;
+                    transition: background 0.15s;
+                }
                 tbody tr:last-child { border-bottom: none; }
                 tbody tr:hover { background: #f8f9fa; }
-                tbody td { padding: 12px 16px; font-size: 13px; color: #1a1a2e; }
-                tbody td.valor-entrada { color: #2ecc71; font-weight: 700; }
-                tbody td.valor-saida { color: #e74c3c; font-weight: 700; }
-                .badge-tipo { display: inline-block; padding: 2px 10px; border-radius: 12px; font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.3px; }
+                tbody td {
+                    padding: 12px 16px;
+                    font-size: 13px;
+                    color: #1a1a2e;
+                }
+                tbody td.valor-entrada { 
+                    color: #2ecc71; 
+                    font-weight: 700;
+                }
+                tbody td.valor-saida { 
+                    color: #e74c3c; 
+                    font-weight: 700;
+                }
+                tbody td .codigo {
+                    font-family: monospace;
+                    font-size: 11px;
+                    color: #6c757d;
+                }
+                .footer {
+                    text-align: center;
+                    color: #6c757d;
+                    font-size: 11px;
+                    margin-top: 25px;
+                    padding-top: 15px;
+                    border-top: 1px solid #e8ecf0;
+                }
+                .badge-tipo {
+                    display: inline-block;
+                    padding: 2px 10px;
+                    border-radius: 12px;
+                    font-size: 10px;
+                    font-weight: 700;
+                    text-transform: uppercase;
+                    letter-spacing: 0.3px;
+                }
                 .badge-tipo.entrada { background: rgba(46,204,113,0.15); color: #2ecc71; }
                 .badge-tipo.saida { background: rgba(231,76,60,0.15); color: #e74c3c; }
-                .footer { text-align: center; color: #6c757d; font-size: 11px; margin-top: 25px; padding-top: 15px; border-top: 1px solid #e8ecf0; }
                 .empty-state { text-align: center; padding: 40px; color: #6c757d; font-size: 14px; }
                 @media print {
                     body { padding: 15px; }
@@ -1419,7 +1602,9 @@
             html+=`<tr><td colspan="5" class="empty-state">Nenhuma movimentação registrada</td></tr>`;
         }
         html+=`</tbody></table>
-            <div class="footer">📄 Documento gerado automaticamente • Sistema Integrado de Caixa + Estoque</div>
+            <div class="footer">
+                📄 Documento gerado automaticamente • Sistema Integrado de Caixa + Estoque
+            </div>
         </body></html>`;
         
         let div=document.createElement('div'); 
@@ -1451,34 +1636,126 @@
             <title>Relatório de Estoque</title>
             <style>
                 * { margin: 0; padding: 0; box-sizing: border-box; }
-                body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Arial, sans-serif; padding: 30px; background: #ffffff; color: #1a1a2e; line-height: 1.6; }
-                .header { text-align: center; padding-bottom: 20px; border-bottom: 3px solid #2ecc71; margin-bottom: 25px; }
-                .header h1 { font-size: 28px; font-weight: 800; color: #1a1a2e; letter-spacing: -0.5px; }
-                .header .sub { color: #4a4a5a; font-size: 14px; margin-top: 4px; }
-                .summary { display: grid; grid-template-columns: 1fr 1fr 1fr 1fr; gap: 12px; margin-bottom: 25px; background: #f8f9fa; padding: 20px; border-radius: 12px; border: 1px solid #e8ecf0; }
-                .summary-item { text-align: center; }
-                .summary-item .label { font-size: 10px; text-transform: uppercase; letter-spacing: 0.5px; color: #6c757d; font-weight: 700; }
-                .summary-item .value { font-size: 20px; font-weight: 800; margin-top: 2px; color: #1a1a2e; }
+                body { 
+                    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Arial, sans-serif; 
+                    padding: 30px; 
+                    background: #ffffff; 
+                    color: #1a1a2e;
+                    line-height: 1.6;
+                }
+                .header { 
+                    text-align: center; 
+                    padding-bottom: 20px; 
+                    border-bottom: 3px solid #2ecc71;
+                    margin-bottom: 25px;
+                }
+                .header h1 { 
+                    font-size: 28px; 
+                    font-weight: 800; 
+                    color: #1a1a2e;
+                    letter-spacing: -0.5px;
+                }
+                .header .sub { 
+                    color: #4a4a5a; 
+                    font-size: 14px; 
+                    margin-top: 4px;
+                }
+                .summary {
+                    display: grid;
+                    grid-template-columns: 1fr 1fr 1fr 1fr;
+                    gap: 12px;
+                    margin-bottom: 25px;
+                    background: #f8f9fa;
+                    padding: 20px;
+                    border-radius: 12px;
+                    border: 1px solid #e8ecf0;
+                }
+                .summary-item {
+                    text-align: center;
+                }
+                .summary-item .label {
+                    font-size: 10px;
+                    text-transform: uppercase;
+                    letter-spacing: 0.5px;
+                    color: #6c757d;
+                    font-weight: 700;
+                }
+                .summary-item .value {
+                    font-size: 20px;
+                    font-weight: 800;
+                    margin-top: 2px;
+                    color: #1a1a2e;
+                }
                 .summary-item .value.primary { color: #2ecc71; }
                 .summary-item .value.warning { color: #f39c12; }
                 .summary-item .value.danger { color: #e74c3c; }
-                table { width: 100%; border-collapse: collapse; background: #ffffff; border-radius: 12px; overflow: hidden; box-shadow: 0 2px 8px rgba(0,0,0,0.06); margin-top: 10px; }
-                thead { background: #1a1a2e; color: #ffffff; }
-                thead th { padding: 12px 14px; text-align: left; font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; }
-                tbody tr { border-bottom: 1px solid #e8ecf0; transition: background 0.15s; }
+                table {
+                    width: 100%;
+                    border-collapse: collapse;
+                    background: #ffffff;
+                    border-radius: 12px;
+                    overflow: hidden;
+                    box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+                    margin-top: 10px;
+                }
+                thead {
+                    background: #1a1a2e;
+                    color: #ffffff;
+                }
+                thead th {
+                    padding: 12px 14px;
+                    text-align: left;
+                    font-size: 11px;
+                    font-weight: 700;
+                    text-transform: uppercase;
+                    letter-spacing: 0.5px;
+                }
+                tbody tr {
+                    border-bottom: 1px solid #e8ecf0;
+                    transition: background 0.15s;
+                }
                 tbody tr:last-child { border-bottom: none; }
                 tbody tr:hover { background: #f8f9fa; }
-                tbody td { padding: 10px 14px; font-size: 12px; color: #1a1a2e; }
-                .qtd-badge { display: inline-block; padding: 2px 10px; border-radius: 12px; font-weight: 700; font-size: 13px; }
-                .qtd-badge.normal { background: rgba(46,204,113,0.12); color: #2ecc71; }
-                .qtd-badge.low { background: rgba(243,156,18,0.12); color: #f39c12; }
-                .qtd-badge.zero { background: rgba(231,76,60,0.12); color: #e74c3c; }
-                .status-badge { display: inline-block; padding: 2px 10px; border-radius: 12px; font-size: 9px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.3px; }
-                .status-badge.ok { background: rgba(46,204,113,0.12); color: #2ecc71; }
-                .status-badge.warning { background: rgba(243,156,18,0.12); color: #f39c12; }
-                .status-badge.danger { background: rgba(231,76,60,0.12); color: #e74c3c; }
-                .codigo-cell { font-family: monospace; font-size: 10px; color: #6c757d; }
-                .footer { text-align: center; color: #6c757d; font-size: 11px; margin-top: 25px; padding-top: 15px; border-top: 1px solid #e8ecf0; }
+                tbody td {
+                    padding: 10px 14px;
+                    font-size: 12px;
+                    color: #1a1a2e;
+                }
+                tbody td .qtd-badge {
+                    display: inline-block;
+                    padding: 2px 10px;
+                    border-radius: 12px;
+                    font-weight: 700;
+                    font-size: 13px;
+                }
+                tbody td .qtd-badge.normal { background: rgba(46,204,113,0.12); color: #2ecc71; }
+                tbody td .qtd-badge.low { background: rgba(243,156,18,0.12); color: #f39c12; }
+                tbody td .qtd-badge.zero { background: rgba(231,76,60,0.12); color: #e74c3c; }
+                tbody td .status-badge {
+                    display: inline-block;
+                    padding: 2px 10px;
+                    border-radius: 12px;
+                    font-size: 9px;
+                    font-weight: 700;
+                    text-transform: uppercase;
+                    letter-spacing: 0.3px;
+                }
+                tbody td .status-badge.ok { background: rgba(46,204,113,0.12); color: #2ecc71; }
+                tbody td .status-badge.warning { background: rgba(243,156,18,0.12); color: #f39c12; }
+                tbody td .status-badge.danger { background: rgba(231,76,60,0.12); color: #e74c3c; }
+                .codigo-cell {
+                    font-family: monospace;
+                    font-size: 10px;
+                    color: #6c757d;
+                }
+                .footer {
+                    text-align: center;
+                    color: #6c757d;
+                    font-size: 11px;
+                    margin-top: 25px;
+                    padding-top: 15px;
+                    border-top: 1px solid #e8ecf0;
+                }
                 .empty-state { text-align: center; padding: 40px; color: #6c757d; font-size: 14px; }
                 @media print {
                     body { padding: 15px; }
@@ -1544,7 +1821,9 @@
             html+=`<tr><td colspan="7" class="empty-state">Nenhum produto cadastrado</td></tr>`;
         }
         html+=`</tbody></table>
-            <div class="footer">📄 Documento gerado automaticamente • Sistema Integrado de Caixa + Estoque</div>
+            <div class="footer">
+                📄 Documento gerado automaticamente • Sistema Integrado de Caixa + Estoque
+            </div>
         </body></html>`;
         
         let div=document.createElement('div'); 
@@ -1567,61 +1846,16 @@
 
     // ==================== EVENTOS ====================
     document.addEventListener('DOMContentLoaded', function() {
-        // Login
-        document.getElementById('loginBtn').onclick = () => { 
-            try { 
-                loginUser(document.getElementById('loginNome').value.trim(), document.getElementById('loginSenha').value); 
-                document.getElementById('loginScreen').style.display='none'; 
-                document.getElementById('mainApp').style.display='block'; 
-                document.getElementById('userNameDisplay').innerText=currentUser; 
-                atualizarSelectCaixas(); 
-                refreshAll(); 
-                if(localStorage.getItem('themePreference')==='dark') document.body.classList.add('dark-theme'); 
-                if(localStorage.getItem('hideValuesPreference')==='true') document.body.classList.add('value-hidden'); 
-                document.getElementById('hideValuesBtn').innerHTML=document.body.classList.contains('value-hidden')?'🔓':'🔒'; 
-            } catch(e){ 
-                document.getElementById('loginErrorMsg').innerText=e.message; 
-            } 
-        };
+        document.getElementById('loginBtn').onclick = () => { try { loginUser(document.getElementById('loginNome').value.trim(), document.getElementById('loginSenha').value); document.getElementById('loginScreen').style.display='none'; document.getElementById('mainApp').style.display='block'; document.getElementById('userNameDisplay').innerText=currentUser; atualizarSelectCaixas(); refreshAll(); if(localStorage.getItem('themePreference')==='dark')document.body.classList.add('dark-theme'); if(localStorage.getItem('hideValuesPreference')==='true')document.body.classList.add('value-hidden'); document.getElementById('hideValuesBtn').innerHTML=document.body.classList.contains('value-hidden')?'🔓':'🔒'; } catch(e){ document.getElementById('loginErrorMsg').innerText=e.message; } };
+        document.getElementById('registerBtn').onclick = () => { try { registerUser(document.getElementById('regNome').value.trim(), document.getElementById('regSenha').value); alert("Conta criada!"); document.getElementById('regScreen').style.display='none'; document.getElementById('loginScreen').style.display='flex'; } catch(e){ document.getElementById('regErrorMsg').innerText=e.message; } };
+        document.getElementById('showRegLink').onclick = () => { document.getElementById('loginScreen').style.display='none'; document.getElementById('regScreen').style.display='flex'; };
+        document.getElementById('showLoginLink').onclick = () => { document.getElementById('regScreen').style.display='none'; document.getElementById('loginScreen').style.display='flex'; };
         
-        document.getElementById('registerBtn').onclick = () => { 
-            try { 
-                registerUser(document.getElementById('regNome').value.trim(), document.getElementById('regSenha').value); 
-                alert("Conta criada!"); 
-                document.getElementById('regScreen').style.display='none'; 
-                document.getElementById('loginScreen').style.display='flex'; 
-            } catch(e){ 
-                document.getElementById('regErrorMsg').innerText=e.message; 
-            } 
-        };
-        
-        document.getElementById('showRegLink').onclick = () => { 
-            document.getElementById('loginScreen').style.display='none'; 
-            document.getElementById('regScreen').style.display='flex'; 
-        };
-        
-        document.getElementById('showLoginLink').onclick = () => { 
-            document.getElementById('regScreen').style.display='none'; 
-            document.getElementById('loginScreen').style.display='flex'; 
-        };
-        
-        // Menu
-        document.getElementById('menuBtn').onclick = (e) => { 
-            e.stopPropagation(); 
-            document.getElementById('menuContent').classList.toggle('show-menu'); 
-        };
-        
+        document.getElementById('menuBtn').onclick = (e) => { e.stopPropagation(); document.getElementById('menuContent').classList.toggle('show-menu'); };
         document.addEventListener('click', () => document.getElementById('menuContent').classList.remove('show-menu'));
         document.getElementById('menuTheme').onclick = toggleTheme;
         document.getElementById('menuLogout').onclick = logout;
-        document.getElementById('menuClearAll').onclick = () => { 
-            if(confirm("Apagar TODAS as movimentações?")){ 
-                transacoes=[]; 
-                refreshAll(); 
-                alert("✅ Removidas!"); 
-            } 
-        };
-        
+        document.getElementById('menuClearAll').onclick = () => { if(confirm("Apagar TODAS as movimentações?")){ transacoes=[]; refreshAll(); alert("✅ Removidas!"); } };
         document.getElementById('menuPdf').onclick = gerarPDF;
         document.getElementById('menuEstoquePdf').onclick = gerarEstoquePDF;
         document.getElementById('menuListaProdutos').onclick = abrirListaProdutos;
@@ -1630,70 +1864,23 @@
         document.getElementById('menuRestore').onclick = restoreAction;
         document.getElementById('menuDeleteAccount').onclick = () => document.getElementById('deleteAccountModal').classList.add('active');
         document.getElementById('hideValuesBtn').onclick = toggleHideValues;
-        
-        // Transações
         document.getElementById('mobileAddTransacao').onclick = addTransacao;
-        document.getElementById('mobileAddCaixaBtn').onclick = () => { 
-            let n=prompt("Nome:"); 
-            if(n) criarCaixa(n); 
-        };
+        document.getElementById('mobileAddCaixaBtn').onclick = () => { let n=prompt("Nome:"); if(n)criarCaixa(n); };
         document.getElementById('createCaixaBtn').onclick = () => criarCaixa(document.getElementById('newCaixaName').value);
         document.getElementById('saveEditBtn').onclick = saveEdit;
         document.getElementById('cancelEditBtn').onclick = () => document.getElementById('editModal').classList.remove('active');
-        
-        // Backup
         document.getElementById('confirmBackupMobile').onclick = backupAction;
         document.getElementById('cancelBackupMobile').onclick = () => document.getElementById('backupModalMobile').classList.remove('active');
-        
-        // Delete Account
-        document.getElementById('confirmDeleteAccountBtn').onclick = () => { 
-            let pwd=document.getElementById('deleteConfirmPassword').value; 
-            let u=loadUsers(); 
-            if(!u[currentUser]||u[currentUser].senha!==pwd){ 
-                alert("Senha incorreta!"); 
-                return; 
-            } 
-            delete u[currentUser]; 
-            saveUsers(u); 
-            alert("Conta excluída!"); 
-            document.getElementById('deleteAccountModal').classList.remove('active'); 
-            logout(); 
-        };
+        document.getElementById('confirmDeleteAccountBtn').onclick = () => { let pwd=document.getElementById('deleteConfirmPassword').value; let u=loadUsers(); if(!u[currentUser]||u[currentUser].senha!==pwd){ alert("Senha incorreta!"); return; } delete u[currentUser]; saveUsers(u); alert("Conta excluída!"); document.getElementById('deleteAccountModal').classList.remove('active'); logout(); };
         document.getElementById('cancelDeleteAccountBtn').onclick = () => document.getElementById('deleteAccountModal').classList.remove('active');
+        document.getElementById('forceUpdateBtn').onclick = () => { let np=document.getElementById('forceNewPassword').value; let cp=document.getElementById('forceConfirmPassword').value; if(!np||!cp)return document.getElementById('forceErrorMsg').innerText="Preencha todos!"; if(np!==cp)return document.getElementById('forceErrorMsg').innerText="Senhas não coincidem!"; if(!isStrongPassword(np))return document.getElementById('forceErrorMsg').innerText="Senha fraca!"; let u=loadUsers(); u[currentUser].senha=np; saveUsers(u); document.getElementById('forceUpdateModal').style.display='none'; document.getElementById('mainApp').style.display='block'; refreshAll(); alert("✅ Senha atualizada!"); };
         
-        // Force Update
-        document.getElementById('forceUpdateBtn').onclick = () => { 
-            let np=document.getElementById('forceNewPassword').value; 
-            let cp=document.getElementById('forceConfirmPassword').value; 
-            if(!np||!cp) return document.getElementById('forceErrorMsg').innerText="Preencha todos!"; 
-            if(np!==cp) return document.getElementById('forceErrorMsg').innerText="Senhas não coincidem!"; 
-            if(!isStrongPassword(np)) return document.getElementById('forceErrorMsg').innerText="Senha fraca!"; 
-            let u=loadUsers(); 
-            u[currentUser].senha=np; 
-            saveUsers(u); 
-            document.getElementById('forceUpdateModal').style.display='none'; 
-            document.getElementById('mainApp').style.display='block'; 
-            refreshAll(); 
-            alert("✅ Senha atualizada!"); 
-        };
-        
-        // Scanner - CORRIGIDO
         document.getElementById('startScannerValidade').onclick = iniciarScannerValidade;
         document.getElementById('startScannerBtn').onclick = iniciarScannerNormal;
-        
-        // Produto
         document.getElementById('salvarNovoLoteBtn').onclick = salvarNovoLote;
-        document.getElementById('cancelarNovoLoteBtn').onclick = () => { 
-            document.getElementById('formNovoLote').style.display='none'; 
-            ['produtoCodigo','produtoNome','produtoPreco','produtoValidade','produtoLote'].forEach(id=>document.getElementById(id).value=''); 
-            document.getElementById('produtoQuantidade').value='1'; 
-        };
-        document.getElementById('editarEstoqueBtn').onclick = () => { 
-            document.getElementById('formNovoLote').style.display='block'; 
-            document.getElementById('produtoCodigo').focus(); 
-        };
+        document.getElementById('cancelarNovoLoteBtn').onclick = () => { document.getElementById('formNovoLote').style.display='none'; ['produtoCodigo','produtoNome','produtoPreco','produtoValidade','produtoLote'].forEach(id=>document.getElementById(id).value=''); document.getElementById('produtoQuantidade').value='1'; };
+        document.getElementById('editarEstoqueBtn').onclick = () => { document.getElementById('formNovoLote').style.display='block'; document.getElementById('produtoCodigo').focus(); };
         
-        // Pesquisa
         document.getElementById('pesquisaProduto').oninput = function() {
             termoPesquisa = this.value;
             renderEstoque();
@@ -1704,7 +1891,6 @@
             renderEstoque();
         };
         
-        // Modos Scanner
         document.getElementById('modoAdicionar').onclick = () => { 
             modoScanner='adicionar'; 
             document.getElementById('modoAdicionar').className='scanner-mode-btn active-add'; 
@@ -1720,53 +1906,85 @@
             updateScannerStatus('Modo Remover ativado', '');
         };
         
-        // Validade Modal
         document.getElementById('confirmarValidadeBtn').onclick = () => {
             let validade=document.getElementById('validadeDataInput').value;
             let qtd=parseInt(document.getElementById('validadeQuantidade').value)||1;
             let lote=document.getElementById('validadeLote').value.trim()||null;
-            if(!validade) return alert("❌ Selecione uma data!");
-            if(qtd<1) return alert("❌ Quantidade inválida!");
-            if(scanDuploProduto){ 
-                adicionarComValidade(scanDuploProduto.codigo, validade, qtd, lote); 
-                document.getElementById('validadeModal').classList.remove('active'); 
-                scanDuploProduto=null; 
-                scanDuploAguardandoValidade=false; 
-                document.getElementById('scanDuploStatus').className='scan-duplo-status aguardando'; 
-                document.getElementById('scanDuploStatus').innerHTML='📷 Aguardando próximo código...'; 
-                updateScannerStatus('Produto adicionado!', 'success'); 
-                setTimeout(() => updateScannerStatus('Aguardando escaneamento...', 'active'), 1500); 
+            if(!validade)return alert("❌ Selecione uma data!");
+            if(qtd<1)return alert("❌ Quantidade inválida!");
+            if(scanDuploProduto){ adicionarComValidade(scanDuploProduto.codigo,validade,qtd,lote); document.getElementById('validadeModal').classList.remove('active'); scanDuploProduto=null; scanDuploAguardandoValidade=false; document.getElementById('scanDuploStatus').className='scan-duplo-status aguardando'; document.getElementById('scanDuploStatus').innerHTML='📷 Aguardando próximo código...'; updateScannerStatus('Produto adicionado!', 'success'); setTimeout(() => updateScannerStatus('Aguardando escaneamento...', 'active'), 1500); }
+        };
+        document.getElementById('cancelarValidadeBtn').onclick = () => { document.getElementById('validadeModal').classList.remove('active'); scanDuploProduto=null; scanDuploAguardandoValidade=false; document.getElementById('scanDuploStatus').className='scan-duplo-status aguardando'; document.getElementById('scanDuploStatus').innerHTML='📷 Aguardando código...'; updateScannerStatus('Aguardando escaneamento...', 'active'); };
+        
+        // SECURITY MENU
+        document.getElementById('menuSecurity').onclick = () => {
+            document.getElementById('securityPassword').value = '';
+            document.getElementById('securityAuthCode').value = securityConfig.authCode || '';
+            document.getElementById('securityErrorMsg').innerText = '';
+            updateSecurityStatusDisplay();
+            document.getElementById('securityModal').classList.add('active');
+        };
+        
+        document.getElementById('saveSecurityBtn').onclick = () => {
+            const password = document.getElementById('securityPassword').value;
+            const authCode = document.getElementById('securityAuthCode').value.trim();
+            
+            // Verify user password
+            const users = loadUsers();
+            if (!users[currentUser] || users[currentUser].senha !== password) {
+                document.getElementById('securityErrorMsg').innerText = '❌ Senha incorreta!';
+                return;
             }
+            
+            securityConfig.enabled = authCode.length > 0;
+            securityConfig.authCode = authCode;
+            saveSecurityConfig();
+            
+            document.getElementById('securityModal').classList.remove('active');
+            renderEstoque();
+            alert(securityConfig.enabled ? '✅ Segurança ativada! Remoções exigirão código.' : '✅ Segurança desativada.');
         };
-        document.getElementById('cancelarValidadeBtn').onclick = () => { 
-            document.getElementById('validadeModal').classList.remove('active'); 
-            scanDuploProduto=null; 
-            scanDuploAguardandoValidade=false; 
-            document.getElementById('scanDuploStatus').className='scan-duplo-status aguardando'; 
-            document.getElementById('scanDuploStatus').innerHTML='📷 Aguardando código...'; 
-            updateScannerStatus('Aguardando escaneamento...', 'active'); 
+        
+        document.getElementById('cancelSecurityBtn').onclick = () => {
+            document.getElementById('securityModal').classList.remove('active');
         };
         
-        // Tabs
-        document.querySelectorAll('.tipo-btn').forEach(b=>b.onclick=function(){ 
-            document.querySelectorAll('.tipo-btn').forEach(x=>x.classList.remove('active')); 
-            this.classList.add('active'); 
-            tipoSelecionadoMobile=this.dataset.tipoMobile; 
-        });
+        function updateSecurityStatusDisplay() {
+            const statusEl = document.getElementById('securityStatus');
+            if (securityConfig.enabled && securityConfig.authCode) {
+                statusEl.innerHTML = '🔒 <strong>Segurança ATIVADA</strong><br><span style="font-size:12px; color:var(--text-muted);">Remoções exigem código: ' + escapeHtml(securityConfig.authCode) + '</span>';
+                statusEl.style.border = '2px solid var(--success)';
+                statusEl.style.background = 'rgba(46,204,113,0.05)';
+            } else {
+                statusEl.innerHTML = '🔓 <strong>Segurança DESATIVADA</strong><br><span style="font-size:12px; color:var(--text-muted);">Qualquer um pode remover itens</span>';
+                statusEl.style.border = '2px solid var(--text-muted)';
+                statusEl.style.background = 'var(--bg-elevated)';
+            }
+        }
         
-        document.querySelectorAll('.mobile-tab').forEach(b=>b.onclick=function(){ 
-            document.querySelectorAll('.mobile-tab').forEach(x=>x.classList.remove('active')); 
-            this.classList.add('active'); 
-            document.querySelectorAll('.tab-pane').forEach(p=>p.style.display='none'); 
-            document.getElementById('tab'+this.dataset.tab.charAt(0).toUpperCase()+this.dataset.tab.slice(1)).style.display='block'; 
-            if(this.dataset.tab==='estoque'){ renderEstoque(); } 
-            if(this.dataset.tab==='caixas') renderCaixas(); 
-        });
+        // AUTH CODE MODAL
+        document.getElementById('startAuthCodeBtn').onclick = startAuthCodeScanner;
+        document.getElementById('cancelAuthCodeBtn').onclick = () => {
+            if (authCodeHtml5Qr) {
+                authCodeHtml5Qr.stop().then(() => {
+                    authCodeHtml5Qr = null;
+                    document.getElementById('authCodeReader').style.display = 'none';
+                    document.getElementById('startAuthCodeBtn').innerHTML = '📷 Escanear Código';
+                }).catch(() => {});
+            }
+            document.getElementById('authCodeModal').classList.remove('active');
+            pendingRemoveProduct = null;
+        };
         
+        document.querySelectorAll('.tipo-btn').forEach(b=>b.onclick=function(){ document.querySelectorAll('.tipo-btn').forEach(x=>x.classList.remove('active')); this.classList.add('active'); tipoSelecionadoMobile=this.dataset.tipoMobile; });
+        document.querySelectorAll('.mobile-tab').forEach(b=>b.onclick=function(){ document.querySelectorAll('.mobile-tab').forEach(x=>x.classList.remove('active')); this.classList.add('active'); document.querySelectorAll('.tab-pane').forEach(p=>p.style.display='none'); document.getElementById('tab'+this.dataset.tab.charAt(0).toUpperCase()+this.dataset.tab.slice(1)).style.display='block'; if(this.dataset.tab==='estoque'){ renderEstoque(); } if(this.dataset.tab==='caixas')renderCaixas(); });
         document.getElementById('filtroTipoMobile').onchange = renderMovements;
         document.getElementById('mobileData').value = new Date().toISOString().slice(0,10);
         atualizarSelectCaixas();
+        
         updateScannerStatus('Pronto para escanear', '');
+        loadSecurityConfig();
+        renderEstoque();
     });
 
     let tipoSelecionadoMobile = 'entrada';
@@ -1775,10 +1993,10 @@
         let valRaw=document.getElementById('mobileValor').value.trim();
         let caixa=document.getElementById('mobileCaixa').value;
         let data=document.getElementById('mobileData').value;
-        if(!desc) return alert("❌ Descrição obrigatória");
+        if(!desc)return alert("❌ Descrição obrigatória");
         let val=parseMoney(valRaw);
-        if(val===null) return alert("❌ Valor inválido!");
-        if(!data) data=new Date().toISOString().slice(0,10);
+        if(val===null)return alert("❌ Valor inválido!");
+        if(!data)data=new Date().toISOString().slice(0,10);
         transacoes.push({ id:Date.now()+Math.random(), tipo:tipoSelecionadoMobile, descricao:desc, caixa, valor:val, data });
         document.getElementById('mobileDesc').value='';
         document.getElementById('mobileValor').value='';
@@ -1789,16 +2007,16 @@
     function saveEdit(){
         let id=document.getElementById('editId').value;
         let idx=transacoes.findIndex(t=>t.id==id);
-        if(idx===-1) return;
+        if(idx===-1)return;
         let desc=document.getElementById('editDesc').value.trim();
         let valRaw=document.getElementById('editValor').value.trim();
         let caixa=document.getElementById('editCaixa').value;
         let data=document.getElementById('editData').value;
         let tipo=document.getElementById('editTipo').value;
-        if(!desc) return alert("❌ Descrição obrigatória");
+        if(!desc)return alert("❌ Descrição obrigatória");
         let val=parseMoney(valRaw);
-        if(val===null) return alert("❌ Valor inválido!");
-        if(!data) data=new Date().toISOString().slice(0,10);
+        if(val===null)return alert("❌ Valor inválido!");
+        if(!data)data=new Date().toISOString().slice(0,10);
         transacoes[idx]={...transacoes[idx], descricao:desc, valor:val, caixa, data, tipo};
         document.getElementById('editModal').classList.remove('active');
         refreshAll();
