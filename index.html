@@ -43,7 +43,7 @@
         .hide-toggle { background: var(--bg-elevated); border: 2px solid var(--success); border-radius: 30px; padding: 8px 14px; font-size: 12px; font-weight: 700; cursor: pointer; display: flex; align-items: center; gap: 6px; color: var(--success); }
         .menu-dropdown { position: relative; display: inline-block; }
         .menu-btn { background: var(--bg-elevated); border: 1px solid var(--border); padding: 10px 14px; border-radius: 30px; color: var(--text-primary); font-size: 18px; font-weight: 700; cursor: pointer; }
-        .menu-content { display: none; position: absolute; right: 0; top: 45px; background: var(--bg-card); min-width: 200px; border-radius: 20px; box-shadow: var(--shadow); border: 1px solid var(--border); z-index: 100; overflow: hidden; }
+        .menu-content { display: none; position: absolute; right: 0; top: 45px; background: var(--bg-card); min-width: 220px; border-radius: 20px; box-shadow: var(--shadow); border: 1px solid var(--border); z-index: 100; overflow: hidden; }
         .menu-content button { display: flex; align-items: center; gap: 12px; width: 100%; padding: 12px 16px; text-align: left; background: none; border: none; color: var(--text-primary); font-size: 13px; font-weight: 500; cursor: pointer; }
         .menu-content button:hover { background: var(--hover-bg); }
         .menu-content .danger-item { color: var(--danger); }
@@ -86,6 +86,7 @@
         .produto-lista-item { border-left-color: var(--info); }
         .produto-lista-item.vencendo { border-left-color: var(--warning); background: rgba(245,158,11,0.1); }
         .produto-lista-item.vencido { border-left-color: var(--danger); background: rgba(239,68,68,0.1); }
+        .produto-lista-item.esgotado { opacity: 0.5; border-left-color: var(--danger); }
 
         .transaction-info, .produto-info { flex: 1; }
         .transaction-desc, .produto-nome-lista { font-weight: 700; font-size: 14px; margin-bottom: 3px; color: var(--text-primary); }
@@ -164,6 +165,20 @@
         .produto-acoes .btn-remove { color: var(--danger); }
         .produto-acoes .btn-edit { color: var(--warning); }
         .produto-acoes .btn-delete { color: var(--danger); }
+
+        /* Pesquisa de produtos */
+        .pesquisa-container { display: flex; gap: 8px; margin-bottom: 12px; align-items: center; }
+        .pesquisa-container input { flex: 1; padding: 10px 14px; background: var(--bg-elevated); border: 1px solid var(--border); border-radius: 24px; color: var(--text-primary); font-size: 14px; }
+        .pesquisa-container input:focus { outline: none; border-color: var(--success); }
+        .pesquisa-container .btn-limpar-pesquisa { background: var(--bg-elevated); border: 1px solid var(--border); border-radius: 24px; padding: 10px 14px; cursor: pointer; font-size: 14px; color: var(--text-muted); }
+
+        /* Lista completa de produtos */
+        .produto-completo-item { display: flex; justify-content: space-between; align-items: center; padding: 8px 12px; border-bottom: 1px solid var(--border); font-size: 13px; }
+        .produto-completo-item .info { flex: 1; }
+        .produto-completo-item .info .nome { font-weight: 600; }
+        .produto-completo-item .info .detalhes { font-size: 11px; color: var(--text-muted); }
+        .produto-completo-item .qtd { font-weight: 700; color: var(--success); }
+        .produto-completo-item .qtd.zero { color: var(--danger); }
     </style>
 </head>
 <body class="value-hidden">
@@ -217,6 +232,7 @@
                 <div id="menuContent" class="menu-content">
                     <button id="menuPdf">📄 Extrato PDF</button>
                     <button id="menuEstoquePdf">📦 Estoque PDF</button>
+                    <button id="menuListaProdutos">📋 Lista de Produtos</button>
                     <button id="menuBackup">💾 Backup</button>
                     <button id="menuRestore">📥 Restaurar</button>
                     <div class="menu-divider"></div>
@@ -317,6 +333,12 @@
             </div>
         </div>
         
+        <!-- Pesquisa de produtos -->
+        <div class="pesquisa-container">
+            <input type="text" id="pesquisaProduto" placeholder="🔍 Pesquisar produto...">
+            <button id="limparPesquisaBtn" class="btn-limpar-pesquisa">✕</button>
+        </div>
+        
         <div style="display: flex; justify-content: space-between; align-items: center; margin: 12px 0 8px 0;">
             <span style="font-weight:700; font-size:14px;">📋 PRODUTOS</span>
             <button id="editarEstoqueBtn" class="botao-editar-estoque">✏️ Adicionar</button>
@@ -365,6 +387,18 @@
     </div>
 </div>
 
+<!-- Modal Lista de Produtos -->
+<div id="listaProdutosModal" class="modal-mobile">
+    <div class="modal-card" style="max-width: 380px; max-height: 80vh; overflow-y: auto;">
+        <h3>📋 Lista de Produtos</h3>
+        <div style="margin-bottom: 12px;">
+            <input type="text" id="pesquisaListaProdutos" class="auth-input" placeholder="🔍 Pesquisar..." style="margin-bottom:0;">
+        </div>
+        <div id="listaProdutosContainer" style="max-height: 50vh; overflow-y: auto;"></div>
+        <button id="fecharListaProdutos" class="auth-btn" style="margin-top:12px; background:var(--danger);">Fechar</button>
+    </div>
+</div>
+
 <script>
     // ==================== BASE DE PRODUTOS ====================
     const baseProdutos = {
@@ -394,60 +428,20 @@
     function reconhecerData(texto) {
         if(!texto) return null;
         const t = texto.trim();
-        
-        // Tentar vários formatos de data
-        // Formato 1: YYYY-MM-DD
         let match = t.match(/^(\d{4})-(\d{2})-(\d{2})$/);
-        if(match) {
-            const data = new Date(parseInt(match[1]), parseInt(match[2])-1, parseInt(match[3]));
-            if(!isNaN(data.getTime())) return data;
-        }
-        
-        // Formato 2: DD/MM/YYYY
+        if(match) { const data = new Date(parseInt(match[1]), parseInt(match[2])-1, parseInt(match[3])); if(!isNaN(data.getTime())) return data; }
         match = t.match(/^(\d{2})\/(\d{2})\/(\d{4})$/);
-        if(match) {
-            const data = new Date(parseInt(match[3]), parseInt(match[2])-1, parseInt(match[1]));
-            if(!isNaN(data.getTime())) return data;
-        }
-        
-        // Formato 3: DD-MM-YYYY
+        if(match) { const data = new Date(parseInt(match[3]), parseInt(match[2])-1, parseInt(match[1])); if(!isNaN(data.getTime())) return data; }
         match = t.match(/^(\d{2})-(\d{2})-(\d{4})$/);
-        if(match) {
-            const data = new Date(parseInt(match[3]), parseInt(match[2])-1, parseInt(match[1]));
-            if(!isNaN(data.getTime())) return data;
-        }
-        
-        // Formato 4: DD.MM.YYYY
+        if(match) { const data = new Date(parseInt(match[3]), parseInt(match[2])-1, parseInt(match[1])); if(!isNaN(data.getTime())) return data; }
         match = t.match(/^(\d{2})\.(\d{2})\.(\d{4})$/);
-        if(match) {
-            const data = new Date(parseInt(match[3]), parseInt(match[2])-1, parseInt(match[1]));
-            if(!isNaN(data.getTime())) return data;
-        }
-        
-        // Formato 5: YYYY/MM/DD
+        if(match) { const data = new Date(parseInt(match[3]), parseInt(match[2])-1, parseInt(match[1])); if(!isNaN(data.getTime())) return data; }
         match = t.match(/^(\d{4})\/(\d{2})\/(\d{2})$/);
-        if(match) {
-            const data = new Date(parseInt(match[1]), parseInt(match[2])-1, parseInt(match[3]));
-            if(!isNaN(data.getTime())) return data;
-        }
-        
-        // Formato 6: DD/MM/YY (ano com 2 dígitos)
+        if(match) { const data = new Date(parseInt(match[1]), parseInt(match[2])-1, parseInt(match[3])); if(!isNaN(data.getTime())) return data; }
         match = t.match(/^(\d{2})\/(\d{2})\/(\d{2})$/);
-        if(match) {
-            const ano = parseInt(match[3]) + (parseInt(match[3]) < 30 ? 2000 : 1900);
-            const data = new Date(ano, parseInt(match[2])-1, parseInt(match[1]));
-            if(!isNaN(data.getTime())) return data;
-        }
-        
-        // Formato 7: DD-MM-YY
+        if(match) { const ano = parseInt(match[3]) + (parseInt(match[3]) < 30 ? 2000 : 1900); const data = new Date(ano, parseInt(match[2])-1, parseInt(match[1])); if(!isNaN(data.getTime())) return data; }
         match = t.match(/^(\d{2})-(\d{2})-(\d{2})$/);
-        if(match) {
-            const ano = parseInt(match[3]) + (parseInt(match[3]) < 30 ? 2000 : 1900);
-            const data = new Date(ano, parseInt(match[2])-1, parseInt(match[1]));
-            if(!isNaN(data.getTime())) return data;
-        }
-        
-        // Tentar interpretar como texto (ex: "12 de maio de 2025")
+        if(match) { const ano = parseInt(match[3]) + (parseInt(match[3]) < 30 ? 2000 : 1900); const data = new Date(ano, parseInt(match[2])-1, parseInt(match[1])); if(!isNaN(data.getTime())) return data; }
         const meses = { 'janeiro':0,'fevereiro':1,'março':2,'abril':3,'maio':4,'junho':5,'julho':6,'agosto':7,'setembro':8,'outubro':9,'novembro':10,'dezembro':11 };
         const tLower = t.toLowerCase();
         for(let [mes, idx] of Object.entries(meses)) {
@@ -460,7 +454,6 @@
                 }
             }
         }
-        
         return null;
     }
 
@@ -476,6 +469,7 @@
     let html5QrCode=null, scannerAtivo=false, ultimoCodigoLido="", ultimoTempoLeitura=0;
     let modoScanner='adicionar', scanDuploProduto=null, scanDuploAguardandoValidade=false;
     let aguardandoData = false;
+    let termoPesquisa = '';
 
     // ==================== IDENTIFICAÇÃO ====================
     function identificarProduto(codigo) {
@@ -505,7 +499,12 @@
     }
     function removerQtd(codigo,qtd=1) {
         let idx=produtos.findIndex(p=>p.codigo===codigo);
-        if(idx!==-1){ if(produtos[idx].quantidade<qtd){ alert(`❌ Estoque insuficiente!`); return false; } produtos[idx].quantidade-=qtd; saveCurrentUser(); renderEstoque(); destacarNaLista(codigo); mostrarAnimacao(window.innerWidth/2,window.innerHeight/2,produtos[idx].nome,qtd,'remover'); return true; }
+        if(idx!==-1){ 
+            if(produtos[idx].quantidade<qtd){ alert(`❌ Estoque insuficiente!`); return false; } 
+            produtos[idx].quantidade-=qtd; 
+            // Se quantidade zerou, o produto será oculto da lista (mas mantido no banco)
+            saveCurrentUser(); renderEstoque(); destacarNaLista(codigo); mostrarAnimacao(window.innerWidth/2,window.innerHeight/2,produtos[idx].nome,qtd,'remover'); return true; 
+        }
         return false;
     }
     function adicionarComValidade(codigo,validade,qtd,lote) {
@@ -516,20 +515,41 @@
         document.getElementById('produtoCodigo').value=codigo; document.getElementById('produtoValidade').value=validade; document.getElementById('produtoQuantidade').value=qtd; if(lote) document.getElementById('produtoLote').value=lote; document.getElementById('formNovoLote').style.display='block'; document.getElementById('produtoNome').focus(); return false;
     }
 
-    // ==================== RENDER ====================
+    // ==================== RENDER ESTOQUE ====================
     function renderEstoque() {
         let container=document.getElementById('estoqueList');
-        if(!produtos.length){ container.innerHTML='<div class="empty-state">Nenhum produto 📦</div>'; return; }
-        let ordenados=[...produtos].sort((a,b)=>{ let av=isVencido(a.validade), bv=isVencido(b.validade); if(av&&!bv)return -1; if(!av&&bv)return 1; return 0; });
+        let termo = termoPesquisa.toLowerCase().trim();
+        
+        // Filtrar produtos com quantidade > 0 e aplicar pesquisa
+        let produtosVisiveis = produtos.filter(p => {
+            if (p.quantidade <= 0) return false;
+            if (termo) {
+                return p.nome.toLowerCase().includes(termo) || 
+                       (p.codigo && p.codigo.toLowerCase().includes(termo));
+            }
+            return true;
+        });
+        
+        if(!produtosVisiveis.length){ 
+            if (produtos.length > 0 && produtos.every(p => p.quantidade <= 0)) {
+                container.innerHTML='<div class="empty-state">📦 Todos os produtos estão em falta.<br>Escaneie para repor o estoque.</div>';
+            } else if (termo) {
+                container.innerHTML='<div class="empty-state">🔍 Nenhum produto encontrado para "'+escapeHtml(termo)+'"</div>';
+            } else {
+                container.innerHTML='<div class="empty-state">Nenhum produto no estoque 📦</div>';
+            }
+            return; 
+        }
+        
+        let ordenados=[...produtosVisiveis].sort((a,b)=>{ let av=isVencido(a.validade), bv=isVencido(b.validade); if(av&&!bv)return -1; if(!av&&bv)return 1; return 0; });
         container.innerHTML=ordenados.map(p=>{
             let vencendo=isVencendo(p.validade), vencido=isVencido(p.validade);
             let cls=vencido?'vencido':vencendo?'vencendo':'';
             let badge=vencido?'<span class="badge-status badge-danger">VENCIDO</span>':vencendo?`<span class="badge-status badge-warning">Vence em ${diasAteVencimento(p.validade)} dia(s)</span>`:'<span class="badge-status badge-ok">OK</span>';
             let alerta=p.quantidade<5&&p.quantidade>0?'<span class="estoque-alerta">⚠️ Baixo</span>':'';
-            let esgotado=p.quantidade===0?'<span class="estoque-alerta" style="background:var(--danger);">❌ ESGOTADO</span>':'';
             return `<div class="produto-lista-item ${cls}">
                 <div class="produto-info">
-                    <div class="produto-nome-lista">${escapeHtml(p.nome)} ${alerta} ${esgotado} ${badge}</div>
+                    <div class="produto-nome-lista">${escapeHtml(p.nome)} ${alerta} ${badge}</div>
                     <div class="produto-meta">
                         <span class="codigo-barras">📷 ${escapeHtml(p.codigo||'---')}</span>
                         <span>📦 ${p.quantidade} un.</span>
@@ -551,6 +571,7 @@
         document.querySelectorAll('.btn-remove').forEach(b=>b.onclick=()=>removerQtd(b.dataset.codigo,1));
         document.querySelectorAll('.btn-edit').forEach(b=>b.onclick=()=>editarProduto(b.dataset.codigo));
         document.querySelectorAll('.btn-delete').forEach(b=>b.onclick=()=>deletarProduto(b.dataset.codigo));
+        
         let total=produtos.reduce((s,p)=>s+p.quantidade,0);
         let valor=produtos.reduce((s,p)=>s+(p.preco?p.preco*p.quantidade:0),0);
         let baixo=produtos.filter(p=>p.quantidade<5&&p.quantidade>0).length;
@@ -560,18 +581,6 @@
         document.getElementById('produtosBaixoEstoque').innerText=baixo;
         document.getElementById('produtosVencendo').innerText=vencendo;
     }
-    function editarProduto(codigo) {
-        let p=produtos.find(x=>x.codigo===codigo); if(!p) return;
-        document.getElementById('produtoCodigo').value=p.codigo;
-        document.getElementById('produtoNome').value=p.nome;
-        document.getElementById('produtoPreco').value=p.preco?p.preco.toFixed(2):'';
-        document.getElementById('produtoQuantidade').value=p.quantidade;
-        document.getElementById('produtoValidade').value=p.validade||'';
-        document.getElementById('produtoLote').value=p.numeroLote||'';
-        document.getElementById('formNovoLote').style.display='block';
-        document.getElementById('produtoNome').focus();
-    }
-    function deletarProduto(codigo){ if(confirm("Excluir?")){ produtos=produtos.filter(p=>p.codigo!==codigo); saveCurrentUser(); renderEstoque(); alert("✅ Excluído!"); } }
 
     // ==================== MOVIMENTAÇÕES ====================
     function renderMovements() {
@@ -627,11 +636,9 @@
             if(decoded===ultimoCodigoLido&&agora-ultimoTempoLeitura<1500)return;
             ultimoCodigoLido=decoded; ultimoTempoLeitura=agora;
             
-            // Verificar se é uma data
             let dataReconhecida = reconhecerData(decoded);
             
             if(!scanDuploAguardandoValidade && !aguardandoData){
-                // Primeiro scan: código do produto
                 let ident=identificarProduto(decoded);
                 if(ident.encontrado){
                     scanDuploProduto=ident.produto; scanDuploAguardandoValidade=true;
@@ -654,10 +661,8 @@
                     
                     try { new AudioContext().createOscillator().start(); } catch(e){}
                 } else {
-                    // Verificar se o código pode ser uma data
                     let dataTeste = reconhecerData(decoded);
                     if(dataTeste){
-                        // É uma data, mas não tem produto - pedir para escanear produto primeiro
                         sd.className='scan-duplo-status erro';
                         sd.innerHTML=`📅 Data reconhecida: ${formatDateBR(formatarDataParaInput(dataTeste))}<br>⚠️ Escaneie o produto primeiro!`;
                         setTimeout(()=>{ if(!scanDuploAguardandoValidade){ sd.className='scan-duplo-status aguardando'; sd.innerHTML='📷 Aguardando código do produto...'; } },2000);
@@ -673,7 +678,6 @@
                     }
                 }
             } else if(scanDuploAguardandoValidade) {
-                // Aguardando data de validade
                 let dataReconhecida = reconhecerData(decoded);
                 if(dataReconhecida){
                     let dataFormatada = formatarDataParaInput(dataReconhecida);
@@ -690,10 +694,8 @@
                         try { let ctx=new AudioContext(); let o=ctx.createOscillator(); o.frequency.value=1100; o.start(); o.stop(ctx.currentTime+0.1); } catch(e){}
                     }
                 } else {
-                    // Verificar se é um código de produto (caso o usuário tenha escaneado outro produto)
                     let ident=identificarProduto(decoded);
                     if(ident.encontrado){
-                        // Trocar o produto atual
                         scanDuploProduto=ident.produto;
                         document.getElementById('validadeProdutoNome').innerText=ident.produto.nome;
                         document.getElementById('validadeProdutoCodigo').innerHTML=`Código: ${ident.produto.codigo}`;
@@ -764,6 +766,50 @@
         scannerAtivo=true;
     }
 
+    // ==================== LISTA DE PRODUTOS COMPLETA ====================
+    function abrirListaProdutos() {
+        const container = document.getElementById('listaProdutosContainer');
+        const modal = document.getElementById('listaProdutosModal');
+        const pesquisa = document.getElementById('pesquisaListaProdutos');
+        
+        function renderLista() {
+            const termo = pesquisa.value.toLowerCase().trim();
+            let lista = produtos;
+            if (termo) {
+                lista = produtos.filter(p => 
+                    p.nome.toLowerCase().includes(termo) || 
+                    (p.codigo && p.codigo.toLowerCase().includes(termo))
+                );
+            }
+            
+            if (!lista.length) {
+                container.innerHTML = '<div class="empty-state">📦 Nenhum produto cadastrado</div>';
+                return;
+            }
+            
+            container.innerHTML = lista.sort((a,b) => a.nome.localeCompare(b.nome)).map(p => {
+                const qtdCls = p.quantidade === 0 ? 'zero' : '';
+                return `<div class="produto-completo-item">
+                    <div class="info">
+                        <div class="nome">${escapeHtml(p.nome)}</div>
+                        <div class="detalhes">
+                            📷 ${escapeHtml(p.codigo || '---')} 
+                            ${p.preco ? '💰 '+formatMoney(p.preco) : ''}
+                            ${p.validade ? '📅 '+formatDateBR(p.validade) : ''}
+                            ${p.numeroLote ? '🏷️ '+escapeHtml(p.numeroLote) : ''}
+                        </div>
+                    </div>
+                    <div class="qtd ${qtdCls}">${p.quantidade} un.</div>
+                </div>`;
+            }).join('');
+        }
+        
+        pesquisa.value = '';
+        renderLista();
+        pesquisa.oninput = renderLista;
+        modal.classList.add('active');
+    }
+
     // ==================== FUNÇÕES GERAIS ====================
     function refreshAll() {
         let entradas=transacoes.filter(t=>t.tipo==='entrada').reduce((s,t)=>s+t.valor,0);
@@ -827,6 +873,8 @@
         document.getElementById('menuClearAll').onclick = () => { if(confirm("Apagar TODAS as movimentações?")){ transacoes=[]; refreshAll(); alert("✅ Removidas!"); } };
         document.getElementById('menuPdf').onclick = gerarPDF;
         document.getElementById('menuEstoquePdf').onclick = gerarEstoquePDF;
+        document.getElementById('menuListaProdutos').onclick = abrirListaProdutos;
+        document.getElementById('fecharListaProdutos').onclick = () => document.getElementById('listaProdutosModal').classList.remove('active');
         document.getElementById('menuBackup').onclick = () => document.getElementById('backupModalMobile').classList.add('active');
         document.getElementById('menuRestore').onclick = restoreAction;
         document.getElementById('menuDeleteAccount').onclick = () => document.getElementById('deleteAccountModal').classList.add('active');
@@ -848,6 +896,17 @@
         document.getElementById('cancelarNovoLoteBtn').onclick = () => { document.getElementById('formNovoLote').style.display='none'; ['produtoCodigo','produtoNome','produtoPreco','produtoValidade','produtoLote'].forEach(id=>document.getElementById(id).value=''); document.getElementById('produtoQuantidade').value='1'; };
         document.getElementById('editarEstoqueBtn').onclick = () => { document.getElementById('formNovoLote').style.display='block'; document.getElementById('produtoCodigo').focus(); };
         
+        // Pesquisa de produtos no estoque
+        document.getElementById('pesquisaProduto').oninput = function() {
+            termoPesquisa = this.value;
+            renderEstoque();
+        };
+        document.getElementById('limparPesquisaBtn').onclick = function() {
+            document.getElementById('pesquisaProduto').value = '';
+            termoPesquisa = '';
+            renderEstoque();
+        };
+        
         document.getElementById('modoAdicionar').onclick = () => { modoScanner='adicionar'; document.getElementById('modoAdicionar').className='active-adicionar'; document.getElementById('modoRemover').className=''; document.getElementById('startScannerBtn').className='scan-btn'; };
         document.getElementById('modoRemover').onclick = () => { modoScanner='remover'; document.getElementById('modoRemover').className='active-remover'; document.getElementById('modoAdicionar').className=''; document.getElementById('startScannerBtn').className='scan-btn remover'; };
         
@@ -862,7 +921,7 @@
         document.getElementById('cancelarValidadeBtn').onclick = () => { document.getElementById('validadeModal').classList.remove('active'); scanDuploProduto=null; scanDuploAguardandoValidade=false; document.getElementById('scanDuploStatus').className='scan-duplo-status aguardando'; document.getElementById('scanDuploStatus').innerHTML='📷 Aguardando código...'; };
         
         document.querySelectorAll('.tipo-btn').forEach(b=>b.onclick=function(){ document.querySelectorAll('.tipo-btn').forEach(x=>x.classList.remove('active')); this.classList.add('active'); tipoSelecionadoMobile=this.dataset.tipoMobile; });
-        document.querySelectorAll('.mobile-tab').forEach(b=>b.onclick=function(){ document.querySelectorAll('.mobile-tab').forEach(x=>x.classList.remove('active')); this.classList.add('active'); document.querySelectorAll('.tab-pane').forEach(p=>p.style.display='none'); document.getElementById('tab'+this.dataset.tab.charAt(0).toUpperCase()+this.dataset.tab.slice(1)).style.display='block'; if(this.dataset.tab==='estoque')renderEstoque(); if(this.dataset.tab==='caixas')renderCaixas(); });
+        document.querySelectorAll('.mobile-tab').forEach(b=>b.onclick=function(){ document.querySelectorAll('.mobile-tab').forEach(x=>x.classList.remove('active')); this.classList.add('active'); document.querySelectorAll('.tab-pane').forEach(p=>p.style.display='none'); document.getElementById('tab'+this.dataset.tab.charAt(0).toUpperCase()+this.dataset.tab.slice(1)).style.display='block'; if(this.dataset.tab==='estoque'){ renderEstoque(); } if(this.dataset.tab==='caixas')renderCaixas(); });
         document.getElementById('filtroTipoMobile').onchange = renderMovements;
         document.getElementById('mobileData').value = new Date().toISOString().slice(0,10);
         atualizarSelectCaixas();
@@ -926,6 +985,8 @@
         let div=document.createElement('div'); div.innerHTML=html; document.body.appendChild(div);
         html2pdf().set({ margin:0.5, filename:`Estoque_${currentUser}.pdf`, image:{type:'jpeg',quality:0.98}, html2canvas:{scale:2}, jsPDF:{unit:'in',format:'a4',orientation:'landscape'} }).from(div).save().then(()=>{ document.body.removeChild(div); alert("✅ PDF gerado!"); }).catch(()=>{ document.body.removeChild(div); alert("❌ Erro"); });
     }
+
+    let tipoSelecionadoMobile = 'entrada';
 </script>
 </body>
 </html>
