@@ -316,18 +316,6 @@
         .produto-acoes button:hover { background: var(--hover-bg); transform: scale(0.92); }
         .produto-acoes .btn-add { color: var(--success); }
         .produto-acoes .btn-remove { color: var(--danger); }
-        .produto-acoes .btn-remove.locked {
-            opacity: 0.7;
-            position: relative;
-            color: var(--danger);
-        }
-        .produto-acoes .btn-remove.locked::after {
-            content: '🔒';
-            font-size: 10px;
-            position: absolute;
-            top: -4px;
-            right: -4px;
-        }
         .produto-acoes .btn-edit { color: var(--warning); }
         .produto-acoes .btn-delete { color: var(--danger); }
 
@@ -406,24 +394,6 @@
         ::-webkit-scrollbar { width: 4px; }
         ::-webkit-scrollbar-track { background: var(--bg-elevated); }
         ::-webkit-scrollbar-thumb { background: var(--text-muted); border-radius: 4px; }
-
-        /* Security badge */
-        .security-badge {
-            display: inline-flex;
-            align-items: center;
-            gap: 4px;
-            background: rgba(46,204,113,0.1);
-            color: var(--success);
-            padding: 2px 8px;
-            border-radius: 12px;
-            font-size: 9px;
-            font-weight: 700;
-            text-transform: uppercase;
-        }
-        .security-badge.locked {
-            background: rgba(231,76,60,0.1);
-            color: var(--danger);
-        }
 
         /* Auth Code Scanner inside modal */
         #authCodeReader {
@@ -725,7 +695,7 @@
 <div id="authCodeModal" class="modal-mobile">
     <div class="modal-card">
         <h3>🔑 Autorização Necessária</h3>
-        <p class="sub">Escaneie o código de autorização para remover este item</p>
+        <p class="sub" id="authCodeActionText">Escaneie o código de autorização para remover este item</p>
         <div style="background:var(--bg-elevated); border-radius:12px; padding:12px; margin-bottom:12px; border:1px solid var(--border); text-align:center;">
             <div style="font-weight:700; font-size:15px;" id="authCodeProductName">Produto</div>
             <div style="font-size:11px; color:var(--text-muted);">Aponte a câmera para o código de autorização</div>
@@ -839,7 +809,7 @@
     let aguardandoData = false, termoPesquisa = '';
     let scannerTipo = 'normal';
     let authCodeHtml5Qr = null;
-    let pendingRemoveProduct = null;
+    let pendingAction = null; // { type: 'remove'|'delete', codigo, qtd?, idx? }
     let authCodeScannerRunning = false;
 
     function identificarProduto(codigo) {
@@ -874,14 +844,13 @@
             
             // Check security - if locked, open auth scanner
             if (isRemovalLocked()) {
-                // Save pending product and show auth modal
-                pendingRemoveProduct = { codigo, qtd, idx };
+                pendingAction = { type: 'remove', codigo, qtd, idx };
+                document.getElementById('authCodeActionText').textContent = 'Escaneie o código de autorização para remover este item';
                 document.getElementById('authCodeProductName').innerHTML = produtos[idx].nome + ' (x' + qtd + ')';
                 document.getElementById('authCodeModal').classList.add('active');
                 document.getElementById('authCodeStatus').textContent = '📷 Aguardando código...';
                 document.getElementById('authCodeStatus').className = 'auth-code-status waiting';
                 
-                // Start scanner automatically
                 setTimeout(() => {
                     startAuthCodeScanner();
                 }, 300);
@@ -892,6 +861,31 @@
             saveCurrentUser(); renderEstoque(); destacarNaLista(codigo); mostrarAnimacao(window.innerWidth/2,window.innerHeight/2,produtos[idx].nome,qtd,'remover'); return true; 
         }
         return false;
+    }
+
+    function deletarProduto(codigo) {
+        let idx = produtos.findIndex(p => p.codigo === codigo);
+        if (idx === -1) return;
+        
+        if (isRemovalLocked()) {
+            pendingAction = { type: 'delete', codigo, idx };
+            document.getElementById('authCodeActionText').textContent = 'Escaneie o código de autorização para excluir este item';
+            document.getElementById('authCodeProductName').innerHTML = produtos[idx].nome + ' (excluir)';
+            document.getElementById('authCodeModal').classList.add('active');
+            document.getElementById('authCodeStatus').textContent = '📷 Aguardando código...';
+            document.getElementById('authCodeStatus').className = 'auth-code-status waiting';
+            
+            setTimeout(() => {
+                startAuthCodeScanner();
+            }, 300);
+            return;
+        }
+        
+        if (confirm("Excluir permanentemente?")) {
+            produtos = produtos.filter(p => p.codigo !== codigo);
+            saveCurrentUser();
+            renderEstoque();
+        }
     }
 
     function adicionarComValidade(codigo,validade,qtd,lote) {
@@ -934,8 +928,6 @@
             return a.nome.localeCompare(b.nome); 
         });
         
-        let isLocked = isRemovalLocked();
-        
         container.innerHTML=ordenados.map(p=>{
             let vencendo=isVencendo(p.validade), vencido=isVencido(p.validade);
             let cls = vencido ? 'vencido' : vencendo ? 'vencendo' : '';
@@ -945,13 +937,10 @@
             let low = p.quantidade < 5 && p.quantidade > 0 ? '<span class="badge badge-low">⚠️ Baixo</span>' : '';
             let qtdClass = p.quantidade < 5 ? 'low' : '';
             let qtdDisplay = p.quantidade > 0 ? p.quantidade : '0';
-            let securityBadge = isLocked ? '<span class="security-badge locked">🔒 Seguro</span>' : '';
-            let removeLockClass = isLocked ? 'locked' : '';
-            let removeTitle = isLocked ? '🔒 Requer código de autorização' : 'Remover';
             
             return `<div class="produto-item ${cls}">
                 <div class="produto-info">
-                    <div class="produto-nome">${escapeHtml(p.nome)} ${badge} ${low} ${securityBadge}</div>
+                    <div class="produto-nome">${escapeHtml(p.nome)} ${badge} ${low}</div>
                     <div class="produto-detalhes">
                         <span>📷 ${escapeHtml(p.codigo||'---')}</span>
                         <span>💰 ${p.preco?formatMoney(p.preco):'---'}</span>
@@ -963,7 +952,7 @@
                     <span class="produto-qtd ${qtdClass}">${qtdDisplay}</span>
                     <div class="produto-acoes">
                         <button class="btn-add" data-codigo="${escapeHtml(p.codigo)}" title="Adicionar">➕</button>
-                        <button class="btn-remove ${removeLockClass}" data-codigo="${escapeHtml(p.codigo)}" title="${removeTitle}">➖</button>
+                        <button class="btn-remove" data-codigo="${escapeHtml(p.codigo)}" title="Remover">➖</button>
                         <button class="btn-edit" data-codigo="${escapeHtml(p.codigo)}" title="Editar">✏️</button>
                         <button class="btn-delete" data-codigo="${escapeHtml(p.codigo)}" title="Excluir">🗑️</button>
                     </div>
@@ -997,7 +986,6 @@
         document.getElementById('formNovoLote').style.display='block';
         document.getElementById('produtoNome').focus();
     }
-    function deletarProduto(codigo){ if(confirm("Excluir permanentemente?")){ produtos=produtos.filter(p=>p.codigo!==codigo); saveCurrentUser(); renderEstoque(); } }
 
     // ==================== RENDER MOVEMENTS ====================
     function renderMovements() {
@@ -1348,15 +1336,22 @@
                             o.stop(ctx.currentTime + 0.15); 
                         } catch(e){}
                         
-                        // Execute the pending removal
-                        if (pendingRemoveProduct) {
-                            const p = pendingRemoveProduct;
-                            produtos[p.idx].quantidade -= p.qtd;
-                            saveCurrentUser();
-                            renderEstoque();
-                            destacarNaLista(p.codigo);
-                            mostrarAnimacao(window.innerWidth/2, window.innerHeight/2, produtos[p.idx].nome, p.qtd, 'remover');
-                            pendingRemoveProduct = null;
+                        // Execute the pending action
+                        if (pendingAction) {
+                            if (pendingAction.type === 'remove') {
+                                const p = pendingAction;
+                                produtos[p.idx].quantidade -= p.qtd;
+                                saveCurrentUser();
+                                renderEstoque();
+                                destacarNaLista(p.codigo);
+                                mostrarAnimacao(window.innerWidth/2, window.innerHeight/2, produtos[p.idx].nome, p.qtd, 'remover');
+                            } else if (pendingAction.type === 'delete') {
+                                const p = pendingAction;
+                                produtos = produtos.filter(prod => prod.codigo !== p.codigo);
+                                saveCurrentUser();
+                                renderEstoque();
+                            }
+                            pendingAction = null;
                         }
                         
                         // Close modal after success
@@ -2051,7 +2046,7 @@
         document.getElementById('cancelAuthCodeBtn').onclick = () => {
             stopAuthCodeScanner();
             document.getElementById('authCodeModal').classList.remove('active');
-            pendingRemoveProduct = null;
+            pendingAction = null;
         };
         
         // Handle modal close - stop scanner
@@ -2059,7 +2054,7 @@
             if (e.target === this) {
                 stopAuthCodeScanner();
                 this.classList.remove('active');
-                pendingRemoveProduct = null;
+                pendingAction = null;
             }
         });
         
