@@ -3,8 +3,9 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=yes, viewport-fit=cover">
-    <title>Sistema de Caixa + Estoque</title>
+    <title>Sistema de Caixa + Estoque - Leitura Inteligente</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+    <script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
         :root {
@@ -15,12 +16,20 @@
             --warning: #f39c12; --shadow: 0 4px 16px rgba(0,0,0,0.06);
             --radius-card: 16px; --radius-btn: 12px; --hover-bg: #eef1f5;
             --transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+            --scan-primary: #6c5ce7;
+            --scan-primary-dark: #5a4bd1;
+            --scan-secondary: #00b894;
+            --scan-danger: #fd79a8;
         }
         body.dark-theme {
             --bg-page: #0d1117; --bg-surface: #161b22; --bg-card: #1c2333;
             --bg-elevated: #252d3f; --text-primary: #f0f6fc; --text-secondary: #c9d1d9;
             --text-muted: #8b949e; --border: #30363d; --shadow: 0 4px 16px rgba(0,0,0,0.4);
             --hover-bg: #2d3548;
+            --scan-primary: #a29bfe;
+            --scan-primary-dark: #6c5ce7;
+            --scan-secondary: #55efc4;
+            --scan-danger: #fd79a8;
         }
         body { background-color: var(--bg-page); font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, system-ui, sans-serif; color: var(--text-primary); padding: 0; margin: 0; min-height: 100vh; transition: var(--transition); }
         
@@ -69,6 +78,207 @@
         .mobile-tabs { display: flex; background: var(--bg-surface); border-radius: 14px; padding: 4px; margin-bottom: 16px; gap: 4px; border: 1px solid var(--border); }
         .mobile-tab { flex: 1; text-align: center; padding: 8px 4px; border-radius: 10px; font-weight: 600; font-size: 11px; background: transparent; border: none; color: var(--text-muted); cursor: pointer; transition: var(--transition); }
         .mobile-tab.active { background: var(--success); color: white; box-shadow: 0 2px 8px rgba(46,204,113,0.25); }
+
+        /* ===== SCANNER ===== */
+        .scanner-section {
+            background: var(--bg-card);
+            border-radius: 16px;
+            padding: 16px;
+            margin-bottom: 14px;
+            border: 1px solid var(--border);
+        }
+        .scanner-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 12px;
+        }
+        .scanner-header h4 {
+            font-size: 13px;
+            font-weight: 600;
+            color: var(--text-secondary);
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+        .scanner-header .badge-scanner {
+            font-size: 9px;
+            padding: 2px 10px;
+            border-radius: 20px;
+            background: var(--bg-elevated);
+            color: var(--text-muted);
+            font-weight: 600;
+        }
+        .scanner-modes {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 6px;
+            margin-bottom: 10px;
+        }
+        .scanner-mode-btn {
+            padding: 10px;
+            border-radius: 10px;
+            border: 2px solid var(--border);
+            background: var(--bg-elevated);
+            cursor: pointer;
+            font-weight: 600;
+            font-size: 12px;
+            transition: var(--transition);
+            color: var(--text-secondary);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 6px;
+        }
+        .scanner-mode-btn:hover { border-color: var(--text-muted); }
+        .scanner-mode-btn.active-add {
+            border-color: var(--success);
+            background: rgba(46,204,113,0.1);
+            color: var(--success);
+        }
+        .scanner-mode-btn.active-remove {
+            border-color: var(--danger);
+            background: rgba(231,76,60,0.1);
+            color: var(--danger);
+        }
+        .scanner-mode-btn .mode-icon { font-size: 16px; }
+        .scanner-actions { display: flex; flex-direction: column; gap: 8px; }
+        .scanner-btn {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+            padding: 14px 20px;
+            border: none;
+            border-radius: 12px;
+            font-weight: 700;
+            font-size: 14px;
+            cursor: pointer;
+            transition: var(--transition);
+            color: white;
+            position: relative;
+            overflow: hidden;
+        }
+        .scanner-btn::after {
+            content: '';
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            width: 0;
+            height: 0;
+            border-radius: 50%;
+            background: rgba(255,255,255,0.2);
+            transition: width 0.6s, height 0.6s, top 0.6s, left 0.6s;
+        }
+        .scanner-btn:active::after {
+            width: 300px;
+            height: 300px;
+            top: -100px;
+            left: -100px;
+        }
+        .scanner-btn .btn-icon { font-size: 20px; }
+        .scanner-btn .btn-text { font-size: 14px; }
+        .scanner-btn .btn-badge {
+            background: rgba(255,255,255,0.25);
+            padding: 2px 10px;
+            border-radius: 20px;
+            font-size: 10px;
+            font-weight: 600;
+        }
+        .scanner-btn-primary {
+            background: linear-gradient(135deg, #6c5ce7, #a29bfe);
+            box-shadow: 0 4px 12px rgba(108, 92, 231, 0.3);
+        }
+        .scanner-btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(108, 92, 231, 0.4);
+        }
+        .scanner-btn-secondary {
+            background: linear-gradient(135deg, #00b894, #55efc4);
+            box-shadow: 0 4px 12px rgba(0, 184, 148, 0.3);
+        }
+        .scanner-btn-secondary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(0, 184, 148, 0.4);
+        }
+        .scanner-btn-danger {
+            background: linear-gradient(135deg, #fd79a8, #e74c3c);
+            box-shadow: 0 4px 12px rgba(231, 76, 60, 0.3);
+        }
+        .scanner-btn-danger:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(231, 76, 60, 0.4);
+        }
+        .scanner-btn-warning {
+            background: linear-gradient(135deg, #fdcb6e, #f39c12);
+            box-shadow: 0 4px 12px rgba(243, 156, 18, 0.3);
+            animation: pulseScan 1.2s infinite;
+        }
+        .scanner-btn-warning:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(243, 156, 18, 0.4);
+        }
+        @keyframes pulseScan {
+            0% { opacity: 1; }
+            50% { opacity: 0.7; }
+            100% { opacity: 1; }
+        }
+        .scanner-btn .scanning-dot {
+            display: inline-block;
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: white;
+            margin-right: 4px;
+            animation: dotPulse 1s infinite;
+        }
+        @keyframes dotPulse {
+            0%, 100% { opacity: 1; transform: scale(1); }
+            50% { opacity: 0.4; transform: scale(0.8); }
+        }
+        .scanner-status {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            padding: 8px 12px;
+            margin-top: 8px;
+            border-radius: 10px;
+            font-size: 12px;
+            font-weight: 500;
+            background: var(--bg-elevated);
+            color: var(--text-muted);
+            transition: var(--transition);
+        }
+        .scanner-status.active {
+            background: rgba(108, 92, 231, 0.1);
+            color: var(--scan-primary);
+        }
+        .scanner-status .status-dot {
+            width: 6px;
+            height: 6px;
+            border-radius: 50%;
+            background: var(--text-muted);
+        }
+        .scanner-status.active .status-dot {
+            background: var(--scan-primary);
+            animation: dotPulse 1s infinite;
+        }
+        .scanner-status.success {
+            background: rgba(46,204,113,0.1);
+            color: var(--success);
+        }
+        .scanner-status.success .status-dot {
+            background: var(--success);
+        }
+        .scanner-status.error {
+            background: rgba(231,76,60,0.1);
+            color: var(--danger);
+        }
+        .scanner-status.error .status-dot {
+            background: var(--danger);
+        }
+        #reader { width: 100%; border: none; min-height: 200px; border-radius: 12px; overflow: hidden; margin-top: 10px; display: none; }
 
         /* ===== ESTOQUE ===== */
         .estoque-resumo { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 14px; }
@@ -136,6 +346,21 @@
         .empty-state { text-align: center; padding: 30px 20px; color: var(--text-muted); font-size: 13px; }
         footer { font-size: 10px; text-align: center; color: var(--text-muted); margin-top: 16px; }
 
+        /* ===== LISTA COMPLETA ===== */
+        .produto-completo-item { display: flex; justify-content: space-between; align-items: center; padding: 8px 0; border-bottom: 1px solid var(--border); font-size: 13px; }
+        .produto-completo-item:last-child { border-bottom: none; }
+        .produto-completo-item .info { flex: 1; min-width: 0; }
+        .produto-completo-item .info .nome { font-weight: 600; }
+        .produto-completo-item .info .detalhes { font-size: 11px; color: var(--text-muted); }
+        .produto-completo-item .qtd { font-weight: 700; padding: 2px 10px; border-radius: 20px; font-size: 13px; background: var(--bg-elevated); }
+        .produto-completo-item .qtd.zero { color: var(--danger); background: rgba(231,76,60,0.1); }
+
+        .scan-animation { position: fixed; background: var(--success); color: white; font-size: 20px; font-weight: 700; padding: 10px 20px; border-radius: 30px; pointer-events: none; z-index: 2000; animation: floatUp 0.8s ease-out forwards; box-shadow: 0 8px 24px rgba(0,0,0,0.2); text-align: center; white-space: nowrap; }
+        .scan-animation.remover { background: var(--danger); }
+        .warning-animation { position: fixed; background: var(--warning); color: white; font-size: 14px; font-weight: 600; padding: 10px 16px; border-radius: 20px; pointer-events: none; z-index: 2000; animation: shakeWarning 0.5s ease-out forwards; box-shadow: 0 8px 24px rgba(0,0,0,0.2); text-align: center; max-width: 80%; left: 10%; }
+        @keyframes floatUp { 0% { opacity: 1; transform: translateY(0) scale(1); } 100% { opacity: 0; transform: translateY(-80px) scale(1.2); } }
+        @keyframes shakeWarning { 0% { transform: translateX(0); opacity: 1; } 25% { transform: translateX(-10px); } 75% { transform: translateX(10px); } 100% { transform: translateX(0); opacity: 0; } }
+
         .value-hidden .resumo-valor, 
         .value-hidden .transaction-value, 
         .value-hidden .caixa-item span:last-child,
@@ -180,6 +405,7 @@
         .caixa-item .caixa-saldo.positive { color: var(--success); }
         .caixa-item .caixa-saldo.negative { color: var(--danger); }
 
+        /* Grid de totais por caixa com entradas, saídas e saldo */
         .caixa-total-grid {
             display: grid;
             grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
@@ -253,9 +479,50 @@
         .transaction-value { font-weight: 700; font-size: 15px; margin-right: 8px; }
         .transaction-actions { display: flex; gap: 4px; }
 
+        .scan-duplo-status { text-align: center; padding: 8px; font-size: 12px; font-weight: 600; border-radius: 10px; margin-top: 6px; display: none; }
+        .scan-duplo-status.aguardando { display: block; background: var(--warning); color: white; }
+        .scan-duplo-status.lido { display: block; background: var(--success); color: white; }
+        .scan-duplo-status.erro { display: block; background: var(--danger); color: white; }
+        .scan-duplo-status.identificado { display: block; background: var(--info); color: white; }
+
         ::-webkit-scrollbar { width: 4px; }
         ::-webkit-scrollbar-track { background: var(--bg-elevated); }
         ::-webkit-scrollbar-thumb { background: var(--text-muted); border-radius: 4px; }
+
+        /* Auth Code Scanner inside modal */
+        #authCodeReader {
+            width: 100%;
+            min-height: 180px;
+            border-radius: 12px;
+            overflow: hidden;
+            margin-bottom: 12px;
+            background: var(--bg-elevated);
+            display: none;
+        }
+        #authCodeReader video {
+            width: 100% !important;
+            height: auto !important;
+        }
+        .auth-code-status {
+            text-align: center;
+            font-size: 13px;
+            font-weight: 600;
+            padding: 8px;
+            border-radius: 10px;
+            margin-top: 8px;
+        }
+        .auth-code-status.waiting {
+            color: var(--text-muted);
+            background: var(--bg-elevated);
+        }
+        .auth-code-status.success {
+            color: var(--success);
+            background: rgba(46,204,113,0.1);
+        }
+        .auth-code-status.error {
+            color: var(--danger);
+            background: rgba(231,76,60,0.1);
+        }
     </style>
 </head>
 <body class="value-hidden">
@@ -315,7 +582,7 @@
                     <div class="menu-divider"></div>
                     <button id="menuTheme">🌓 Tema</button>
                     <div class="menu-divider"></div>
-                    <button id="menuAbrirLink">🌐 Abrir Extrato</button>
+                    <button id="menuSecurity">🔒 Segurança Remoção</button>
                     <div class="menu-divider"></div>
                     <button id="menuClearAll" style="color:var(--danger);">⚠️ Limpar Transações</button>
                     <button id="menuDeleteAccount" class="danger-item">🗑️ Excluir Conta</button>
@@ -380,6 +647,40 @@
             <div class="estoque-resumo-item"><strong>⏰ Vencem</strong> <span id="produtosVencendo">0</span></div>
         </div>
         
+        <!-- SCANNER SECTION -->
+        <div class="scanner-section">
+            <div class="scanner-header">
+                <h4>📷 Scanner Inteligente</h4>
+                <span class="badge-scanner">v2.0</span>
+            </div>
+            <div class="scanner-modes">
+                <button id="modoAdicionar" class="scanner-mode-btn active-add">
+                    <span class="mode-icon">➕</span> Adicionar
+                </button>
+                <button id="modoRemover" class="scanner-mode-btn">
+                    <span class="mode-icon">➖</span> Remover
+                </button>
+            </div>
+            <div class="scanner-actions">
+                <button id="startScannerBtn" class="scanner-btn scanner-btn-primary">
+                    <span class="btn-icon">📷</span>
+                    <span class="btn-text" id="scanBtnText">Scanear Código</span>
+                    <span class="btn-badge" id="scanBtnBadge">Rápido</span>
+                </button>
+                <button id="startScannerValidade" class="scanner-btn scanner-btn-secondary">
+                    <span class="btn-icon">📋</span>
+                    <span class="btn-text" id="scanValidadeBtnText">Scanear + Validade</span>
+                    <span class="btn-badge">Completo</span>
+                </button>
+            </div>
+            <div id="scanDuploStatus" class="scan-duplo-status" style="display:none;"></div>
+            <div class="scanner-status" id="scannerStatus">
+                <span class="status-dot"></span>
+                <span id="scannerStatusText">Pronto para escanear</span>
+            </div>
+            <div id="reader" style="width:100%; display:none;"></div>
+        </div>
+        
         <!-- Formulário Produto -->
         <div class="form-mobile" id="formNovoLote" style="display: none;">
             <h3>📦 Novo Produto</h3>
@@ -410,7 +711,10 @@
 
     <!-- CAIXAS -->
     <div id="tabCaixas" class="tab-pane" style="display: none;">
-        <div class="caixa-total-grid" id="caixaTotalGrid"></div>
+        <!-- Grid com o total de cada caixa individual -->
+        <div class="caixa-total-grid" id="caixaTotalGrid">
+            <!-- Renderizado via JavaScript -->
+        </div>
 
         <div class="caixas-grid">
             <div class="caixa-box">
@@ -424,7 +728,7 @@
         </div>
     </div>
 
-    <footer>✔️ Sistema de Caixa + Estoque</footer>
+    <footer>✔️ Escaneie produto e validade - Reconhece datas</footer>
 </div>
 
 <!-- Modais -->
@@ -434,6 +738,25 @@
 
 <div id="deleteAccountModal" class="modal-mobile"><div class="modal-card"><h3 style="color:var(--danger);">⚠️ Excluir Conta</h3><p class="sub">Digite sua senha para confirmar</p><input type="password" id="deleteConfirmPassword" class="auth-input"><div style="display:flex; gap:10px; margin-top:16px;"><button id="confirmDeleteAccountBtn" class="auth-btn" style="background:var(--danger);">Excluir</button><button id="cancelDeleteAccountBtn" class="auth-btn" style="background:var(--text-muted);">Cancelar</button></div></div></div>
 
+<div id="validadeModal" class="modal-mobile validade-modal">
+    <div class="modal-card">
+        <h3>📦 Adicionar ao Estoque</h3>
+        <div style="background:var(--bg-elevated); border-radius:12px; padding:12px; margin-bottom:12px; border:1px solid var(--border);">
+            <div style="font-weight:700; font-size:15px;" id="validadeProdutoNome">Produto</div>
+            <div style="font-size:11px; color:var(--text-muted); font-family:monospace;" id="validadeProdutoCodigo">Código: ---</div>
+            <div style="font-size:12px; color:var(--text-muted); margin-top:2px;" id="validadeProdutoDetalhes">Quantidade: 0 | Validade: ---</div>
+            <div id="validadeProdutoStatus" style="margin-top:6px; font-size:12px;"></div>
+        </div>
+        <div class="input-field"><label>📅 Validade</label><input type="date" id="validadeDataInput"></div>
+        <div class="input-field"><label>🔢 Quantidade</label><input type="number" id="validadeQuantidade" value="1" min="1"></div>
+        <div class="input-field"><label>🏷️ Lote</label><input type="text" id="validadeLote" placeholder="Opcional"></div>
+        <div style="display:flex; gap:10px; margin-top:12px;">
+            <button id="confirmarValidadeBtn" class="auth-btn">✅ Adicionar</button>
+            <button id="cancelarValidadeBtn" class="auth-btn" style="background:var(--danger);">✕</button>
+        </div>
+    </div>
+</div>
+
 <div id="listaProdutosModal" class="modal-mobile">
     <div class="modal-card" style="max-width:380px; max-height:80vh; overflow-y:auto;">
         <h3>📋 Todos os Produtos</h3>
@@ -442,6 +765,42 @@
         </div>
         <div id="listaProdutosContainer" style="max-height:50vh; overflow-y:auto;"></div>
         <button id="fecharListaProdutos" class="auth-btn" style="margin-top:12px; background:var(--text-muted);">Fechar</button>
+    </div>
+</div>
+
+<!-- Security Modals -->
+<div id="securityModal" class="modal-mobile">
+    <div class="modal-card">
+        <h3>🔒 Segurança Remoção</h3>
+        <div id="securityStatus" style="background:var(--bg-elevated); border-radius:12px; padding:12px; margin-bottom:16px; text-align:center; font-size:14px; font-weight:600;"></div>
+        <div class="input-field">
+            <label>🔑 Senha para confirmar</label>
+            <input type="password" id="securityPassword" class="auth-input" placeholder="Digite sua senha">
+        </div>
+        <div class="input-field">
+            <label>📷 Código de autorização</label>
+            <input type="text" id="securityAuthCode" class="auth-input" placeholder="Código para escanear na remoção">
+            <div style="font-size:11px; color:var(--text-muted); margin-top:4px;">Deixe em branco para desativar</div>
+        </div>
+        <div style="display:flex; gap:10px; margin-top:8px;">
+            <button id="saveSecurityBtn" class="auth-btn">💾 Salvar</button>
+            <button id="cancelSecurityBtn" class="auth-btn" style="background:var(--text-muted);">Cancelar</button>
+        </div>
+        <div id="securityErrorMsg" style="color:var(--danger); font-size:12px; margin-top:10px;"></div>
+    </div>
+</div>
+
+<div id="authCodeModal" class="modal-mobile">
+    <div class="modal-card">
+        <h3>🔑 Autorização Necessária</h3>
+        <p class="sub" id="authCodeActionText">Escaneie o código de autorização para remover este item</p>
+        <div style="background:var(--bg-elevated); border-radius:12px; padding:12px; margin-bottom:12px; border:1px solid var(--border); text-align:center;">
+            <div style="font-weight:700; font-size:15px;" id="authCodeProductName">Produto</div>
+            <div style="font-size:11px; color:var(--text-muted);">Aponte a câmera para o código de autorização</div>
+        </div>
+        <div id="authCodeReader"></div>
+        <div id="authCodeStatus" class="auth-code-status waiting">📷 Aguardando código...</div>
+        <button id="cancelAuthCodeBtn" class="auth-btn" style="background:var(--danger); margin-top:8px;">Cancelar</button>
     </div>
 </div>
 
@@ -460,6 +819,38 @@
         '7896015505808': { nome: 'Sal', preco: 2.50 },
     };
 
+    // ==================== SECURITY CONFIG ====================
+    let securityConfig = {
+        enabled: false,
+        authCode: ''
+    };
+
+    function loadSecurityConfig() {
+        try {
+            const saved = localStorage.getItem('securityConfig_' + (currentUser || 'default'));
+            if (saved) {
+                securityConfig = JSON.parse(saved);
+            } else {
+                securityConfig = { enabled: false, authCode: '' };
+            }
+        } catch(e) {
+            securityConfig = { enabled: false, authCode: '' };
+        }
+    }
+
+    function saveSecurityConfig() {
+        localStorage.setItem('securityConfig_' + (currentUser || 'default'), JSON.stringify(securityConfig));
+    }
+
+    function isRemovalLocked() {
+        return securityConfig.enabled && securityConfig.authCode && securityConfig.authCode.trim().length > 0;
+    }
+
+    function checkAuthCode(code) {
+        if (!securityConfig.enabled || !securityConfig.authCode) return true;
+        return code === securityConfig.authCode;
+    }
+
     // ==================== FUNÇÕES AUXILIARES ====================
     function parseMoney(v) { if(!v) return null; let str=String(v).trim().replace(/\./g,'').replace(',','.'); let n=parseFloat(str); return isNaN(n)||n<=0?null:n; }
     function formatMoney(v) { return v.toLocaleString('pt-BR',{style:'currency',currency:'BRL'}); }
@@ -470,8 +861,54 @@
     function isVencendo(d) { const dias=diasAteVencimento(d); return dias!==null&&dias>=0&&dias<=7; }
     function isVencido(d) { const dias=diasAteVencimento(d); return dias!==null&&dias<0; }
 
+    function reconhecerData(texto) {
+        if(!texto) return null;
+        const t = texto.trim();
+        let match = t.match(/^(\d{4})-(\d{2})-(\d{2})$/);
+        if(match) { const data = new Date(parseInt(match[1]), parseInt(match[2])-1, parseInt(match[3])); if(!isNaN(data.getTime())) return data; }
+        match = t.match(/^(\d{2})\/(\d{2})\/(\d{4})$/);
+        if(match) { const data = new Date(parseInt(match[3]), parseInt(match[2])-1, parseInt(match[1])); if(!isNaN(data.getTime())) return data; }
+        match = t.match(/^(\d{2})-(\d{2})-(\d{4})$/);
+        if(match) { const data = new Date(parseInt(match[3]), parseInt(match[2])-1, parseInt(match[1])); if(!isNaN(data.getTime())) return data; }
+        match = t.match(/^(\d{2})\.(\d{2})\.(\d{4})$/);
+        if(match) { const data = new Date(parseInt(match[3]), parseInt(match[2])-1, parseInt(match[1])); if(!isNaN(data.getTime())) return data; }
+        match = t.match(/^(\d{4})\/(\d{2})\/(\d{2})$/);
+        if(match) { const data = new Date(parseInt(match[1]), parseInt(match[2])-1, parseInt(match[3])); if(!isNaN(data.getTime())) return data; }
+        match = t.match(/^(\d{2})\/(\d{2})\/(\d{2})$/);
+        if(match) { const ano = parseInt(match[3]) + (parseInt(match[3]) < 30 ? 2000 : 1900); const data = new Date(ano, parseInt(match[2])-1, parseInt(match[1])); if(!isNaN(data.getTime())) return data; }
+        match = t.match(/^(\d{2})-(\d{2})-(\d{2})$/);
+        if(match) { const ano = parseInt(match[3]) + (parseInt(match[3]) < 30 ? 2000 : 1900); const data = new Date(ano, parseInt(match[2])-1, parseInt(match[1])); if(!isNaN(data.getTime())) return data; }
+        const meses = { 'janeiro':0,'fevereiro':1,'março':2,'abril':3,'maio':4,'junho':5,'julho':6,'agosto':7,'setembro':8,'outubro':9,'novembro':10,'dezembro':11 };
+        const tLower = t.toLowerCase();
+        for(let [mes, idx] of Object.entries(meses)) {
+            if(tLower.includes(mes)) {
+                let diaMatch = tLower.match(/(\d{1,2})/);
+                let anoMatch = tLower.match(/(\d{4})/);
+                if(diaMatch && anoMatch) {
+                    const data = new Date(parseInt(anoMatch[1]), idx, parseInt(diaMatch[1]));
+                    if(!isNaN(data.getTime())) return data;
+                }
+            }
+        }
+        return null;
+    }
+
+    function formatarDataParaInput(data) {
+        if(!data) return '';
+        const ano = data.getFullYear();
+        const mes = String(data.getMonth()+1).padStart(2,'0');
+        const dia = String(data.getDate()).padStart(2,'0');
+        return `${ano}-${mes}-${dia}`;
+    }
+
     let currentUser=null, transacoes=[], caixas=[], produtos=[];
-    let termoPesquisa = '';
+    let html5QrCode=null, scannerAtivo=false, ultimoCodigoLido="", ultimoTempoLeitura=0;
+    let modoScanner='adicionar', scanDuploProduto=null, scanDuploAguardandoValidade=false;
+    let aguardandoData = false, termoPesquisa = '';
+    let scannerTipo = 'normal';
+    let authCodeHtml5Qr = null;
+    let pendingAction = null;
+    let authCodeScannerRunning = false;
 
     function identificarProduto(codigo) {
         const p=produtos.find(x=>x.codigo===codigo);
@@ -485,7 +922,7 @@
     function loadUsers() { return JSON.parse(localStorage.getItem("appUsers")||"{}"); }
     function saveUsers(u) { localStorage.setItem("appUsers",JSON.stringify(u)); }
     function registerUser(n,s) { let u=loadUsers(); if(u[n]) throw new Error("Usuário já existe!"); if(!isStrongPassword(s)) throw new Error("Senha deve ter 4-6 números"); u[n]={ senha:s, transacoes:[], produtos:[], caixas:["Carteira","Banco","PicPay","Nubank"] }; saveUsers(u); return true; }
-    function loginUser(n,s) { let u=loadUsers(); if(!u[n]) throw new Error("Usuário não encontrado!"); if(u[n].senha!==s) throw new Error("Senha incorreta!"); currentUser=n; transacoes=u[n].transacoes||[]; produtos=u[n].produtos||[]; caixas=u[n].caixas||["Carteira","Banco","PicPay","Nubank"]; return true; }
+    function loginUser(n,s) { let u=loadUsers(); if(!u[n]) throw new Error("Usuário não encontrado!"); if(u[n].senha!==s) throw new Error("Senha incorreta!"); currentUser=n; transacoes=u[n].transacoes||[]; produtos=u[n].produtos||[]; caixas=u[n].caixas||["Carteira","Banco","PicPay","Nubank"]; loadSecurityConfig(); return true; }
     function saveCurrentUser() { if(!currentUser) return; let u=loadUsers(); if(u[currentUser]) { u[currentUser].transacoes=transacoes; u[currentUser].produtos=produtos; u[currentUser].caixas=caixas; saveUsers(u); } }
 
     function getSaldoPorCaixa() { 
@@ -531,16 +968,31 @@
     // ==================== ESTOQUE ====================
     function adicionarQtd(codigo,qtd=1) {
         let idx=produtos.findIndex(p=>p.codigo===codigo);
-        if(idx!==-1){ produtos[idx].quantidade+=qtd; saveCurrentUser(); renderEstoque(); return true; }
+        if(idx!==-1){ produtos[idx].quantidade+=qtd; saveCurrentUser(); renderEstoque(); destacarNaLista(codigo); mostrarAnimacao(window.innerWidth/2,window.innerHeight/2,produtos[idx].nome,qtd,'adicionar'); return true; }
         return false;
     }
 
     function removerQtd(codigo,qtd=1) {
         let idx=produtos.findIndex(p=>p.codigo===codigo);
         if(idx!==-1){ 
-            if(produtos[idx].quantidade<qtd){ alert(`❌ Estoque insuficiente!`); return false; }
+            if(produtos[idx].quantidade<qtd){ alert(`❌ Estoque insuficiente!`); return false; } 
+            
+            if (isRemovalLocked()) {
+                pendingAction = { type: 'remove', codigo, qtd, idx };
+                document.getElementById('authCodeActionText').textContent = 'Escaneie o código de autorização para remover este item';
+                document.getElementById('authCodeProductName').innerHTML = produtos[idx].nome + ' (x' + qtd + ')';
+                document.getElementById('authCodeModal').classList.add('active');
+                document.getElementById('authCodeStatus').textContent = '📷 Aguardando código...';
+                document.getElementById('authCodeStatus').className = 'auth-code-status waiting';
+                
+                setTimeout(() => {
+                    startAuthCodeScanner();
+                }, 300);
+                return false;
+            }
+            
             produtos[idx].quantidade-=qtd; 
-            saveCurrentUser(); renderEstoque(); return true; 
+            saveCurrentUser(); renderEstoque(); destacarNaLista(codigo); mostrarAnimacao(window.innerWidth/2,window.innerHeight/2,produtos[idx].nome,qtd,'remover'); return true; 
         }
         return false;
     }
@@ -548,11 +1000,34 @@
     function deletarProduto(codigo) {
         let idx = produtos.findIndex(p => p.codigo === codigo);
         if (idx === -1) return;
+        
+        if (isRemovalLocked()) {
+            pendingAction = { type: 'delete', codigo, idx };
+            document.getElementById('authCodeActionText').textContent = 'Escaneie o código de autorização para excluir este item';
+            document.getElementById('authCodeProductName').innerHTML = produtos[idx].nome + ' (excluir)';
+            document.getElementById('authCodeModal').classList.add('active');
+            document.getElementById('authCodeStatus').textContent = '📷 Aguardando código...';
+            document.getElementById('authCodeStatus').className = 'auth-code-status waiting';
+            
+            setTimeout(() => {
+                startAuthCodeScanner();
+            }, 300);
+            return;
+        }
+        
         if (confirm("Excluir permanentemente?")) {
             produtos = produtos.filter(p => p.codigo !== codigo);
             saveCurrentUser();
             renderEstoque();
         }
+    }
+
+    function adicionarComValidade(codigo,validade,qtd,lote) {
+        let idx=produtos.findIndex(p=>p.codigo===codigo);
+        if(idx!==-1){ produtos[idx].quantidade+=qtd; produtos[idx].validade=validade; if(lote) produtos[idx].numeroLote=lote; saveCurrentUser(); renderEstoque(); mostrarAnimacao(window.innerWidth/2,window.innerHeight/2,produtos[idx].nome,qtd,'adicionar'); alert(`✅ Adicionado!`); return true; }
+        let ident=identificarProduto(codigo);
+        if(ident.encontrado&&ident.origem==='base'){ produtos.push({ codigo, nome:ident.produto.nome, preco:ident.produto.preco, quantidade:qtd, validade:validade||null, numeroLote:lote||null }); saveCurrentUser(); renderEstoque(); mostrarAnimacao(window.innerWidth/2,window.innerHeight/2,ident.produto.nome,qtd,'adicionar'); alert(`✅ "${ident.produto.nome}" adicionado!`); return true; }
+        document.getElementById('produtoCodigo').value=codigo; document.getElementById('produtoValidade').value=validade; document.getElementById('produtoQuantidade').value=qtd; if(lote) document.getElementById('produtoLote').value=lote; document.getElementById('formNovoLote').style.display='block'; document.getElementById('produtoNome').focus(); return false;
     }
 
     // ==================== RENDER ESTOQUE ====================
@@ -571,7 +1046,7 @@
         
         if(!produtosVisiveis.length){ 
             if (produtos.length > 0 && produtos.every(p => p.quantidade <= 0)) {
-                container.innerHTML='<div class="empty-state">📦 Estoque vazio. Adicione produtos.</div>';
+                container.innerHTML='<div class="empty-state">📦 Estoque vazio. Escaneie para repor.</div>';
             } else if (termo) {
                 container.innerHTML='<div class="empty-state">🔍 Nada encontrado para "'+escapeHtml(termo)+'"</div>';
             } else {
@@ -672,12 +1147,401 @@
     function openEditModal(id){ let t=transacoes.find(x=>x.id==id); if(!t)return; document.getElementById('editId').value=t.id; document.getElementById('editDesc').value=t.descricao; document.getElementById('editValor').value=t.valor.toFixed(2); document.getElementById('editData').value=t.data; document.getElementById('editTipo').value=t.tipo; let sel=document.getElementById('editCaixa'); sel.innerHTML=caixas.map(c=>`<option value="${escapeHtml(c)}" ${c===t.caixa?'selected':''}>${escapeHtml(c)}</option>`).join(''); document.getElementById('editModal').classList.add('active'); }
     function deleteTransacao(id){ if(confirm("Remover?")){ transacoes=transacoes.filter(t=>t.id!=id); refreshAll(); } }
 
+    // ==================== ANIMAÇÕES ====================
+    function mostrarAnimacao(x,y,nome,qtd,tipo){
+        const div=document.createElement('div');
+        div.className='scan-animation'+(tipo==='remover'?' remover':'');
+        div.innerHTML=(tipo==='adicionar'?`+${qtd}`:`-${qtd}`)+` ${nome}`;
+        div.style.left=(x-60)+'px'; div.style.top=(y-40)+'px';
+        document.body.appendChild(div);
+        setTimeout(()=>div.remove(),800);
+    }
+    function destacarNaLista(codigo){
+        document.querySelectorAll('.produto-item').forEach(item=>{
+            let btn=item.querySelector('.btn-edit');
+            if(btn&&btn.dataset.codigo===codigo){ item.style.transition='all 0.15s'; item.style.backgroundColor='var(--success)'; item.style.color='white'; setTimeout(()=>{ item.style.backgroundColor=''; item.style.color=''; },300); }
+        });
+    }
+
+    // ==================== SCANNERS ====================
+    function updateScannerStatus(text, type='active') {
+        const status = document.getElementById('scannerStatus');
+        const textEl = document.getElementById('scannerStatusText');
+        status.className = 'scanner-status ' + type;
+        textEl.textContent = text;
+    }
+
+    function iniciarScannerValidade() {
+        const rd=document.getElementById('reader');
+        const st=document.getElementById('startScannerValidade');
+        const stText=document.getElementById('scanValidadeBtnText');
+        const sd=document.getElementById('scanDuploStatus');
+        
+        if(scannerAtivo){ 
+            if(html5QrCode){ 
+                html5QrCode.stop().then(()=>{ 
+                    rd.style.display='none'; 
+                    stText.innerHTML='Scanear + Validade';
+                    st.className='scanner-btn scanner-btn-secondary';
+                    scannerAtivo=false; 
+                    html5QrCode=null; 
+                    aguardandoData=false;
+                    sd.style.display='none';
+                    updateScannerStatus('Pronto para escanear', '');
+                }).catch(e=>{}); 
+            } 
+            return; 
+        }
+        
+        rd.style.display='block';
+        sd.style.display='block';
+        sd.className='scan-duplo-status aguardando';
+        sd.innerHTML='📷 Aguardando código do produto...';
+        stText.innerHTML='🛑 Parar';
+        st.className='scanner-btn scanner-btn-warning';
+        updateScannerStatus('Aguardando escaneamento...', 'active');
+        
+        scanDuploProduto=null; 
+        scanDuploAguardandoValidade=false; 
+        aguardandoData=false;
+        scannerTipo = 'validade';
+        
+        html5QrCode=new Html5Qrcode("reader");
+        html5QrCode.start({ facingMode:"environment" },{ fps:10, qrbox:{width:250,height:200} }, (decoded)=>{
+            let agora=Date.now();
+            if(decoded===ultimoCodigoLido&&agora-ultimoTempoLeitura<1500)return;
+            ultimoCodigoLido=decoded; ultimoTempoLeitura=agora;
+            
+            if(!scanDuploAguardandoValidade && !aguardandoData){
+                let ident=identificarProduto(decoded);
+                if(ident.encontrado){
+                    scanDuploProduto=ident.produto; 
+                    scanDuploAguardandoValidade=true;
+                    let msg=`✅ ${ident.produto.nome}`;
+                    if(ident.origem==='estoque'){ 
+                        msg+=` (${ident.produto.quantidade} un.)`; 
+                        sd.className='scan-duplo-status lido'; 
+                    } else { 
+                        sd.className='scan-duplo-status identificado'; 
+                    }
+                    sd.innerHTML=`${msg}<br>📷 Agora escaneie a data de validade`;
+                    updateScannerStatus(`Produto: ${ident.produto.nome} - Aguardando data`, 'success');
+                    
+                    document.getElementById('validadeProdutoNome').innerText=ident.produto.nome;
+                    document.getElementById('validadeProdutoCodigo').innerHTML=`Código: ${ident.produto.codigo}`;
+                    let detalhes=`Quantidade: ${ident.produto.quantidade||0}`;
+                    if(ident.produto.validade) detalhes+=` | Validade: ${formatDateBR(ident.produto.validade)}`;
+                    if(ident.produto.preco) detalhes+=` | Preço: ${formatMoney(ident.produto.preco)}`;
+                    document.getElementById('validadeProdutoDetalhes').innerHTML=detalhes;
+                    document.getElementById('validadeProdutoStatus').innerHTML=ident.origem==='estoque'?'<span style="color:var(--success);">✅ No estoque</span>':'<span style="color:var(--info);">💡 Será cadastrado</span>';
+                    document.getElementById('validadeDataInput').value='';
+                    document.getElementById('validadeQuantidade').value='1';
+                    document.getElementById('validadeLote').value=ident.produto.numeroLote||'';
+                    document.getElementById('validadeModal').classList.add('active');
+                    try { new AudioContext().createOscillator().start(); } catch(e){}
+                } else {
+                    let dataTeste = reconhecerData(decoded);
+                    if(dataTeste){
+                        sd.className='scan-duplo-status erro';
+                        sd.innerHTML=`📅 Data reconhecida: ${formatDateBR(formatarDataParaInput(dataTeste))}<br>⚠️ Escaneie o produto primeiro!`;
+                        updateScannerStatus('Data reconhecida, mas aguarde o produto', 'error');
+                        setTimeout(()=>{ 
+                            if(!scanDuploAguardandoValidade){ 
+                                sd.className='scan-duplo-status aguardando'; 
+                                sd.innerHTML='📷 Aguardando código do produto...';
+                                updateScannerStatus('Aguardando escaneamento...', 'active');
+                            } 
+                        },2000);
+                    } else {
+                        sd.className='scan-duplo-status erro';
+                        sd.innerHTML=`❌ Produto não encontrado!<br>${decoded}`;
+                        updateScannerStatus('Produto não encontrado', 'error');
+                        if(confirm(`📷 Código: ${decoded}\n\nProduto não encontrado!\nCadastrar?`)){
+                            document.getElementById('produtoCodigo').value=decoded;
+                            document.getElementById('formNovoLote').style.display='block';
+                            document.getElementById('produtoNome').focus();
+                            if(html5QrCode){ 
+                                html5QrCode.stop().then(()=>{ 
+                                    rd.style.display='none'; 
+                                    sd.style.display='none';
+                                    stText.innerHTML='Scanear + Validade';
+                                    st.className='scanner-btn scanner-btn-secondary';
+                                    scannerAtivo=false; 
+                                    html5QrCode=null;
+                                    updateScannerStatus('Pronto para escanear', '');
+                                }).catch(e=>{}); 
+                            }
+                        }
+                    }
+                }
+            } else if(scanDuploAguardandoValidade) {
+                let dataReconhecida = reconhecerData(decoded);
+                if(dataReconhecida){
+                    let dataFormatada = formatarDataParaInput(dataReconhecida);
+                    document.getElementById('validadeDataInput').value = dataFormatada;
+                    let qtd = parseInt(document.getElementById('validadeQuantidade').value) || 1;
+                    let lote = document.getElementById('validadeLote').value.trim() || null;
+                    if(scanDuploProduto){
+                        adicionarComValidade(scanDuploProduto.codigo, dataFormatada, qtd, lote);
+                        document.getElementById('validadeModal').classList.remove('active');
+                        scanDuploProduto=null; 
+                        scanDuploAguardandoValidade=false;
+                        sd.className='scan-duplo-status aguardando';
+                        sd.innerHTML='📷 Aguardando próximo código...';
+                        updateScannerStatus('Produto adicionado com sucesso!', 'success');
+                        try { let ctx=new AudioContext(); let o=ctx.createOscillator(); o.frequency.value=1100; o.start(); o.stop(ctx.currentTime+0.1); } catch(e){}
+                        setTimeout(() => updateScannerStatus('Aguardando escaneamento...', 'active'), 1500);
+                    }
+                } else {
+                    let ident=identificarProduto(decoded);
+                    if(ident.encontrado){
+                        scanDuploProduto=ident.produto;
+                        document.getElementById('validadeProdutoNome').innerText=ident.produto.nome;
+                        document.getElementById('validadeProdutoCodigo').innerHTML=`Código: ${ident.produto.codigo}`;
+                        let detalhes=`Quantidade: ${ident.produto.quantidade||0}`;
+                        if(ident.produto.validade) detalhes+=` | Validade: ${formatDateBR(ident.produto.validade)}`;
+                        document.getElementById('validadeProdutoDetalhes').innerHTML=detalhes;
+                        sd.className='scan-duplo-status lido';
+                        sd.innerHTML=`✅ Produto: ${ident.produto.nome}<br>📷 Agora escaneie a data`;
+                        updateScannerStatus(`Produto alterado: ${ident.produto.nome}`, 'success');
+                        try { let ctx=new AudioContext(); let o=ctx.createOscillator(); o.frequency.value=660; o.start(); o.stop(ctx.currentTime+0.1); } catch(e){}
+                    } else {
+                        sd.className='scan-duplo-status erro';
+                        sd.innerHTML=`❌ Data inválida: ${decoded}`;
+                        updateScannerStatus('Data inválida, tente novamente', 'error');
+                        setTimeout(()=>{
+                            if(scanDuploAguardandoValidade && scanDuploProduto){
+                                sd.className='scan-duplo-status lido';
+                                sd.innerHTML=`✅ Produto: ${scanDuploProduto.nome}<br>📷 Agora escaneie a data`;
+                                updateScannerStatus(`Aguardando data para ${scanDuploProduto.nome}`, 'active');
+                            }
+                        },2000);
+                    }
+                }
+            }
+        }, (error)=>{});
+        scannerAtivo=true;
+    }
+
+    function iniciarScannerNormal() {
+        const rd=document.getElementById('reader');
+        const st=document.getElementById('startScannerBtn');
+        const stText=document.getElementById('scanBtnText');
+        const badge=document.getElementById('scanBtnBadge');
+        
+        if(scannerAtivo){ 
+            if(html5QrCode){ 
+                html5QrCode.stop().then(()=>{ 
+                    rd.style.display='none'; 
+                    stText.innerHTML='Scanear Código';
+                    badge.innerHTML='Rápido';
+                    st.className='scanner-btn scanner-btn-primary';
+                    scannerAtivo=false; 
+                    html5QrCode=null;
+                    document.getElementById('startScannerValidade').innerHTML='📋 Scanear + Validade';
+                    document.getElementById('startScannerValidade').className='scanner-btn scanner-btn-secondary';
+                    document.getElementById('scanValidadeBtnText').innerHTML='Scanear + Validade';
+                    updateScannerStatus('Pronto para escanear', '');
+                }).catch(e=>{}); 
+            } 
+            return; 
+        }
+        
+        rd.style.display='block';
+        stText.innerHTML='🛑 Parar';
+        badge.innerHTML='Escanendo...';
+        st.className='scanner-btn scanner-btn-warning';
+        updateScannerStatus('Escanendo...', 'active');
+        scannerTipo = 'normal';
+        
+        html5QrCode=new Html5Qrcode("reader");
+        html5QrCode.start({ facingMode:"environment" },{ fps:10, qrbox:{width:250,height:200} }, (decoded)=>{
+            let agora=Date.now();
+            if(decoded===ultimoCodigoLido&&agora-ultimoTempoLeitura<1000)return;
+            ultimoCodigoLido=decoded; ultimoTempoLeitura=agora;
+            let ident=identificarProduto(decoded);
+            if(ident.encontrado){
+                let nome=ident.produto.nome;
+                if(modoScanner==='adicionar'){
+                    let p=produtos.find(x=>x.codigo===decoded);
+                    if(p){ 
+                        adicionarQtd(decoded,1); 
+                        updateScannerStatus(`+1 ${nome} adicionado!`, 'success');
+                    } else {
+                        if(confirm(`📦 "${nome}" encontrado!\n\nAdicionar ao estoque?`)){
+                            produtos.push({ codigo:decoded, nome:ident.produto.nome, preco:ident.produto.preco||null, quantidade:1, validade:null, numeroLote:null });
+                            saveCurrentUser(); renderEstoque(); mostrarAnimacao(window.innerWidth/2,window.innerHeight/2,nome,1,'adicionar');
+                            updateScannerStatus(`✅ "${nome}" adicionado!`, 'success');
+                        }
+                    }
+                } else {
+                    let p=produtos.find(x=>x.codigo===decoded);
+                    if(p){ 
+                        removerQtd(decoded,1); 
+                        updateScannerStatus(`-1 ${nome} removido!`, 'success');
+                    } else { 
+                        alert(`❌ "${nome}" não está no estoque.`);
+                        updateScannerStatus('Produto não encontrado no estoque', 'error');
+                    }
+                }
+                try { let ctx=new AudioContext(); let o=ctx.createOscillator(); o.frequency.value=880; o.start(); o.stop(ctx.currentTime+0.1); } catch(e){}
+                setTimeout(() => updateScannerStatus('Escanendo...', 'active'), 1000);
+            } else {
+                if(modoScanner==='adicionar'){
+                    if(confirm(`📷 Código: ${decoded}\n\nProduto não encontrado!\nCadastrar?`)){
+                        document.getElementById('produtoCodigo').value=decoded;
+                        document.getElementById('formNovoLote').style.display='block';
+                        document.getElementById('produtoNome').focus();
+                        if(html5QrCode){ 
+                            html5QrCode.stop().then(()=>{ 
+                                rd.style.display='none'; 
+                                stText.innerHTML='Scanear Código';
+                                badge.innerHTML='Rápido';
+                                st.className='scanner-btn scanner-btn-primary';
+                                scannerAtivo=false; 
+                                html5QrCode=null;
+                                updateScannerStatus('Pronto para escanear', '');
+                            }).catch(e=>{}); 
+                        }
+                    } else {
+                        updateScannerStatus('Produto não cadastrado', 'error');
+                        setTimeout(() => updateScannerStatus('Escanendo...', 'active'), 1000);
+                    }
+                } else {
+                    let div=document.createElement('div'); 
+                    div.className='warning-animation'; 
+                    div.innerHTML=`❌ Produto não encontrado!`; 
+                    div.style.left='10%'; 
+                    div.style.width='80%'; 
+                    div.style.top='40%'; 
+                    document.body.appendChild(div); 
+                    setTimeout(()=>div.remove(),3000);
+                    updateScannerStatus('Produto não encontrado', 'error');
+                    setTimeout(() => updateScannerStatus('Escanendo...', 'active'), 1000);
+                }
+            }
+        }, (error)=>{});
+        scannerAtivo=true;
+    }
+
+    // ==================== AUTH CODE SCANNER ====================
+    function startAuthCodeScanner() {
+        const reader = document.getElementById('authCodeReader');
+        const status = document.getElementById('authCodeStatus');
+        
+        if (authCodeHtml5Qr) {
+            authCodeHtml5Qr.stop().then(() => {
+                authCodeHtml5Qr = null;
+                authCodeScannerRunning = false;
+                reader.style.display = 'none';
+                status.textContent = '📷 Aguardando código...';
+                status.className = 'auth-code-status waiting';
+            }).catch(() => {});
+            return;
+        }
+        
+        reader.style.display = 'block';
+        status.textContent = '📷 Aguardando código...';
+        status.className = 'auth-code-status waiting';
+        
+        try {
+            authCodeHtml5Qr = new Html5Qrcode("authCodeReader");
+            authCodeScannerRunning = true;
+            
+            authCodeHtml5Qr.start(
+                { facingMode: "environment" },
+                { fps: 10, qrbox: { width: 250, height: 200 } },
+                (decoded) => {
+                    let now = Date.now();
+                    if (decoded === ultimoCodigoLido && now - ultimoTempoLeitura < 1500) return;
+                    ultimoCodigoLido = decoded;
+                    ultimoTempoLeitura = now;
+                    
+                    if (checkAuthCode(decoded)) {
+                        status.textContent = '✅ Código autorizado!';
+                        status.className = 'auth-code-status success';
+                        try { 
+                            let ctx = new AudioContext(); 
+                            let o = ctx.createOscillator(); 
+                            o.frequency.value = 1100; 
+                            o.start(); 
+                            o.stop(ctx.currentTime + 0.15); 
+                        } catch(e){}
+                        
+                        if (pendingAction) {
+                            if (pendingAction.type === 'remove') {
+                                const p = pendingAction;
+                                produtos[p.idx].quantidade -= p.qtd;
+                                saveCurrentUser();
+                                renderEstoque();
+                                destacarNaLista(p.codigo);
+                                mostrarAnimacao(window.innerWidth/2, window.innerHeight/2, produtos[p.idx].nome, p.qtd, 'remover');
+                            } else if (pendingAction.type === 'delete') {
+                                const p = pendingAction;
+                                produtos = produtos.filter(prod => prod.codigo !== p.codigo);
+                                saveCurrentUser();
+                                renderEstoque();
+                            }
+                            pendingAction = null;
+                        }
+                        
+                        setTimeout(() => {
+                            document.getElementById('authCodeModal').classList.remove('active');
+                            if (authCodeHtml5Qr) {
+                                authCodeHtml5Qr.stop().then(() => {
+                                    authCodeHtml5Qr = null;
+                                    authCodeScannerRunning = false;
+                                    reader.style.display = 'none';
+                                }).catch(() => {});
+                            }
+                        }, 800);
+                    } else {
+                        status.textContent = '❌ Código inválido! Tente novamente.';
+                        status.className = 'auth-code-status error';
+                        try { 
+                            let ctx = new AudioContext(); 
+                            let o = ctx.createOscillator(); 
+                            o.frequency.value = 200; 
+                            o.start(); 
+                            o.stop(ctx.currentTime + 0.1); 
+                        } catch(e){}
+                        setTimeout(() => {
+                            status.textContent = '📷 Aguardando código...';
+                            status.className = 'auth-code-status waiting';
+                        }, 2000);
+                    }
+                },
+                (error) => {}
+            );
+        } catch(e) {
+            console.error('Error starting auth code scanner:', e);
+            status.textContent = '❌ Erro ao iniciar câmera';
+            status.className = 'auth-code-status error';
+            authCodeScannerRunning = false;
+            setTimeout(() => {
+                status.textContent = '📷 Aguardando código...';
+                status.className = 'auth-code-status waiting';
+            }, 3000);
+        }
+    }
+
+    function stopAuthCodeScanner() {
+        if (authCodeHtml5Qr) {
+            authCodeHtml5Qr.stop().then(() => {
+                authCodeHtml5Qr = null;
+                authCodeScannerRunning = false;
+                document.getElementById('authCodeReader').style.display = 'none';
+            }).catch(() => {});
+        }
+    }
+
     // ==================== CAIXAS ====================
     function renderCaixas() {
         let saldos = getSaldoPorCaixa();
         let entradasSaidas = getEntradasSaidasPorCaixa();
         let totalGeral = getTotalGeral();
         
+        // Grid com o total de cada caixa individual
         let gridHtml = '';
         if (caixas.length === 0) {
             gridHtml = '<div class="empty-state" style="grid-column:1/-1;">Nenhum caixa cadastrado</div>';
@@ -709,6 +1573,7 @@
         }
         document.getElementById('caixaTotalGrid').innerHTML = gridHtml;
         
+        // Gerenciar caixas
         let htmlManage = caixas.map(c => {
             let tem = transacoes.some(t => t.caixa === c);
             return `<div class="caixa-item">
@@ -782,14 +1647,10 @@
     function criarCaixa(nome){ if(!nome||!nome.trim())return alert("❌ Digite um nome"); if(caixas.includes(nome.trim()))return alert("❌ Já existe!"); caixas.push(nome.trim()); saveCurrentUser(); atualizarSelectCaixas(); refreshAll(); alert(`✅ Caixa "${nome.trim()}" criado!`); document.getElementById('newCaixaName').value=''; }
     function toggleHideValues(){ document.body.classList.toggle('value-hidden'); localStorage.setItem('hideValuesPreference',document.body.classList.contains('value-hidden')); document.getElementById('hideValuesBtn').innerHTML=document.body.classList.contains('value-hidden')?'🔓':'🔒'; }
     function toggleTheme(){ document.body.classList.toggle('dark-theme'); localStorage.setItem('themePreference',document.body.classList.contains('dark-theme')?'dark':'light'); }
-    function logout(){ if(confirm("Sair?")){ currentUser=null; document.getElementById('mainApp').style.display='none'; document.getElementById('loginScreen').style.display='flex'; } }
+    function logout(){ if(confirm("Sair?")){ if(scannerAtivo&&html5QrCode)html5QrCode.stop().catch(e=>{}); stopAuthCodeScanner(); currentUser=null; document.getElementById('mainApp').style.display='none'; document.getElementById('loginScreen').style.display='flex'; } }
 
     function backupAction(){ let pass=document.getElementById('backupPass').value; if(!pass)return alert("Digite uma senha"); let data={ transacoes, produtos, caixas }; let str=JSON.stringify(data); let out=''; for(let i=0;i<str.length;i++)out+=String.fromCharCode(str.charCodeAt(i)^pass.charCodeAt(i%pass.length)); let blob=new Blob([btoa(out)],{type:"application/octet-stream"}); let a=document.createElement('a'); a.href=URL.createObjectURL(blob); a.download=`backup_${currentUser}_${new Date().toISOString().slice(0,10)}.fin`; a.click(); document.getElementById('backupModalMobile').classList.remove('active'); alert("Backup criado!"); }
     function restoreAction(){ let input=document.createElement('input'); input.type='file'; input.accept='.fin'; input.onchange=e=>{ let file=e.target.files[0]; if(!file)return; let pass=prompt("Senha:"); if(!pass)return; let reader=new FileReader(); reader.onload=ev=>{ try{ let enc=ev.target.result; let str=atob(enc); let out=''; for(let i=0;i<str.length;i++)out+=String.fromCharCode(str.charCodeAt(i)^pass.charCodeAt(i%pass.length)); let dec=JSON.parse(out); if(confirm("Restaurar?")){ transacoes=dec.transacoes||[]; produtos=dec.produtos||[]; caixas=dec.caixas||["Carteira","Banco","PicPay","Nubank"]; refreshAll(); alert("Restaurado!"); } }catch(e){ alert("Erro: senha incorreta"); } }; reader.readAsText(file); }; input.click(); }
-
-    function abrirLinkExterno() {
-        window.open('https://pbsappsoficial-hue.github.io/extrato-sistema/', '_blank');
-    }
 
     function salvarNovoLote(){
         let codigo=document.getElementById('produtoCodigo').value.trim();
@@ -1021,7 +1882,6 @@
         document.getElementById('menuRestore').onclick = restoreAction;
         document.getElementById('menuDeleteAccount').onclick = () => document.getElementById('deleteAccountModal').classList.add('active');
         document.getElementById('hideValuesBtn').onclick = toggleHideValues;
-        document.getElementById('menuAbrirLink').onclick = abrirLinkExterno;
         document.getElementById('mobileAddTransacao').onclick = addTransacao;
         document.getElementById('mobileAddCaixaBtn').onclick = () => { let n=prompt("Nome:"); if(n)criarCaixa(n); };
         document.getElementById('createCaixaBtn').onclick = () => criarCaixa(document.getElementById('newCaixaName').value);
@@ -1033,6 +1893,8 @@
         document.getElementById('cancelDeleteAccountBtn').onclick = () => document.getElementById('deleteAccountModal').classList.remove('active');
         document.getElementById('forceUpdateBtn').onclick = () => { let np=document.getElementById('forceNewPassword').value; let cp=document.getElementById('forceConfirmPassword').value; if(!np||!cp)return document.getElementById('forceErrorMsg').innerText="Preencha todos!"; if(np!==cp)return document.getElementById('forceErrorMsg').innerText="Senhas não coincidem!"; if(!isStrongPassword(np))return document.getElementById('forceErrorMsg').innerText="Senha fraca!"; let u=loadUsers(); u[currentUser].senha=np; saveUsers(u); document.getElementById('forceUpdateModal').style.display='none'; document.getElementById('mainApp').style.display='block'; refreshAll(); alert("✅ Senha atualizada!"); };
         
+        document.getElementById('startScannerValidade').onclick = iniciarScannerValidade;
+        document.getElementById('startScannerBtn').onclick = iniciarScannerNormal;
         document.getElementById('salvarNovoLoteBtn').onclick = salvarNovoLote;
         document.getElementById('cancelarNovoLoteBtn').onclick = () => { document.getElementById('formNovoLote').style.display='none'; ['produtoCodigo','produtoNome','produtoPreco','produtoValidade','produtoLote'].forEach(id=>document.getElementById(id).value=''); document.getElementById('produtoQuantidade').value='1'; };
         document.getElementById('editarEstoqueBtn').onclick = () => { document.getElementById('formNovoLote').style.display='block'; document.getElementById('produtoCodigo').focus(); };
@@ -1047,12 +1909,99 @@
             renderEstoque();
         };
         
+        document.getElementById('modoAdicionar').onclick = () => { 
+            modoScanner='adicionar'; 
+            document.getElementById('modoAdicionar').className='scanner-mode-btn active-add'; 
+            document.getElementById('modoRemover').className='scanner-mode-btn'; 
+            document.getElementById('startScannerBtn').className='scanner-btn scanner-btn-primary';
+            updateScannerStatus('Modo Adicionar ativado', '');
+        };
+        document.getElementById('modoRemover').onclick = () => { 
+            modoScanner='remover'; 
+            document.getElementById('modoRemover').className='scanner-mode-btn active-remove'; 
+            document.getElementById('modoAdicionar').className='scanner-mode-btn'; 
+            document.getElementById('startScannerBtn').className='scanner-btn scanner-btn-danger';
+            updateScannerStatus('Modo Remover ativado', '');
+        };
+        
+        document.getElementById('confirmarValidadeBtn').onclick = () => {
+            let validade=document.getElementById('validadeDataInput').value;
+            let qtd=parseInt(document.getElementById('validadeQuantidade').value)||1;
+            let lote=document.getElementById('validadeLote').value.trim()||null;
+            if(!validade)return alert("❌ Selecione uma data!");
+            if(qtd<1)return alert("❌ Quantidade inválida!");
+            if(scanDuploProduto){ adicionarComValidade(scanDuploProduto.codigo,validade,qtd,lote); document.getElementById('validadeModal').classList.remove('active'); scanDuploProduto=null; scanDuploAguardandoValidade=false; document.getElementById('scanDuploStatus').className='scan-duplo-status aguardando'; document.getElementById('scanDuploStatus').innerHTML='📷 Aguardando próximo código...'; updateScannerStatus('Produto adicionado!', 'success'); setTimeout(() => updateScannerStatus('Aguardando escaneamento...', 'active'), 1500); }
+        };
+        document.getElementById('cancelarValidadeBtn').onclick = () => { document.getElementById('validadeModal').classList.remove('active'); scanDuploProduto=null; scanDuploAguardandoValidade=false; document.getElementById('scanDuploStatus').className='scan-duplo-status aguardando'; document.getElementById('scanDuploStatus').innerHTML='📷 Aguardando código...'; updateScannerStatus('Aguardando escaneamento...', 'active'); };
+        
+        // SECURITY MENU
+        document.getElementById('menuSecurity').onclick = () => {
+            document.getElementById('securityPassword').value = '';
+            document.getElementById('securityAuthCode').value = securityConfig.authCode || '';
+            document.getElementById('securityErrorMsg').innerText = '';
+            updateSecurityStatusDisplay();
+            document.getElementById('securityModal').classList.add('active');
+        };
+        
+        document.getElementById('saveSecurityBtn').onclick = () => {
+            const password = document.getElementById('securityPassword').value;
+            const authCode = document.getElementById('securityAuthCode').value.trim();
+            
+            const users = loadUsers();
+            if (!users[currentUser] || users[currentUser].senha !== password) {
+                document.getElementById('securityErrorMsg').innerText = '❌ Senha incorreta!';
+                return;
+            }
+            
+            securityConfig.enabled = authCode.length > 0;
+            securityConfig.authCode = authCode;
+            saveSecurityConfig();
+            
+            document.getElementById('securityModal').classList.remove('active');
+            renderEstoque();
+            alert(securityConfig.enabled ? '✅ Segurança ativada! Remoções exigirão código.' : '✅ Segurança desativada.');
+        };
+        
+        document.getElementById('cancelSecurityBtn').onclick = () => {
+            document.getElementById('securityModal').classList.remove('active');
+        };
+        
+        function updateSecurityStatusDisplay() {
+            const statusEl = document.getElementById('securityStatus');
+            if (securityConfig.enabled && securityConfig.authCode) {
+                statusEl.innerHTML = '🔒 <strong>Segurança ATIVADA</strong><br><span style="font-size:12px; color:var(--text-muted);">Remoções exigem código: ' + escapeHtml(securityConfig.authCode) + '</span>';
+                statusEl.style.border = '2px solid var(--success)';
+                statusEl.style.background = 'rgba(46,204,113,0.05)';
+            } else {
+                statusEl.innerHTML = '🔓 <strong>Segurança DESATIVADA</strong><br><span style="font-size:12px; color:var(--text-muted);">Qualquer um pode remover itens</span>';
+                statusEl.style.border = '2px solid var(--text-muted)';
+                statusEl.style.background = 'var(--bg-elevated)';
+            }
+        }
+        
+        // AUTH CODE MODAL
+        document.getElementById('cancelAuthCodeBtn').onclick = () => {
+            stopAuthCodeScanner();
+            document.getElementById('authCodeModal').classList.remove('active');
+            pendingAction = null;
+        };
+        
+        document.getElementById('authCodeModal').addEventListener('click', function(e) {
+            if (e.target === this) {
+                stopAuthCodeScanner();
+                this.classList.remove('active');
+                pendingAction = null;
+            }
+        });
+        
         document.querySelectorAll('.tipo-btn').forEach(b=>b.onclick=function(){ document.querySelectorAll('.tipo-btn').forEach(x=>x.classList.remove('active')); this.classList.add('active'); tipoSelecionadoMobile=this.dataset.tipoMobile; });
         document.querySelectorAll('.mobile-tab').forEach(b=>b.onclick=function(){ document.querySelectorAll('.mobile-tab').forEach(x=>x.classList.remove('active')); this.classList.add('active'); document.querySelectorAll('.tab-pane').forEach(p=>p.style.display='none'); document.getElementById('tab'+this.dataset.tab.charAt(0).toUpperCase()+this.dataset.tab.slice(1)).style.display='block'; if(this.dataset.tab==='estoque'){ renderEstoque(); } if(this.dataset.tab==='caixas')renderCaixas(); });
         document.getElementById('filtroTipoMobile').onchange = renderMovements;
         document.getElementById('mobileData').value = new Date().toISOString().slice(0,10);
         atualizarSelectCaixas();
         
+        updateScannerStatus('Pronto para escanear', '');
+        loadSecurityConfig();
         renderEstoque();
     });
 
