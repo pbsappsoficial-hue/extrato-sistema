@@ -361,8 +361,32 @@
         @keyframes floatUp { 0% { opacity: 1; transform: translateY(0) scale(1); } 100% { opacity: 0; transform: translateY(-80px) scale(1.2); } }
         @keyframes shakeWarning { 0% { transform: translateX(0); opacity: 1; } 25% { transform: translateX(-10px); } 75% { transform: translateX(10px); } 100% { transform: translateX(0); opacity: 0; } }
 
-        .value-hidden .resumo-valor, .value-hidden .transaction-value, .value-hidden .caixa-item span:last-child { visibility: hidden; position: relative; display: inline-block; }
-        .value-hidden .resumo-valor::before, .value-hidden .transaction-value::before, .value-hidden .caixa-item span:last-child::before { visibility: visible; position: absolute; left: 0; top: 0; content: "•••••"; font-family: inherit; font-size: inherit; font-weight: inherit; letter-spacing: 2px; color: var(--text-muted); background: transparent; }
+        .value-hidden .resumo-valor, 
+        .value-hidden .transaction-value, 
+        .value-hidden .caixa-item span:last-child,
+        .value-hidden .caixa-total-card .caixa-linha .value,
+        .value-hidden .caixa-total-card .caixa-total { 
+            visibility: hidden; 
+            position: relative; 
+            display: inline-block; 
+        }
+        .value-hidden .resumo-valor::before, 
+        .value-hidden .transaction-value::before, 
+        .value-hidden .caixa-item span:last-child::before,
+        .value-hidden .caixa-total-card .caixa-linha .value::before,
+        .value-hidden .caixa-total-card .caixa-total::before { 
+            visibility: visible; 
+            position: absolute; 
+            left: 0; 
+            top: 0; 
+            content: "•••••"; 
+            font-family: inherit; 
+            font-size: inherit; 
+            font-weight: inherit; 
+            letter-spacing: 2px; 
+            color: var(--text-muted); 
+            background: transparent; 
+        }
 
         .tipo-switch { display: flex; gap: 8px; margin-bottom: 14px; }
         .tipo-btn { flex: 1; padding: 10px; border-radius: 10px; text-align: center; font-weight: 600; background: var(--bg-elevated); color: var(--text-secondary); cursor: pointer; border: 2px solid transparent; font-size: 13px; transition: var(--transition); }
