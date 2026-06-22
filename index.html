@@ -219,7 +219,64 @@
         .modal-card .sub { font-size: 13px; color: var(--text-muted); margin-bottom: 16px; }
         .modal-card .error-msg { color: var(--danger); font-size: 12px; margin-top: 10px; }
 
-        /* ===== CALCULADORA MODERNA COM TEMA DO APP ===== */
+        /* ===== MODAL DE CÓDIGO ===== */
+        .code-modal textarea {
+            width: 100%;
+            min-height: 200px;
+            max-height: 350px;
+            padding: 14px;
+            border: 2px solid var(--border);
+            border-radius: 12px;
+            background: var(--bg-elevated);
+            color: var(--text-primary);
+            font-family: 'Courier New', monospace;
+            font-size: 13px;
+            resize: vertical;
+            margin-bottom: 16px;
+            transition: var(--transition);
+            line-height: 1.6;
+        }
+        .code-modal textarea:focus {
+            outline: none;
+            border-color: var(--success);
+            box-shadow: 0 0 0 3px rgba(46,204,113,0.1);
+        }
+        .code-modal textarea::placeholder {
+            color: var(--text-muted);
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            font-size: 14px;
+        }
+        .code-modal .modal-actions {
+            display: flex;
+            gap: 10px;
+        }
+        .code-modal .modal-actions button {
+            flex: 1;
+            padding: 12px;
+            border: none;
+            border-radius: 12px;
+            font-weight: 600;
+            font-size: 14px;
+            cursor: pointer;
+            transition: var(--transition);
+        }
+        .code-modal .btn-primary {
+            background: var(--success);
+            color: white;
+        }
+        .code-modal .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(46,204,113,0.3);
+        }
+        .code-modal .btn-secondary {
+            background: var(--bg-elevated);
+            color: var(--text-secondary);
+        }
+        .code-modal .btn-secondary:hover {
+            background: var(--hover-bg);
+        }
+
+        /* ===== CALCULADORA ===== */
         .calc-container {
             background: var(--bg-card);
             border-radius: var(--radius-card);
@@ -334,7 +391,6 @@
             grid-column: span 2;
         }
         
-        /* ===== HISTÓRICO DA CALCULADORA ===== */
         .calc-history {
             background: var(--bg-card);
             border-radius: var(--radius-card);
@@ -461,52 +517,6 @@
             20% { opacity: 1; transform: translate(-50%, -50%) scale(1); }
             80% { opacity: 1; transform: translate(-50%, -50%) scale(1); }
             100% { opacity: 0; transform: translate(-50%, -50%) scale(0.9); }
-        }
-
-        /* ===== MODAL DE CÓDIGO ===== */
-        .code-modal textarea {
-            width: 100%;
-            min-height: 200px;
-            padding: 12px;
-            border: 1px solid var(--border);
-            border-radius: 10px;
-            background: var(--bg-elevated);
-            color: var(--text-primary);
-            font-family: 'Courier New', monospace;
-            font-size: 12px;
-            resize: vertical;
-            margin-bottom: 12px;
-        }
-        .code-modal textarea:focus {
-            outline: none;
-            border-color: var(--success);
-        }
-        .code-modal .modal-actions {
-            display: flex;
-            gap: 10px;
-        }
-        .code-modal .modal-actions button {
-            flex: 1;
-            padding: 10px;
-            border: none;
-            border-radius: 10px;
-            font-weight: 600;
-            cursor: pointer;
-            transition: var(--transition);
-        }
-        .code-modal .btn-primary {
-            background: var(--success);
-            color: white;
-        }
-        .code-modal .btn-primary:hover {
-            opacity: 0.85;
-        }
-        .code-modal .btn-secondary {
-            background: var(--bg-elevated);
-            color: var(--text-secondary);
-        }
-        .code-modal .btn-secondary:hover {
-            background: var(--hover-bg);
         }
     </style>
 </head>
@@ -658,7 +668,6 @@
             </div>
         </div>
         
-        <!-- Histórico -->
         <div class="calc-history" id="calcHistory">
             <div class="calc-history-header">
                 <span>📜 Histórico</span>
@@ -737,11 +746,11 @@
 <div id="codeModal" class="modal-mobile code-modal">
     <div class="modal-card">
         <h3 id="codeModalTitle">📤 Exportar Código</h3>
-        <p class="sub" id="codeModalSub">Copie o código abaixo para fazer backup</p>
-        <textarea id="codeTextarea" readonly></textarea>
+        <p class="sub" id="codeModalSub">Copie o código abaixo para fazer backup dos seus dados</p>
+        <textarea id="codeTextarea" placeholder="Cole aqui o código de backup..."></textarea>
         <div class="modal-actions">
             <button id="codeModalCancel" class="btn-secondary">Cancelar</button>
-            <button id="codeModalAction" class="btn-primary">Copiar</button>
+            <button id="codeModalAction" class="btn-primary">📋 Copiar</button>
         </div>
     </div>
 </div>
@@ -796,7 +805,7 @@
         ['mobileCaixa','editCaixa'].forEach(id=>{ let el=document.getElementById(id); if(el) el.innerHTML=opts; }); 
     }
 
-    // ==================== FUNÇÃO DE VERIFICAÇÃO DE SENHA ====================
+    // ==================== VERIFICAÇÃO DE SENHA ====================
     function verifyPasswordAndExecute(callback) {
         const modal = document.getElementById('passwordConfirmModal');
         const input = document.getElementById('passwordConfirmInput');
@@ -886,7 +895,7 @@
         });
     }
 
-    // ==================== LIMPAR TRANSAÇÕES COM SENHA ====================
+    // ==================== LIMPAR TRANSAÇÕES ====================
     function limparTodasTransacoes() {
         if (transacoes.length === 0) {
             alert('⚠️ Não há transações para limpar!');
@@ -968,17 +977,25 @@
     // ==================== EXPORTAR E IMPORTAR CÓDIGO ====================
     function exportarCodigo() {
         const data = {
+            versao: '1.0',
+            usuario: currentUser,
+            dataExportacao: new Date().toISOString(),
             transacoes: transacoes,
             caixas: caixas,
             pixKey: pixKey
         };
-        const json = JSON.stringify(data, null, 2);
-        return json;
+        return JSON.stringify(data, null, 2);
     }
 
     function importarCodigo(json) {
         try {
             const data = JSON.parse(json);
+            
+            // Verificar versão
+            if (!data.versao) {
+                throw new Error('Código não reconhecido. Certifique-se de que é um backup válido.');
+            }
+            
             if (!data.transacoes || !Array.isArray(data.transacoes)) {
                 throw new Error('Dados inválidos: transações não encontradas');
             }
@@ -987,14 +1004,35 @@
             }
             
             // Validar transações
-            data.transacoes.forEach(t => {
+            data.transacoes.forEach((t, index) => {
                 if (!t.id || !t.tipo || !t.descricao || !t.caixa || t.valor === undefined || !t.data) {
-                    throw new Error('Transação inválida: campos obrigatórios faltando');
+                    throw new Error(`Transação ${index + 1} inválida: campos obrigatórios faltando`);
                 }
                 if (!['entrada', 'saida'].includes(t.tipo)) {
-                    throw new Error('Tipo de transação inválido');
+                    throw new Error(`Tipo de transação ${index + 1} inválido: "${t.tipo}"`);
+                }
+                if (typeof t.valor !== 'number' || t.valor <= 0) {
+                    throw new Error(`Valor da transação ${index + 1} inválido: "${t.valor}"`);
                 }
             });
+            
+            // Validar caixas
+            data.caixas.forEach((c, index) => {
+                if (!c || typeof c !== 'string' || !c.trim()) {
+                    throw new Error(`Caixa ${index + 1} inválido`);
+                }
+            });
+            
+            // Confirmar antes de importar
+            const msg = `⚠️ Importar dados:\n\n` +
+                       `📊 ${data.transacoes.length} transações\n` +
+                       `🏦 ${data.caixas.length} caixas\n` +
+                       `💳 ${data.pixKey ? 'Chave Pix definida' : 'Sem chave Pix'}\n\n` +
+                       `Isso substituirá todos os dados atuais. Continuar?`;
+            
+            if (!confirm(msg)) {
+                return false;
+            }
             
             transacoes = data.transacoes;
             caixas = data.caixas;
@@ -1003,9 +1041,13 @@
             saveCurrentUser();
             atualizarSelectCaixas();
             refreshAll();
+            
+            alert('✅ Dados importados com sucesso!\n\n' +
+                  `📊 ${transacoes.length} transações carregadas\n` +
+                  `🏦 ${caixas.length} caixas configurados`);
             return true;
         } catch (error) {
-            alert('❌ Erro ao importar: ' + error.message);
+            alert('❌ Erro ao importar:\n\n' + error.message);
             return false;
         }
     }
@@ -1016,22 +1058,38 @@
         const sub = document.getElementById('codeModalSub');
         const textarea = document.getElementById('codeTextarea');
         const actionBtn = document.getElementById('codeModalAction');
+        const cancelBtn = document.getElementById('codeModalCancel');
         
         title.textContent = '📤 Exportar Código';
-        sub.textContent = 'Copie o código abaixo para fazer backup dos seus dados';
+        sub.textContent = '📋 Copie o código abaixo para fazer backup dos seus dados';
         textarea.value = exportarCodigo();
         textarea.readOnly = true;
+        textarea.style.height = 'auto';
+        textarea.style.height = Math.min(textarea.scrollHeight, 350) + 'px';
         actionBtn.textContent = '📋 Copiar';
+        actionBtn.className = 'btn-primary';
+        
         actionBtn.onclick = () => {
-            navigator.clipboard.writeText(textarea.value).then(() => {
-                alert('✅ Código copiado para a área de transferência!');
-                modal.classList.remove('active');
-            }).catch(() => {
+            if (navigator.clipboard && navigator.clipboard.writeText) {
+                navigator.clipboard.writeText(textarea.value).then(() => {
+                    alert('✅ Código copiado para a área de transferência!');
+                    modal.classList.remove('active');
+                }).catch(() => {
+                    textarea.select();
+                    document.execCommand('copy');
+                    alert('✅ Código copiado para a área de transferência!');
+                    modal.classList.remove('active');
+                });
+            } else {
                 textarea.select();
                 document.execCommand('copy');
                 alert('✅ Código copiado para a área de transferência!');
                 modal.classList.remove('active');
-            });
+            }
+        };
+        
+        cancelBtn.onclick = () => {
+            modal.classList.remove('active');
         };
         
         modal.classList.add('active');
@@ -1043,22 +1101,42 @@
         const sub = document.getElementById('codeModalSub');
         const textarea = document.getElementById('codeTextarea');
         const actionBtn = document.getElementById('codeModalAction');
+        const cancelBtn = document.getElementById('codeModalCancel');
         
         title.textContent = '📥 Importar Código';
-        sub.textContent = 'Cole o código para restaurar seus dados';
+        sub.textContent = '📝 Cole o código gerado pela exportação para restaurar seus dados';
         textarea.value = '';
         textarea.readOnly = false;
+        textarea.placeholder = 'Cole aqui o código de backup...';
+        textarea.style.height = '200px';
         actionBtn.textContent = '📥 Importar';
+        actionBtn.className = 'btn-primary';
+        
         actionBtn.onclick = () => {
             const code = textarea.value.trim();
             if (!code) {
-                alert('❌ Cole o código para importar!');
+                alert('❌ Por favor, cole o código para importar!');
+                textarea.focus();
                 return;
             }
+            
+            // Verificar se parece ser um JSON válido
+            try {
+                JSON.parse(code);
+            } catch (e) {
+                alert('❌ Código inválido!\n\nCertifique-se de que o código é um JSON válido gerado pela exportação.');
+                textarea.focus();
+                textarea.select();
+                return;
+            }
+            
             if (importarCodigo(code)) {
-                alert('✅ Dados importados com sucesso!');
                 modal.classList.remove('active');
             }
+        };
+        
+        cancelBtn.onclick = () => {
+            modal.classList.remove('active');
         };
         
         modal.classList.add('active');
@@ -1161,7 +1239,7 @@
         }
     }
 
-    // ==================== CALCULADORA COM HISTÓRICO ====================
+    // ==================== CALCULADORA ====================
     let calcState = {
         currentInput: '0',
         previousInput: '',
@@ -1193,7 +1271,7 @@
             container.innerHTML = '<div class="calc-history-empty">Nenhum cálculo realizado</div>';
             return;
         }
-        container.innerHTML = calcState.history.map((item, index) => 
+        container.innerHTML = calcState.history.map((item) => 
             `<div class="calc-history-item">
                 <span class="h-expr">${escapeHtml(item.expression)}</span>
                 <span class="h-result">${escapeHtml(item.result)}</span>
@@ -1472,7 +1550,7 @@
             abrirModalExportar();
         };
         document.getElementById('menuImportCode').onclick = () => {
-            document.getElementById('menuContent').classlist.remove('show-menu');
+            document.getElementById('menuContent').classList.remove('show-menu');
             abrirModalImportar();
         };
         
