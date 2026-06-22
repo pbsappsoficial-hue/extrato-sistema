@@ -462,6 +462,52 @@
             80% { opacity: 1; transform: translate(-50%, -50%) scale(1); }
             100% { opacity: 0; transform: translate(-50%, -50%) scale(0.9); }
         }
+
+        /* ===== MODAL DE CÓDIGO ===== */
+        .code-modal textarea {
+            width: 100%;
+            min-height: 200px;
+            padding: 12px;
+            border: 1px solid var(--border);
+            border-radius: 10px;
+            background: var(--bg-elevated);
+            color: var(--text-primary);
+            font-family: 'Courier New', monospace;
+            font-size: 12px;
+            resize: vertical;
+            margin-bottom: 12px;
+        }
+        .code-modal textarea:focus {
+            outline: none;
+            border-color: var(--success);
+        }
+        .code-modal .modal-actions {
+            display: flex;
+            gap: 10px;
+        }
+        .code-modal .modal-actions button {
+            flex: 1;
+            padding: 10px;
+            border: none;
+            border-radius: 10px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: var(--transition);
+        }
+        .code-modal .btn-primary {
+            background: var(--success);
+            color: white;
+        }
+        .code-modal .btn-primary:hover {
+            opacity: 0.85;
+        }
+        .code-modal .btn-secondary {
+            background: var(--bg-elevated);
+            color: var(--text-secondary);
+        }
+        .code-modal .btn-secondary:hover {
+            background: var(--hover-bg);
+        }
     </style>
 </head>
 <body class="value-hidden">
@@ -516,6 +562,9 @@
                     <button id="menuPdf">📄 Extrato</button>
                     <button id="menuBackup">💾 Backup</button>
                     <button id="menuRestore">📥 Restaurar</button>
+                    <div class="menu-divider"></div>
+                    <button id="menuExportCode">📤 Exportar Código</button>
+                    <button id="menuImportCode">📥 Importar Código</button>
                     <div class="menu-divider"></div>
                     <button id="menuPix">💳 Chave Pix</button>
                     <div class="menu-divider"></div>
@@ -680,6 +729,19 @@
         <div style="display:flex; gap:10px; margin-top:12px;">
             <button id="savePixBtn" class="auth-btn">💾 Salvar</button>
             <button id="cancelPixBtn" class="auth-btn" style="background:var(--text-muted);">Fechar</button>
+        </div>
+    </div>
+</div>
+
+<!-- MODAL DE EXPORTAR/IMPORTAR CÓDIGO -->
+<div id="codeModal" class="modal-mobile code-modal">
+    <div class="modal-card">
+        <h3 id="codeModalTitle">📤 Exportar Código</h3>
+        <p class="sub" id="codeModalSub">Copie o código abaixo para fazer backup</p>
+        <textarea id="codeTextarea" readonly></textarea>
+        <div class="modal-actions">
+            <button id="codeModalCancel" class="btn-secondary">Cancelar</button>
+            <button id="codeModalAction" class="btn-primary">Copiar</button>
         </div>
     </div>
 </div>
@@ -901,6 +963,106 @@
                 }
             });
         });
+    }
+
+    // ==================== EXPORTAR E IMPORTAR CÓDIGO ====================
+    function exportarCodigo() {
+        const data = {
+            transacoes: transacoes,
+            caixas: caixas,
+            pixKey: pixKey
+        };
+        const json = JSON.stringify(data, null, 2);
+        return json;
+    }
+
+    function importarCodigo(json) {
+        try {
+            const data = JSON.parse(json);
+            if (!data.transacoes || !Array.isArray(data.transacoes)) {
+                throw new Error('Dados inválidos: transações não encontradas');
+            }
+            if (!data.caixas || !Array.isArray(data.caixas)) {
+                throw new Error('Dados inválidos: caixas não encontrados');
+            }
+            
+            // Validar transações
+            data.transacoes.forEach(t => {
+                if (!t.id || !t.tipo || !t.descricao || !t.caixa || t.valor === undefined || !t.data) {
+                    throw new Error('Transação inválida: campos obrigatórios faltando');
+                }
+                if (!['entrada', 'saida'].includes(t.tipo)) {
+                    throw new Error('Tipo de transação inválido');
+                }
+            });
+            
+            transacoes = data.transacoes;
+            caixas = data.caixas;
+            pixKey = data.pixKey || '';
+            
+            saveCurrentUser();
+            atualizarSelectCaixas();
+            refreshAll();
+            return true;
+        } catch (error) {
+            alert('❌ Erro ao importar: ' + error.message);
+            return false;
+        }
+    }
+
+    function abrirModalExportar() {
+        const modal = document.getElementById('codeModal');
+        const title = document.getElementById('codeModalTitle');
+        const sub = document.getElementById('codeModalSub');
+        const textarea = document.getElementById('codeTextarea');
+        const actionBtn = document.getElementById('codeModalAction');
+        
+        title.textContent = '📤 Exportar Código';
+        sub.textContent = 'Copie o código abaixo para fazer backup dos seus dados';
+        textarea.value = exportarCodigo();
+        textarea.readOnly = true;
+        actionBtn.textContent = '📋 Copiar';
+        actionBtn.onclick = () => {
+            navigator.clipboard.writeText(textarea.value).then(() => {
+                alert('✅ Código copiado para a área de transferência!');
+                modal.classList.remove('active');
+            }).catch(() => {
+                textarea.select();
+                document.execCommand('copy');
+                alert('✅ Código copiado para a área de transferência!');
+                modal.classList.remove('active');
+            });
+        };
+        
+        modal.classList.add('active');
+    }
+
+    function abrirModalImportar() {
+        const modal = document.getElementById('codeModal');
+        const title = document.getElementById('codeModalTitle');
+        const sub = document.getElementById('codeModalSub');
+        const textarea = document.getElementById('codeTextarea');
+        const actionBtn = document.getElementById('codeModalAction');
+        
+        title.textContent = '📥 Importar Código';
+        sub.textContent = 'Cole o código para restaurar seus dados';
+        textarea.value = '';
+        textarea.readOnly = false;
+        actionBtn.textContent = '📥 Importar';
+        actionBtn.onclick = () => {
+            const code = textarea.value.trim();
+            if (!code) {
+                alert('❌ Cole o código para importar!');
+                return;
+            }
+            if (importarCodigo(code)) {
+                alert('✅ Dados importados com sucesso!');
+                modal.classList.remove('active');
+            }
+        };
+        
+        modal.classList.add('active');
+        setTimeout(() => textarea.focus(), 100);
     }
 
     // ==================== REFRESH ====================
@@ -1304,6 +1466,26 @@
         document.getElementById('menuPix').onclick = openPixModal;
         document.getElementById('hideValuesBtn').onclick = toggleHideValues;
         
+        // Exportar e Importar Código
+        document.getElementById('menuExportCode').onclick = () => {
+            document.getElementById('menuContent').classList.remove('show-menu');
+            abrirModalExportar();
+        };
+        document.getElementById('menuImportCode').onclick = () => {
+            document.getElementById('menuContent').classlist.remove('show-menu');
+            abrirModalImportar();
+        };
+        
+        // Code Modal
+        document.getElementById('codeModalCancel').onclick = () => {
+            document.getElementById('codeModal').classList.remove('active');
+        };
+        document.getElementById('codeModal').addEventListener('click', (e) => {
+            if (e.target === document.getElementById('codeModal')) {
+                document.getElementById('codeModal').classList.remove('active');
+            }
+        });
+        
         // Transações
         document.getElementById('mobileAddTransacao').onclick = addTransacao;
         document.getElementById('mobileAddCaixaBtn').onclick = () => { let n=prompt("Nome:"); if(n)criarCaixa(n); };
@@ -1446,4 +1628,4 @@
     }
 </script>
 </body>
-    </html>
+</html>
