@@ -570,8 +570,6 @@
                 <button id="menuBtn" class="menu-btn">⋯</button>
                 <div id="menuContent" class="menu-content">
                     <button id="menuPdf">📄 Extrato</button>
-                    <button id="menuBackup">💾 Backup</button>
-                    <button id="menuRestore">📥 Restaurar</button>
                     <div class="menu-divider"></div>
                     <button id="menuExportCode">📤 Exportar Código</button>
                     <button id="menuImportCode">📥 Importar Código</button>
@@ -703,8 +701,6 @@
 
 <!-- Modais -->
 <div id="editModal" class="modal-mobile"><div class="modal-card"><h3>✏️ Editar</h3><input type="hidden" id="editId"><div class="input-field"><label>Descrição</label><input type="text" id="editDesc" class="auth-input"></div><div class="input-field"><label>Valor</label><input type="text" id="editValor" class="auth-input"></div><div class="input-field"><label>Caixa</label><select id="editCaixa" class="auth-input"></select></div><div class="input-field"><label>Data</label><input type="date" id="editData" class="auth-input"></div><div class="input-field"><label>Tipo</label><select id="editTipo" class="auth-input"><option value="entrada">Entrada</option><option value="saida">Saída</option></select></div><div style="display:flex; gap:10px; margin-top:16px;"><button id="saveEditBtn" class="auth-btn">Salvar</button><button id="cancelEditBtn" class="auth-btn" style="background:var(--text-muted);">Cancelar</button></div></div></div>
-
-<div id="backupModalMobile" class="modal-mobile"><div class="modal-card"><h3>🔐 Backup</h3><p class="sub">Digite a senha para criptografar</p><input type="password" id="backupPass" class="auth-input" placeholder="Senha"><div style="display:flex; gap:10px; margin-top:16px;"><button id="confirmBackupMobile" class="auth-btn">Confirmar</button><button id="cancelBackupMobile" class="auth-btn" style="background:var(--text-muted);">Cancelar</button></div></div></div>
 
 <div id="deleteAccountModal" class="modal-mobile"><div class="modal-card"><h3 style="color:var(--danger);">⚠️ Excluir Conta</h3><p class="sub">Digite sua senha para confirmar</p><input type="password" id="deleteConfirmPassword" class="auth-input"><div style="display:flex; gap:10px; margin-top:16px;"><button id="confirmDeleteAccountBtn" class="auth-btn danger">Excluir</button><button id="cancelDeleteAccountBtn" class="auth-btn" style="background:var(--text-muted);">Cancelar</button></div></div></div>
 
@@ -1158,9 +1154,6 @@
     function toggleTheme(){ document.body.classList.toggle('dark-theme'); localStorage.setItem('themePreference',document.body.classList.contains('dark-theme')?'dark':'light'); }
     function logout(){ if(confirm("Sair?")){ currentUser=null; document.getElementById('mainApp').style.display='none'; document.getElementById('loginScreen').style.display='flex'; } }
 
-    function backupAction(){ let pass=document.getElementById('backupPass').value; if(!pass)return alert("Digite uma senha"); let data={ transacoes, caixas, pixKey }; let str=JSON.stringify(data); let out=''; for(let i=0;i<str.length;i++)out+=String.fromCharCode(str.charCodeAt(i)^pass.charCodeAt(i%pass.length)); let blob=new Blob([btoa(out)],{type:"application/octet-stream"}); let a=document.createElement('a'); a.href=URL.createObjectURL(blob); a.download=`backup_${currentUser}_${new Date().toISOString().slice(0,10)}.fin`; a.click(); document.getElementById('backupModalMobile').classList.remove('active'); alert("Backup criado!"); }
-    function restoreAction(){ let input=document.createElement('input'); input.type='file'; input.accept='.fin'; input.onchange=e=>{ let file=e.target.files[0]; if(!file)return; let pass=prompt("Senha:"); if(!pass)return; let reader=new FileReader(); reader.onload=ev=>{ try{ let enc=ev.target.result; let str=atob(enc); let out=''; for(let i=0;i<str.length;i++)out+=String.fromCharCode(str.charCodeAt(i)^pass.charCodeAt(i%pass.length)); let dec=JSON.parse(out); if(confirm("Restaurar?")){ transacoes=dec.transacoes||[]; caixas=dec.caixas||["Carteira","Banco","PicPay","Nubank"]; pixKey=dec.pixKey||''; refreshAll(); alert("Restaurado!"); } }catch(e){ alert("Erro: senha incorreta"); } }; reader.readAsText(file); }; input.click(); }
-
     // ==================== PIX FUNCTIONS ====================
     function openPixModal() {
         document.getElementById('pixKeyInput').value = pixKey || '';
@@ -1538,8 +1531,6 @@
         document.getElementById('menuLogout').onclick = logout;
         document.getElementById('menuClearAll').onclick = limparTodasTransacoes;
         document.getElementById('menuPdf').onclick = gerarPDF;
-        document.getElementById('menuBackup').onclick = () => document.getElementById('backupModalMobile').classList.add('active');
-        document.getElementById('menuRestore').onclick = restoreAction;
         document.getElementById('menuDeleteAccount').onclick = () => document.getElementById('deleteAccountModal').classList.add('active');
         document.getElementById('menuPix').onclick = openPixModal;
         document.getElementById('hideValuesBtn').onclick = toggleHideValues;
@@ -1570,10 +1561,6 @@
         document.getElementById('createCaixaBtn').onclick = () => criarCaixa(document.getElementById('newCaixaName').value);
         document.getElementById('saveEditBtn').onclick = saveEdit;
         document.getElementById('cancelEditBtn').onclick = () => document.getElementById('editModal').classList.remove('active');
-        
-        // Backup
-        document.getElementById('confirmBackupMobile').onclick = backupAction;
-        document.getElementById('cancelBackupMobile').onclick = () => document.getElementById('backupModalMobile').classList.remove('active');
         
         // Delete Account
         document.getElementById('confirmDeleteAccountBtn').onclick = () => { 
