@@ -568,8 +568,6 @@
             <div class="menu-dropdown">
                 <button id="menuBtn" class="menu-btn">⋯</button>
                 <div id="menuContent" class="menu-content">
-                    <button id="menuJsonPdf">📄 Gerar JSON para PDF</button>
-                    <div class="menu-divider"></div>
                     <button id="menuExportCode">📤 Exportar Código</button>
                     <button id="menuImportCode">📥 Importar Código</button>
                     <div class="menu-divider"></div>
@@ -1133,109 +1131,6 @@
         setTimeout(() => textarea.focus(), 100);
     }
 
-    // ==================== GERAR JSON PARA PDF ====================
-    function gerarJsonParaPDF() {
-        if(!transacoes.length){ 
-            alert("❌ Nenhuma movimentação para gerar JSON!"); 
-            return; 
-        }
-        
-        const data = {
-            versao: '1.0',
-            usuario: currentUser,
-            dataExportacao: new Date().toISOString(),
-            transacoes: transacoes.map(t => ({
-                id: t.id,
-                tipo: t.tipo,
-                descricao: t.descricao,
-                caixa: t.caixa,
-                valor: t.valor,
-                data: t.data
-            })),
-            caixas: caixas,
-            pixKey: pixKey || ''
-        };
-        
-        const json = JSON.stringify(data, null, 2);
-        
-        // Copiar para área de transferência
-        if (navigator.clipboard && navigator.clipboard.writeText) {
-            navigator.clipboard.writeText(json).then(() => {
-                alert('✅ JSON copiado para a área de transferência!\n\n' +
-                      `📊 ${data.transacoes.length} transações\n` +
-                      `🏦 ${data.caixas.length} caixas\n` +
-                      `👤 Usuário: ${data.usuario}\n\n` +
-                      '📄 Cole no Conversor de PDF para gerar o extrato.');
-            }).catch(() => {
-                fallbackCopyJson(json);
-            });
-        } else {
-            fallbackCopyJson(json);
-        }
-    }
-
-    function fallbackCopyJson(text) {
-        const textarea = document.createElement('textarea');
-        textarea.value = text;
-        textarea.style.position = 'fixed';
-        textarea.style.opacity = '0';
-        textarea.style.left = '-9999px';
-        document.body.appendChild(textarea);
-        textarea.select();
-        try {
-            document.execCommand('copy');
-            alert('✅ JSON copiado para a área de transferência!\n\n' +
-                  '📄 Cole no Conversor de PDF para gerar o extrato.');
-        } catch (e) {
-            alert('❌ Erro ao copiar. Selecione e copie manualmente.');
-            mostrarJsonModal(text);
-        }
-        document.body.removeChild(textarea);
-    }
-
-    function mostrarJsonModal(json) {
-        const modal = document.getElementById('codeModal');
-        const title = document.getElementById('codeModalTitle');
-        const sub = document.getElementById('codeModalSub');
-        const textarea = document.getElementById('codeTextarea');
-        const actionBtn = document.getElementById('codeModalAction');
-        const cancelBtn = document.getElementById('codeModalCancel');
-        
-        title.textContent = '📄 JSON para PDF';
-        sub.textContent = 'Copie este JSON e cole no Conversor de PDF';
-        textarea.value = json;
-        textarea.readOnly = true;
-        textarea.style.height = 'auto';
-        textarea.style.height = Math.min(textarea.scrollHeight, 350) + 'px';
-        actionBtn.textContent = '📋 Copiar';
-        actionBtn.className = 'btn-primary';
-        
-        actionBtn.onclick = () => {
-            if (navigator.clipboard && navigator.clipboard.writeText) {
-                navigator.clipboard.writeText(textarea.value).then(() => {
-                    alert('✅ JSON copiado para a área de transferência!');
-                    modal.classList.remove('active');
-                }).catch(() => {
-                    textarea.select();
-                    document.execCommand('copy');
-                    alert('✅ JSON copiado para a área de transferência!');
-                    modal.classList.remove('active');
-                });
-            } else {
-                textarea.select();
-                document.execCommand('copy');
-                alert('✅ JSON copiado para a área de transferência!');
-                modal.classList.remove('active');
-            }
-        };
-        
-        cancelBtn.onclick = () => {
-            modal.classList.remove('active');
-        };
-        
-        modal.classList.add('active');
-    }
-
     // ==================== REFRESH ====================
     function refreshAll() {
         let entradas=transacoes.filter(t=>t.tipo==='entrada').reduce((s,t)=>s+t.valor,0);
@@ -1536,10 +1431,6 @@
         document.getElementById('menuTheme').onclick = toggleTheme;
         document.getElementById('menuLogout').onclick = logout;
         document.getElementById('menuClearAll').onclick = limparTodasTransacoes;
-        document.getElementById('menuJsonPdf').onclick = () => {
-            document.getElementById('menuContent').classList.remove('show-menu');
-            gerarJsonParaPDF();
-        };
         document.getElementById('menuDeleteAccount').onclick = () => document.getElementById('deleteAccountModal').classList.add('active');
         document.getElementById('menuPix').onclick = openPixModal;
         document.getElementById('hideValuesBtn').onclick = toggleHideValues;
