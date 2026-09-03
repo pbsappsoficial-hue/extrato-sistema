@@ -1,0 +1,2305 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=yes, viewport-fit=cover">
+    <title>PBS Controle Financeiro</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+        :root {
+            --bg-page: #f5f7fa; --bg-surface: #ffffff; --bg-card: #ffffff; --bg-elevated: #f0f2f5;
+            --text-primary: #1a1a2e; --text-secondary: #4a4a5a; --text-muted: #8e8ea0;
+            --border: #e8ecf0; --success: #2ecc71; --success-dark: #27ae60;
+            --danger: #e74c3c; --danger-dark: #c0392b; --info: #3498db;
+            --warning: #f39c12; --shadow: 0 4px 16px rgba(0,0,0,0.06);
+            --radius-card: 16px; --radius-btn: 12px; --hover-bg: #eef1f5;
+            --transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+            --pix-color: #00b894;
+        }
+        body.dark-theme {
+            --bg-page: #0d1117; --bg-surface: #161b22; --bg-card: #1c2333;
+            --bg-elevated: #252d3f; --text-primary: #f0f6fc; --text-secondary: #c9d1d9;
+            --text-muted: #8b949e; --border: #30363d; --shadow: 0 4px 16px rgba(0,0,0,0.4);
+            --hover-bg: #2d3548;
+        }
+        body { background-color: var(--bg-page); font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, system-ui, sans-serif; color: var(--text-primary); padding: 0; margin: 0; min-height: 100vh; transition: var(--transition); }
+        
+        /* ===== AUTH ===== */
+        .auth-screen { position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: var(--bg-page); display: flex; align-items: center; justify-content: center; z-index: 1000; padding: 20px; }
+        .auth-card { background: var(--bg-card); border-radius: 24px; padding: 32px 24px; width: 100%; max-width: 340px; box-shadow: var(--shadow); border: 1px solid var(--border); }
+        .auth-card .auth-logo { text-align: center; margin-bottom: 12px; }
+        .auth-card .auth-logo img { width: 64px; height: 64px; border-radius: 16px; object-fit: contain; background: var(--bg-elevated); padding: 4px; border: 2px solid var(--border); }
+        .auth-card h2 { font-size: 24px; font-weight: 700; text-align: center; background: linear-gradient(135deg, #2ecc71, #3498db); -webkit-background-clip: text; background-clip: text; color: transparent; }
+        .auth-card .sub { color: var(--text-secondary); margin-bottom: 24px; font-size: 14px; text-align: center; }
+        .auth-input { width: 100%; padding: 14px 16px; margin-bottom: 12px; background: var(--bg-elevated); border: 1px solid var(--border); border-radius: 12px; color: var(--text-primary); font-size: 15px; transition: var(--transition); }
+        .auth-input:focus { outline: none; border-color: var(--success); box-shadow: 0 0 0 3px rgba(46,204,113,0.15); }
+        .auth-btn { width: 100%; background: var(--success); color: white; border: none; padding: 14px; border-radius: 12px; font-weight: 600; font-size: 15px; cursor: pointer; transition: var(--transition); }
+        .auth-btn:hover { transform: translateY(-1px); box-shadow: 0 4px 12px rgba(46,204,113,0.3); }
+        .auth-btn.danger { background: var(--danger); }
+        .auth-btn.danger:hover { box-shadow: 0 4px 12px rgba(231,76,60,0.3); }
+        .auth-link { text-align: center; margin-top: 16px; color: var(--text-secondary); font-size: 13px; }
+        .auth-link a { color: var(--success); font-weight: 600; text-decoration: none; cursor: pointer; }
+
+        /* ===== APP ===== */
+        .app-container { display: none; padding: 16px 16px 80px 16px; max-width: 600px; margin: 0 auto; }
+        .mobile-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; flex-wrap: wrap; gap: 8px; }
+        .logo-area { display: flex; align-items: center; gap: 10px; cursor: pointer; }
+        .logo-area img { width: 36px; height: 36px; border-radius: 8px; object-fit: contain; background: var(--bg-elevated); padding: 2px; border: 1px solid var(--border); }
+        .logo-area h1 { font-size: 18px; font-weight: 800; background: linear-gradient(135deg, #2ecc71, #3498db); -webkit-background-clip: text; background-clip: text; color: transparent; letter-spacing: -0.5px; }
+        .user-actions { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+        .user-badge { background: var(--bg-elevated); padding: 6px 14px; border-radius: 30px; font-size: 12px; font-weight: 600; display: flex; align-items: center; gap: 6px; color: var(--text-secondary); }
+        .icon-btn { background: var(--bg-elevated); border: none; padding: 8px 12px; border-radius: 30px; font-size: 15px; cursor: pointer; transition: var(--transition); color: var(--text-secondary); display: flex; align-items: center; gap: 4px; font-weight: 500; }
+        .icon-btn:hover { background: var(--hover-bg); transform: scale(0.96); }
+
+        /* ===== MENU DROPDOWN ===== */
+        .menu-dropdown { position: relative; display: inline-block; }
+        .menu-btn { background: var(--bg-elevated); border: none; padding: 8px 14px; border-radius: 30px; font-size: 18px; cursor: pointer; color: var(--text-secondary); transition: var(--transition); }
+        .menu-btn:hover { background: var(--hover-bg); }
+        .menu-content { display: none; position: absolute; right: 0; top: 45px; background: var(--bg-card); min-width: 210px; border-radius: 16px; box-shadow: 0 8px 32px rgba(0,0,0,0.12); border: 1px solid var(--border); z-index: 100; overflow: hidden; backdrop-filter: blur(20px); }
+        .menu-content button { display: flex; align-items: center; gap: 12px; width: 100%; padding: 10px 16px; text-align: left; background: none; border: none; color: var(--text-primary); font-size: 13px; font-weight: 500; cursor: pointer; transition: var(--transition); }
+        .menu-content button:hover { background: var(--hover-bg); }
+        .menu-content .danger-item { color: var(--danger); }
+        .menu-divider { height: 1px; background: var(--border); margin: 4px 0; }
+        .show-menu { display: block; }
+
+        /* ===== BOTÃO VOLTAR ===== */
+        .back-button {
+            display: none;
+            background: var(--bg-elevated);
+            border: none;
+            padding: 8px 16px;
+            border-radius: 30px;
+            font-size: 13px;
+            font-weight: 600;
+            cursor: pointer;
+            color: var(--text-secondary);
+            transition: var(--transition);
+            margin-bottom: 16px;
+            align-items: center;
+            gap: 6px;
+        }
+        .back-button:hover { background: var(--hover-bg); }
+        .back-button.show { display: inline-flex; }
+
+        /* ===== MENU PRINCIPAL EM GRID ===== */
+        #mainMenuScreen {
+            display: block;
+            animation: fadeIn 0.3s ease;
+        }
+        #mainMenuScreen.hidden { display: none; }
+
+        .main-menu-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 14px;
+        }
+        .menu-card {
+            background: var(--bg-card);
+            border-radius: var(--radius-card);
+            padding: 28px 12px 20px;
+            border: 1px solid var(--border);
+            text-align: center;
+            cursor: pointer;
+            transition: var(--transition);
+            box-shadow: var(--shadow);
+            position: relative;
+            overflow: hidden;
+        }
+        .menu-card::after {
+            content: '';
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            height: 3px;
+            background: var(--success);
+            transform: scaleX(0);
+            transition: transform 0.3s ease;
+        }
+        .menu-card:hover::after { transform: scaleX(1); }
+        .menu-card:hover {
+            transform: translateY(-4px);
+            box-shadow: 0 8px 28px rgba(0,0,0,0.08);
+        }
+        .menu-card:active { transform: scale(0.96); }
+        .menu-card .menu-icon {
+            font-size: 40px;
+            display: block;
+            margin-bottom: 8px;
+        }
+        .menu-card .menu-label {
+            font-size: 15px;
+            font-weight: 700;
+            color: var(--text-primary);
+        }
+        .menu-card .menu-desc {
+            font-size: 11px;
+            color: var(--text-muted);
+            margin-top: 4px;
+        }
+        .menu-card .menu-badge {
+            position: absolute;
+            top: 8px;
+            right: 8px;
+            background: var(--success);
+            color: white;
+            font-size: 10px;
+            font-weight: 700;
+            padding: 2px 8px;
+            border-radius: 12px;
+        }
+
+        /* ===== TELAS DE CONTEÚDO ===== */
+        .content-screen {
+            display: none;
+            animation: fadeIn 0.3s ease;
+        }
+        .content-screen.active { display: block; }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        /* ===== RESUMO ===== */
+        .resumo-grid { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 10px; margin-bottom: 20px; }
+        .resumo-card { background: var(--bg-card); border-radius: 16px; padding: 14px 12px; border: 1px solid var(--border); text-align: center; transition: var(--transition); }
+        .resumo-card:hover { transform: translateY(-2px); box-shadow: var(--shadow); }
+        .resumo-label { font-size: 10px; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.5px; font-weight: 700; }
+        .resumo-valor { font-size: 18px; font-weight: 800; margin-top: 4px; }
+        .resumo-icon { font-size: 20px; margin-bottom: 2px; }
+        .card-entradas .resumo-valor { color: var(--success); }
+        .card-saidas .resumo-valor { color: var(--danger); }
+        .card-saldo .resumo-valor { color: var(--info); }
+
+        /* ===== TELA DE JUROS ===== */
+        .juros-full {
+            background: var(--bg-card);
+            border-radius: var(--radius-card);
+            padding: 20px;
+            border: 1px solid var(--border);
+            box-shadow: var(--shadow);
+        }
+        .juros-full .juros-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 16px;
+        }
+        .juros-full .juros-header h3 {
+            font-size: 18px;
+            font-weight: 700;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        .juros-full .juros-badge {
+            background: var(--warning);
+            color: white;
+            padding: 4px 14px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: 700;
+        }
+        .juros-full .juros-saldo-atual {
+            background: var(--bg-elevated);
+            border-radius: 12px;
+            padding: 12px 16px;
+            margin-top: 12px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .juros-full .juros-saldo-atual .label {
+            font-size: 13px;
+            font-weight: 600;
+            color: var(--text-secondary);
+        }
+        .juros-full .juros-saldo-atual .value {
+            font-size: 18px;
+            font-weight: 800;
+        }
+        .juros-full .juros-saldo-atual .value.positive { color: var(--success); }
+        .juros-full .juros-saldo-atual .value.negative { color: var(--danger); }
+
+        .juros-full .juros-input-area {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            margin-top: 16px;
+        }
+        .juros-full .juros-input-area .input-group {
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+        }
+        .juros-full .juros-input-area .input-group label {
+            font-size: 12px;
+            font-weight: 600;
+            color: var(--text-secondary);
+            text-transform: uppercase;
+            letter-spacing: 0.3px;
+        }
+        .juros-full .juros-input-area input, 
+        .juros-full .juros-input-area select {
+            width: 100%;
+            padding: 12px 14px;
+            background: var(--bg-elevated);
+            border: 1px solid var(--border);
+            border-radius: 10px;
+            color: var(--text-primary);
+            font-size: 15px;
+            transition: var(--transition);
+            font-family: inherit;
+        }
+        .juros-full .juros-input-area input:focus,
+        .juros-full .juros-input-area select:focus {
+            outline: none;
+            border-color: var(--warning);
+            box-shadow: 0 0 0 3px rgba(243,156,18,0.15);
+        }
+        .juros-full .juros-input-area .juros-duplo {
+            display: flex;
+            gap: 8px;
+            align-items: center;
+        }
+        .juros-full .juros-input-area .juros-duplo select {
+            flex: 1;
+        }
+        .juros-full .juros-input-area .juros-duplo input {
+            flex: 1;
+        }
+        .juros-full .juros-input-area button {
+            background: var(--warning);
+            color: white;
+            border: none;
+            padding: 14px;
+            border-radius: 12px;
+            font-weight: 700;
+            font-size: 15px;
+            cursor: pointer;
+            transition: var(--transition);
+            margin-top: 4px;
+        }
+        .juros-full .juros-input-area button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 16px rgba(243,156,18,0.3);
+        }
+        .juros-full .juros-info {
+            font-size: 12px;
+            color: var(--text-muted);
+            margin-top: 12px;
+            text-align: center;
+        }
+
+        /* ===== LISTA DE JUROS ACUMULADOS ===== */
+        .juros-acumulados {
+            margin-top: 16px;
+            border-top: 2px solid var(--border);
+            padding-top: 16px;
+        }
+        .juros-acumulados .juros-acum-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 10px;
+            flex-wrap: wrap;
+            gap: 8px;
+        }
+        .juros-acumulados .juros-acum-header h4 {
+            font-size: 14px;
+            font-weight: 700;
+            color: var(--text-primary);
+        }
+        .juros-acumulados .juros-acum-header .total-juros {
+            font-size: 14px;
+            font-weight: 700;
+            color: var(--success);
+        }
+        .juros-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 10px 12px;
+            background: var(--bg-elevated);
+            border-radius: 10px;
+            margin-bottom: 6px;
+            border-left: 3px solid var(--warning);
+        }
+        .juros-item .juros-info {
+            display: flex;
+            flex-direction: column;
+            gap: 2px;
+        }
+        .juros-item .juros-info .juros-desc {
+            font-weight: 600;
+            font-size: 13px;
+        }
+        .juros-item .juros-info .juros-meta {
+            font-size: 11px;
+            color: var(--text-muted);
+        }
+        .juros-item .juros-info .juros-meta span {
+            margin-right: 10px;
+        }
+        .juros-item .juros-valor {
+            font-weight: 700;
+            font-size: 14px;
+            color: var(--success);
+            margin-right: 8px;
+        }
+        .juros-item .juros-delete {
+            background: none;
+            border: none;
+            color: var(--danger);
+            font-size: 16px;
+            cursor: pointer;
+            padding: 4px 8px;
+            border-radius: 6px;
+            transition: var(--transition);
+        }
+        .juros-item .juros-delete:hover {
+            background: var(--hover-bg);
+        }
+
+        /* ===== FORM ===== */
+        .form-mobile { background: var(--bg-card); border-radius: 16px; padding: 16px; margin-bottom: 14px; border: 1px solid var(--border); }
+        .form-mobile h3 { font-size: 15px; margin-bottom: 12px; font-weight: 700; }
+        .input-field { margin-bottom: 10px; }
+        .input-field label { font-size: 11px; font-weight: 600; color: var(--text-secondary); margin-bottom: 4px; display: block; text-transform: uppercase; letter-spacing: 0.3px; }
+        .input-field input, .input-field select { width: 100%; padding: 10px 14px; background: var(--bg-elevated); border: 1px solid var(--border); border-radius: 10px; color: var(--text-primary); font-size: 14px; font-family: inherit; transition: var(--transition); }
+        .input-field input:focus, .input-field select:focus { outline: none; border-color: var(--success); box-shadow: 0 0 0 3px rgba(46,204,113,0.1); }
+        .full-btn { width: 100%; background: var(--success); color: white; border: none; padding: 12px; border-radius: 12px; font-weight: 600; font-size: 14px; cursor: pointer; transition: var(--transition); display: flex; align-items: center; justify-content: center; gap: 8px; }
+        .full-btn:hover { transform: translateY(-1px); box-shadow: 0 4px 12px rgba(46,204,113,0.3); }
+        .full-btn.danger { background: var(--danger); }
+        .full-btn.danger:hover { box-shadow: 0 4px 12px rgba(231,76,60,0.3); }
+
+        .tipo-switch { display: flex; gap: 8px; margin-bottom: 14px; }
+        .tipo-btn { flex: 1; padding: 10px; border-radius: 10px; text-align: center; font-weight: 600; background: var(--bg-elevated); color: var(--text-secondary); cursor: pointer; border: 2px solid transparent; font-size: 13px; transition: var(--transition); }
+        .tipo-btn.entrada.active { border-color: var(--success); background: rgba(46,204,113,0.1); color: var(--success); }
+        .tipo-btn.saida.active { border-color: var(--danger); background: rgba(231,76,60,0.1); color: var(--danger); }
+
+        /* ===== CAIXAS ===== */
+        .caixas-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 16px; }
+        .caixa-box { background: var(--bg-card); border-radius: 16px; padding: 14px; border: 1px solid var(--border); }
+        .caixa-box h4 { font-size: 12px; margin-bottom: 10px; font-weight: 700; color: var(--text-secondary); text-transform: uppercase; letter-spacing: 0.3px; }
+
+        .caixa-list { display: flex; flex-direction: column; gap: 4px; }
+        .caixa-item { display: flex; justify-content: space-between; align-items: center; font-size: 13px; padding: 6px 0; border-bottom: 1px solid var(--border); }
+        .caixa-item:last-child { border-bottom: none; }
+        .caixa-item .caixa-name { font-weight: 600; }
+        .caixa-item .caixa-saldo { font-weight: 700; }
+        .caixa-item .caixa-saldo.positive { color: var(--success); }
+        .caixa-item .caixa-saldo.negative { color: var(--danger); }
+
+        .caixa-total-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+            gap: 12px;
+            margin-bottom: 16px;
+        }
+        .caixa-total-card {
+            background: var(--bg-card);
+            border-radius: 14px;
+            padding: 14px 12px;
+            border: 1px solid var(--border);
+            text-align: center;
+            transition: var(--transition);
+        }
+        .caixa-total-card:hover {
+            transform: translateY(-2px);
+            box-shadow: var(--shadow);
+        }
+        .caixa-total-card .caixa-icon {
+            font-size: 22px;
+            display: block;
+            margin-bottom: 2px;
+        }
+        .caixa-total-card .caixa-nome {
+            font-size: 12px;
+            color: var(--text-secondary);
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.3px;
+            margin-bottom: 6px;
+        }
+        .caixa-total-card .caixa-linha {
+            display: flex;
+            justify-content: space-between;
+            font-size: 11px;
+            padding: 2px 0;
+            color: var(--text-secondary);
+        }
+        .caixa-total-card .caixa-linha .label {
+            font-weight: 500;
+        }
+        .caixa-total-card .caixa-linha .value {
+            font-weight: 600;
+        }
+        .caixa-total-card .caixa-linha .value.entrada { color: var(--success); }
+        .caixa-total-card .caixa-linha .value.saida { color: var(--danger); }
+        .caixa-total-card .caixa-linha .value.saldo { font-size: 13px; }
+        .caixa-total-card .caixa-linha .value.saldo.positive { color: var(--success); }
+        .caixa-total-card .caixa-linha .value.saldo.negative { color: var(--danger); }
+        .caixa-total-card .caixa-divider {
+            height: 1px;
+            background: var(--border);
+            margin: 4px 0;
+        }
+        .caixa-total-card .caixa-total {
+            font-size: 16px;
+            font-weight: 800;
+            margin-top: 4px;
+        }
+        .caixa-total-card .caixa-total.positive { color: var(--success); }
+        .caixa-total-card .caixa-total.negative { color: var(--danger); }
+        .caixa-total-card .caixa-total.zero { color: var(--text-muted); }
+
+        .transaction-list { display: flex; flex-direction: column; gap: 8px; margin-top: 10px; }
+        .transaction-item { background: var(--bg-card); border-radius: 12px; padding: 12px 14px; display: flex; justify-content: space-between; align-items: center; border-left: 3px solid; transition: var(--transition); }
+        .transaction-item.entrada { border-left-color: var(--success); }
+        .transaction-item.saida { border-left-color: var(--danger); }
+        .transaction-info { flex: 1; min-width: 0; }
+        .transaction-desc { font-weight: 600; font-size: 13px; }
+        .transaction-meta { display: flex; gap: 8px; font-size: 11px; color: var(--text-muted); flex-wrap: wrap; }
+        .transaction-value { font-weight: 700; font-size: 15px; margin-right: 8px; }
+        .transaction-actions { display: flex; gap: 4px; }
+
+        .empty-state { text-align: center; padding: 30px 20px; color: var(--text-muted); font-size: 13px; }
+        footer { font-size: 10px; text-align: center; color: var(--text-muted); margin-top: 16px; }
+
+        /* ===== OCULTAR VALORES ===== */
+        .value-hidden .resumo-valor, 
+        .value-hidden .transaction-value, 
+        .value-hidden .caixa-item span:last-child,
+        .value-hidden .caixa-total-card .caixa-linha .value,
+        .value-hidden .caixa-total-card .caixa-total,
+        .value-hidden .juros-valor,
+        .value-hidden .total-juros { 
+            visibility: hidden; 
+            position: relative; 
+            display: inline-block; 
+        }
+        .value-hidden .resumo-valor::before, 
+        .value-hidden .transaction-value::before, 
+        .value-hidden .caixa-item span:last-child::before,
+        .value-hidden .caixa-total-card .caixa-linha .value::before,
+        .value-hidden .caixa-total-card .caixa-total::before,
+        .value-hidden .juros-valor::before,
+        .value-hidden .total-juros::before { 
+            visibility: visible; 
+            position: absolute; 
+            left: 0; 
+            top: 0; 
+            content: "•••••"; 
+            font-family: inherit; 
+            font-size: inherit; 
+            font-weight: inherit; 
+            letter-spacing: 2px; 
+            color: var(--text-muted); 
+            background: transparent; 
+        }
+
+        ::-webkit-scrollbar { width: 4px; }
+        ::-webkit-scrollbar-track { background: var(--bg-elevated); }
+        ::-webkit-scrollbar-thumb { background: var(--text-muted); border-radius: 4px; }
+
+        /* Modais */
+        .modal-mobile { display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.6); backdrop-filter: blur(8px); z-index: 1100; align-items: center; justify-content: center; padding: 20px; }
+        .modal-mobile.active { display: flex; }
+        .modal-card { background: var(--bg-surface); border-radius: 20px; padding: 24px; width: 100%; max-width: 340px; border: 1px solid var(--border); box-shadow: 0 20px 60px rgba(0,0,0,0.2); }
+        .modal-card h3 { font-size: 17px; margin-bottom: 12px; font-weight: 700; }
+        .modal-card .sub { font-size: 13px; color: var(--text-muted); margin-bottom: 16px; }
+        .modal-card .error-msg { color: var(--danger); font-size: 12px; margin-top: 10px; }
+
+        /* ===== MODAL DE CÓDIGO ===== */
+        .code-modal textarea {
+            width: 100%;
+            min-height: 200px;
+            max-height: 350px;
+            padding: 14px;
+            border: 2px solid var(--border);
+            border-radius: 12px;
+            background: var(--bg-elevated);
+            color: var(--text-primary);
+            font-family: 'Courier New', monospace;
+            font-size: 13px;
+            resize: vertical;
+            margin-bottom: 16px;
+            transition: var(--transition);
+            line-height: 1.6;
+        }
+        .code-modal textarea:focus {
+            outline: none;
+            border-color: var(--success);
+            box-shadow: 0 0 0 3px rgba(46,204,113,0.1);
+        }
+        .code-modal textarea::placeholder {
+            color: var(--text-muted);
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            font-size: 14px;
+        }
+        .code-modal .modal-actions {
+            display: flex;
+            gap: 10px;
+        }
+        .code-modal .modal-actions button {
+            flex: 1;
+            padding: 12px;
+            border: none;
+            border-radius: 12px;
+            font-weight: 600;
+            font-size: 14px;
+            cursor: pointer;
+            transition: var(--transition);
+        }
+        .code-modal .btn-primary {
+            background: var(--success);
+            color: white;
+        }
+        .code-modal .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(46,204,113,0.3);
+        }
+        .code-modal .btn-secondary {
+            background: var(--bg-elevated);
+            color: var(--text-secondary);
+        }
+        .code-modal .btn-secondary:hover {
+            background: var(--hover-bg);
+        }
+
+        /* ===== CALCULADORA ===== */
+        .calc-container {
+            background: var(--bg-card);
+            border-radius: var(--radius-card);
+            padding: 16px;
+            margin-bottom: 14px;
+            border: 1px solid var(--border);
+            box-shadow: var(--shadow);
+            transition: var(--transition);
+        }
+        .calc-display {
+            background: var(--bg-elevated);
+            border-radius: 12px;
+            padding: 12px 16px;
+            margin-bottom: 12px;
+            min-height: 70px;
+            display: flex;
+            flex-direction: column;
+            justify-content: flex-end;
+            align-items: flex-end;
+            border: 1px solid var(--border);
+            transition: var(--transition);
+            cursor: pointer;
+            user-select: none;
+        }
+        .calc-display:active {
+            transform: scale(0.98);
+        }
+        .calc-display .calc-expression {
+            font-size: 13px;
+            color: var(--text-muted);
+            min-height: 20px;
+            word-break: break-all;
+            text-align: right;
+            width: 100%;
+            transition: var(--transition);
+        }
+        .calc-display .calc-result {
+            font-size: 32px;
+            font-weight: 700;
+            color: var(--text-primary);
+            word-break: break-all;
+            text-align: right;
+            width: 100%;
+            transition: var(--transition);
+        }
+        .calc-display .calc-result.error {
+            color: var(--danger);
+            font-size: 24px;
+        }
+        .calc-grid {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 8px;
+        }
+        .calc-btn {
+            padding: 14px 8px;
+            border: none;
+            border-radius: var(--radius-btn);
+            font-size: 18px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.15s ease;
+            background: var(--bg-elevated);
+            color: var(--text-primary);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            user-select: none;
+            -webkit-tap-highlight-color: transparent;
+            min-height: 50px;
+            border: 1px solid transparent;
+        }
+        .calc-btn:active {
+            transform: scale(0.92);
+        }
+        .calc-btn:hover {
+            opacity: 0.85;
+        }
+        .calc-btn.operator {
+            background: var(--success);
+            color: white;
+            border-color: var(--success);
+        }
+        .calc-btn.operator:hover {
+            background: var(--success-dark);
+        }
+        .calc-btn.function {
+            background: var(--warning);
+            color: white;
+            border-color: var(--warning);
+        }
+        .calc-btn.function:hover {
+            background: #e67e22;
+        }
+        .calc-btn.equals {
+            background: var(--info);
+            color: white;
+            border-color: var(--info);
+        }
+        .calc-btn.equals:hover {
+            background: #2980b9;
+        }
+        .calc-btn.danger-btn {
+            background: var(--danger);
+            color: white;
+            border-color: var(--danger);
+        }
+        .calc-btn.danger-btn:hover {
+            background: var(--danger-dark);
+        }
+        .calc-btn.zero {
+            grid-column: span 2;
+        }
+        
+        .calc-history {
+            background: var(--bg-card);
+            border-radius: var(--radius-card);
+            padding: 12px 16px;
+            border: 1px solid var(--border);
+            margin-top: 10px;
+            max-height: 150px;
+            overflow-y: auto;
+            transition: var(--transition);
+        }
+        .calc-history-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 8px;
+        }
+        .calc-history-header span {
+            font-size: 11px;
+            font-weight: 600;
+            color: var(--text-muted);
+            text-transform: uppercase;
+            letter-spacing: 0.3px;
+        }
+        .calc-history-header button {
+            background: none;
+            border: none;
+            font-size: 12px;
+            color: var(--danger);
+            cursor: pointer;
+            font-weight: 600;
+            padding: 4px 8px;
+            border-radius: 6px;
+            transition: var(--transition);
+        }
+        .calc-history-header button:hover {
+            background: var(--hover-bg);
+        }
+        .calc-history-item {
+            display: flex;
+            justify-content: space-between;
+            padding: 4px 0;
+            font-size: 12px;
+            color: var(--text-secondary);
+            border-bottom: 1px solid var(--border);
+        }
+        .calc-history-item:last-child {
+            border-bottom: none;
+        }
+        .calc-history-item .h-expr {
+            color: var(--text-muted);
+        }
+        .calc-history-item .h-result {
+            font-weight: 600;
+            color: var(--text-primary);
+        }
+        .calc-history-empty {
+            text-align: center;
+            color: var(--text-muted);
+            font-size: 12px;
+            padding: 8px 0;
+        }
+
+        /* ===== PIX MODAL ===== */
+        .pix-key-display {
+            background: var(--bg-elevated);
+            border-radius: 12px;
+            padding: 16px;
+            text-align: center;
+            border: 2px solid var(--pix-color);
+            margin-bottom: 16px;
+            word-break: break-all;
+            font-family: monospace;
+            font-size: 14px;
+            color: var(--text-primary);
+            cursor: pointer;
+            transition: var(--transition);
+            user-select: all;
+            min-height: 80px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+        }
+        .pix-key-display:active {
+            transform: scale(0.97);
+        }
+        .pix-key-display .pix-label {
+            font-size: 11px;
+            color: var(--text-muted);
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            margin-bottom: 4px;
+        }
+        .pix-key-display .pix-icon {
+            font-size: 28px;
+            display: block;
+            margin-bottom: 4px;
+        }
+        .pix-key-display .pix-key-text {
+            font-weight: 600;
+            color: var(--pix-color);
+        }
+        .pix-key-display .pix-empty {
+            color: var(--text-muted);
+            font-weight: 400;
+        }
+        .pix-copy-feedback {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: var(--success);
+            color: white;
+            padding: 16px 32px;
+            border-radius: 16px;
+            font-weight: 600;
+            font-size: 16px;
+            z-index: 2000;
+            box-shadow: 0 8px 32px rgba(0,0,0,0.3);
+            animation: fadeInOut 1.5s ease forwards;
+            pointer-events: none;
+        }
+        @keyframes fadeInOut {
+            0% { opacity: 0; transform: translate(-50%, -50%) scale(0.8); }
+            20% { opacity: 1; transform: translate(-50%, -50%) scale(1); }
+            80% { opacity: 1; transform: translate(-50%, -50%) scale(1); }
+            100% { opacity: 0; transform: translate(-50%, -50%) scale(0.9); }
+        }
+        .filter-select {
+            width: 100%;
+            padding: 10px 14px;
+            background: var(--bg-elevated);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            color: var(--text-primary);
+            font-size: 13px;
+            font-family: inherit;
+            margin-bottom: 12px;
+        }
+
+        .screen-title {
+            font-size: 16px;
+            font-weight: 700;
+            margin-bottom: 14px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            color: var(--text-primary);
+        }
+
+        /* ===== ÍCONE DO APP NA TELA DE LOGIN ===== */
+        .auth-logo-img {
+            width: 72px;
+            height: 72px;
+            border-radius: 18px;
+            object-fit: contain;
+            background: var(--bg-elevated);
+            padding: 4px;
+            border: 2px solid var(--border);
+            display: block;
+            margin: 0 auto 8px auto;
+        }
+    </style>
+</head>
+<body class="value-hidden">
+
+<!-- Auth Screens -->
+<div id="loginScreen" class="auth-screen">
+    <div class="auth-card">
+        <div class="auth-logo">
+            <img src="https://i.ibb.co/Y7mBnHPC/1784338906835.png" alt="PBS Logo" class="auth-logo-img" onerror="this.style.display='none'">
+        </div>
+        <h2>PBS</h2>
+        <div class="sub">Controle Financeiro</div>
+        <div id="loginErrorMsg" style="color:var(--danger); font-size:13px; margin-bottom:12px;"></div>
+        <input type="text" id="loginNome" class="auth-input" placeholder="Usuário">
+        <input type="password" id="loginSenha" class="auth-input" placeholder="Senha (4-6 números)">
+        <button id="loginBtn" class="auth-btn">Entrar</button>
+        <div class="auth-link">Não tem conta? <a id="showRegLink">Criar</a></div>
+    </div>
+</div>
+
+<div id="regScreen" class="auth-screen" style="display: none;">
+    <div class="auth-card">
+        <div class="auth-logo">
+            <img src="https://i.ibb.co/Y7mBnHPC/1784338906835.png" alt="PBS Logo" class="auth-logo-img" onerror="this.style.display='none'">
+        </div>
+        <h2>PBS</h2>
+        <div class="sub">Crie sua conta</div>
+        <div id="regErrorMsg" style="color:var(--danger); font-size:13px; margin-bottom:12px;"></div>
+        <input type="text" id="regNome" class="auth-input" placeholder="Nome">
+        <input type="password" id="regSenha" class="auth-input" placeholder="Senha (4-6 números)">
+        <input type="password" id="regConfirm" class="auth-input" placeholder="Confirmar">
+        <button id="registerBtn" class="auth-btn">Criar Conta</button>
+        <div class="auth-link">Já tem? <a id="showLoginLink">Entrar</a></div>
+    </div>
+</div>
+
+<div id="forceUpdateModal" style="display:none; position:fixed; top:0; left:0; right:0; bottom:0; background:rgba(0,0,0,0.8); z-index:1200; align-items:center; justify-content:center; padding:20px; backdrop-filter:blur(8px);">
+    <div style="background:var(--bg-card); border-radius:24px; padding:28px; width:100%; max-width:320px; border:1px solid var(--border); text-align:center;">
+        <h3 style="color:var(--warning);">⚠️ Senha Fraca</h3>
+        <p style="font-size:13px; color:var(--text-secondary); margin:8px 0 16px;">Crie uma senha forte para continuar.</p>
+        <input type="password" id="forceNewPassword" class="auth-input" placeholder="Nova senha (4-6 números)">
+        <input type="password" id="forceConfirmPassword" class="auth-input" placeholder="Confirmar">
+        <button id="forceUpdateBtn" class="auth-btn">Atualizar</button>
+        <div id="forceErrorMsg" style="color:var(--danger); font-size:12px; margin-top:12px;"></div>
+    </div>
+</div>
+
+<!-- Main App -->
+<div id="mainApp" class="app-container">
+    <div class="mobile-header">
+        <div class="logo-area" id="logoArea">
+            <img src="https://i.ibb.co/Y7mBnHPC/1784338906835.png" alt="PBS Logo" id="appLogo" onerror="this.style.display='none'">
+            <h1 id="logoTitle">PBS Controle</h1>
+        </div>
+        <div class="user-actions">
+            <span class="user-badge">👤 <span id="userNameDisplay"></span></span>
+            <button id="hideValuesBtn" class="icon-btn">🔓</button>
+            <div class="menu-dropdown">
+                <button id="menuBtn" class="menu-btn">⋯</button>
+                <div id="menuContent" class="menu-content">
+                    <button id="menuExportCode">📤 Exportar Código</button>
+                    <button id="menuImportCode">📥 Importar Código</button>
+                    <div class="menu-divider"></div>
+                    <button id="menuPix">💳 Chave Pix</button>
+                    <div class="menu-divider"></div>
+                    <button id="menuTheme">🌓 Tema</button>
+                    <div class="menu-divider"></div>
+                    <button id="menuClearAll" style="color:var(--danger);">⚠️ Limpar Transações</button>
+                    <button id="menuDeleteAccount" class="danger-item">🗑️ Excluir Conta</button>
+                    <div class="menu-divider"></div>
+                    <button id="menuLogout">🚪 Sair</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Resumo sempre visível -->
+    <div class="resumo-grid">
+        <div class="resumo-card card-entradas"><div><div class="resumo-icon">📥</div><div class="resumo-label">Entradas</div></div><div class="resumo-valor" id="mobileTotalEntradas">R$ 0</div></div>
+        <div class="resumo-card card-saidas"><div><div class="resumo-icon">📤</div><div class="resumo-label">Saídas</div></div><div class="resumo-valor" id="mobileTotalSaidas">R$ 0</div></div>
+        <div class="resumo-card card-saldo"><div><div class="resumo-icon">💰</div><div class="resumo-label">Saldo</div></div><div class="resumo-valor" id="mobileSaldo">R$ 0</div></div>
+    </div>
+
+    <!-- Botão Voltar -->
+    <button id="backButton" class="back-button">← Voltar</button>
+
+    <!-- TELA DO MENU PRINCIPAL -->
+    <div id="mainMenuScreen">
+        <div class="main-menu-grid">
+            <div class="menu-card" data-screen="movements">
+                <span class="menu-icon">📋</span>
+                <div class="menu-label">Extrato</div>
+                <div class="menu-desc">Ver movimentações</div>
+                <span class="menu-badge" id="movCountBadge">0</span>
+            </div>
+            <div class="menu-card" data-screen="add">
+                <span class="menu-icon">➕</span>
+                <div class="menu-label">Adicionar</div>
+                <div class="menu-desc">Nova transação</div>
+            </div>
+            <div class="menu-card" data-screen="calculator">
+                <span class="menu-icon">🧮</span>
+                <div class="menu-label">Calculadora</div>
+                <div class="menu-desc">Cálculos rápidos</div>
+            </div>
+            <div class="menu-card" data-screen="caixas">
+                <span class="menu-icon">🏦</span>
+                <div class="menu-label">Caixas</div>
+                <div class="menu-desc">Gerenciar caixas</div>
+            </div>
+            <div class="menu-card" data-screen="juros">
+                <span class="menu-icon">📈</span>
+                <div class="menu-label">Juros/Mês</div>
+                <div class="menu-desc">Calcular juros mensais</div>
+                <span class="menu-badge" id="jurosCountBadge">0</span>
+            </div>
+        </div>
+        <footer>✔️ PBS Controle Financeiro - Simplificado</footer>
+    </div>
+
+    <!-- TELAS DE CONTEÚDO -->
+    <!-- Extrato -->
+    <div id="screenMovements" class="content-screen">
+        <div class="screen-title">📋 Extrato</div>
+        <select id="filtroTipoMobile" class="filter-select">
+            <option value="todos">📋 Todos</option>
+            <option value="entrada">📥 Entradas</option>
+            <option value="saida">📤 Saídas</option>
+        </select>
+        <div id="movementsList" class="transaction-list"></div>
+    </div>
+
+    <!-- Adicionar -->
+    <div id="screenAdd" class="content-screen">
+        <div class="screen-title">➕ Adicionar Transação</div>
+        <div class="form-mobile">
+            <div class="tipo-switch">
+                <div class="tipo-btn entrada active" data-tipo-mobile="entrada">📥 ENTRADA</div>
+                <div class="tipo-btn saida" data-tipo-mobile="saida">📤 SAÍDA</div>
+            </div>
+            <div class="input-field"><label>📝 Descrição</label><input type="text" id="mobileDesc" placeholder="Ex: Salário, Uber"></div>
+            <div class="input-field"><label>💰 Valor</label><input type="text" id="mobileValor" inputmode="decimal" placeholder="0,00"></div>
+            <div class="input-field"><label>🏦 Caixa</label>
+                <div style="display:flex; gap:8px; align-items:center;">
+                    <select id="mobileCaixa" style="flex:1; padding:10px 14px; background:var(--bg-elevated); border:1px solid var(--border); border-radius:10px; color:var(--text-primary); font-size:14px;"></select>
+                    <button id="mobileAddCaixaBtn" style="background:var(--bg-elevated); border:1px solid var(--border); padding:10px 14px; border-radius:10px; cursor:pointer; font-size:16px; transition:var(--transition);">➕</button>
+                </div>
+            </div>
+            <div class="input-field"><label>📅 Data</label><input type="date" id="mobileData"></div>
+            <button id="mobileAddTransacao" class="full-btn">➕ Adicionar</button>
+        </div>
+    </div>
+
+    <!-- Calculadora -->
+    <div id="screenCalculator" class="content-screen">
+        <div class="screen-title">🧮 Calculadora</div>
+        <div class="calc-container">
+            <div class="calc-display" id="calcDisplay">
+                <div class="calc-expression" id="calcExpression"></div>
+                <div class="calc-result" id="calcResult">0</div>
+            </div>
+            <div class="calc-grid">
+                <button class="calc-btn function" data-action="clear">AC</button>
+                <button class="calc-btn function" data-action="sign">±</button>
+                <button class="calc-btn function" data-action="percent">%</button>
+                <button class="calc-btn operator" data-action="divide">÷</button>
+                <button class="calc-btn" data-action="7">7</button>
+                <button class="calc-btn" data-action="8">8</button>
+                <button class="calc-btn" data-action="9">9</button>
+                <button class="calc-btn operator" data-action="multiply">×</button>
+                <button class="calc-btn" data-action="4">4</button>
+                <button class="calc-btn" data-action="5">5</button>
+                <button class="calc-btn" data-action="6">6</button>
+                <button class="calc-btn operator" data-action="subtract">−</button>
+                <button class="calc-btn" data-action="1">1</button>
+                <button class="calc-btn" data-action="2">2</button>
+                <button class="calc-btn" data-action="3">3</button>
+                <button class="calc-btn operator" data-action="add">+</button>
+                <button class="calc-btn zero" data-action="0">0</button>
+                <button class="calc-btn" data-action="decimal">.</button>
+                <button class="calc-btn equals" data-action="equals">=</button>
+            </div>
+        </div>
+        <div class="calc-history" id="calcHistory">
+            <div class="calc-history-header">
+                <span>📜 Histórico</span>
+                <button id="clearHistoryBtn">Limpar</button>
+            </div>
+            <div id="calcHistoryList">
+                <div class="calc-history-empty">Nenhum cálculo realizado</div>
+            </div>
+        </div>
+        <div style="background:var(--bg-card); border-radius:16px; padding:12px 16px; border:1px solid var(--border); text-align:center; font-size:12px; color:var(--text-muted); margin-top:10px;">
+            💡 Clique no resultado para copiar
+        </div>
+    </div>
+
+    <!-- Caixas -->
+    <div id="screenCaixas" class="content-screen">
+        <div class="screen-title">🏦 Gerenciar Caixas</div>
+        <div id="caixaTotalGrid" class="caixa-total-grid"></div>
+    </div>
+
+    <!-- TELA DE JUROS -->
+    <div id="screenJuros" class="content-screen">
+        <div class="screen-title">📈 Juros / Mês</div>
+        <div class="juros-full">
+            <div class="juros-header">
+                <h3>📊 Calculadora de Juros</h3>
+                <span class="juros-badge">💰</span>
+            </div>
+            
+            <div class="juros-saldo-atual">
+                <span class="label">💰 Saldo atual</span>
+                <span class="value" id="jurosSaldoAtual">R$ 0,00</span>
+            </div>
+            
+            <div class="juros-input-area">
+                <div class="input-group">
+                    <label>📊 Selecione ou digite a taxa de juros % ao mês</label>
+                    <div class="juros-duplo">
+                        <select id="jurosTaxaSelect">
+                            <option value="0.5">0,5%</option>
+                            <option value="1">1%</option>
+                            <option value="1.5">1,5%</option>
+                            <option value="2">2%</option>
+                            <option value="2.5">2,5%</option>
+                            <option value="3">3%</option>
+                            <option value="4">4%</option>
+                            <option value="5">5%</option>
+                            <option value="8">8%</option>
+                            <option value="10">10%</option>
+                            <option value="12">12%</option>
+                            <option value="15">15%</option>
+                        </select>
+                        <input type="number" id="jurosTaxaManual" placeholder="Ex: 7.5" step="0.1" min="0">
+                    </div>
+                </div>
+                <div class="input-group">
+                    <label>💰 Valor base para cálculo</label>
+                    <input type="number" id="jurosValorBaseInputFull" placeholder="Ex: 1000" step="0.01" min="0">
+                </div>
+                <button id="jurosCalcularBtnFull">Calcular e Adicionar Juros</button>
+            </div>
+
+            <!-- Lista de juros acumulados -->
+            <div class="juros-acumulados">
+                <div class="juros-acum-header">
+                    <h4>📋 Juros Acumulados</h4>
+                    <span class="total-juros" id="totalJurosAcumulado">R$ 0,00</span>
+                </div>
+                <div id="jurosLista"></div>
+            </div>
+            
+            <div class="juros-info">
+                💡 Fórmula: Valor base + (Valor base × Taxa / 100). <br>
+                Use o select ou digite manualmente a taxa desejada.
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modais -->
+<div id="editModal" class="modal-mobile"><div class="modal-card"><h3>✏️ Editar</h3><input type="hidden" id="editId"><div class="input-field"><label>Descrição</label><input type="text" id="editDesc" class="auth-input"></div><div class="input-field"><label>Valor</label><input type="text" id="editValor" class="auth-input"></div><div class="input-field"><label>Caixa</label><select id="editCaixa" class="auth-input"></select></div><div class="input-field"><label>Data</label><input type="date" id="editData" class="auth-input"></div><div class="input-field"><label>Tipo</label><select id="editTipo" class="auth-input"><option value="entrada">Entrada</option><option value="saida">Saída</option></select></div><div style="display:flex; gap:10px; margin-top:16px;"><button id="saveEditBtn" class="auth-btn">Salvar</button><button id="cancelEditBtn" class="auth-btn" style="background:var(--text-muted);">Cancelar</button></div></div></div>
+
+<div id="deleteAccountModal" class="modal-mobile"><div class="modal-card"><h3 style="color:var(--danger);">⚠️ Excluir Conta</h3><p class="sub">Digite sua senha para confirmar</p><input type="password" id="deleteConfirmPassword" class="auth-input"><div style="display:flex; gap:10px; margin-top:16px;"><button id="confirmDeleteAccountBtn" class="auth-btn danger">Excluir</button><button id="cancelDeleteAccountBtn" class="auth-btn" style="background:var(--text-muted);">Cancelar</button></div></div></div>
+
+<div id="passwordConfirmModal" class="modal-mobile">
+    <div class="modal-card">
+        <h3>🔑 Confirmar Senha</h3>
+        <p class="sub" id="passwordConfirmText">Digite sua senha para excluir este item</p>
+        <input type="password" id="passwordConfirmInput" class="auth-input" placeholder="Digite sua senha">
+        <div id="passwordConfirmError" class="error-msg"></div>
+        <div style="display:flex; gap:10px; margin-top:16px;">
+            <button id="passwordConfirmBtn" class="auth-btn danger">Confirmar</button>
+            <button id="passwordCancelBtn" class="auth-btn" style="background:var(--text-muted);">Cancelar</button>
+        </div>
+    </div>
+</div>
+
+<!-- PIX Modal -->
+<div id="pixModal" class="modal-mobile">
+    <div class="modal-card">
+        <h3>💳 Chave Pix</h3>
+        <p class="sub">Clique na chave para copiar</p>
+        <div class="pix-key-display" id="pixKeyDisplay">
+            <span class="pix-icon">💚</span>
+            <div class="pix-label">CHAVE PIX</div>
+            <span id="pixKeyText" class="pix-empty">clique para definir</span>
+        </div>
+        <div class="input-field">
+            <label>✏️ Editar Chave Pix</label>
+            <input type="text" id="pixKeyInput" class="auth-input" placeholder="Digite sua chave Pix (CPF, email, telefone, etc.)" style="margin-bottom:0;">
+        </div>
+        <div style="display:flex; gap:10px; margin-top:12px;">
+            <button id="savePixBtn" class="auth-btn">💾 Salvar</button>
+            <button id="cancelPixBtn" class="auth-btn" style="background:var(--text-muted);">Fechar</button>
+        </div>
+    </div>
+</div>
+
+<!-- MODAL DE EXPORTAR/IMPORTAR CÓDIGO -->
+<div id="codeModal" class="modal-mobile code-modal">
+    <div class="modal-card">
+        <h3 id="codeModalTitle">📤 Exportar Código</h3>
+        <p class="sub" id="codeModalSub">Copie o código abaixo para fazer backup dos seus dados</p>
+        <textarea id="codeTextarea" placeholder="Cole aqui o código de backup..."></textarea>
+        <div class="modal-actions">
+            <button id="codeModalCancel" class="btn-secondary">Cancelar</button>
+            <button id="codeModalAction" class="btn-primary">📋 Copiar</button>
+        </div>
+    </div>
+</div>
+
+<script>
+    // ==================== CORE ====================
+    let currentUser=null, transacoes=[], caixas=[];
+    let pendingDeleteItem = null;
+    let pixKey = '';
+    let currentScreen = 'main';
+    let screenHistory = [];
+    let jurosAcumulados = []; // Array de {id, data, valorBase, taxa, valorJuros, descricao}
+
+    function parseMoney(v) { if(!v) return null; let str=String(v).trim().replace(/\./g,'').replace(',','.'); let n=parseFloat(str); return isNaN(n)||n<0?null:n; }
+    function formatMoney(v) { return v.toLocaleString('pt-BR',{style:'currency',currency:'BRL'}); }
+    function formatDateBR(d) { if(!d) return ''; const [y,m,d2]=d.split('-'); return `${d2}/${m}/${y}`; }
+    function escapeHtml(s) { if(!s) return ''; return s.replace(/[&<>]/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;'}[m])); }
+    function isStrongPassword(p) { const s=String(p); return /^\d+$/.test(s)&&s.length>=4&&s.length<=6&&!/(\d)\1/.test(s); }
+
+    // ==================== USUÁRIOS ====================
+    function loadUsers() { return JSON.parse(localStorage.getItem("appUsers")||"{}"); }
+    function saveUsers(u) { localStorage.setItem("appUsers",JSON.stringify(u)); }
+    function registerUser(n,s) { let u=loadUsers(); if(u[n]) throw new Error("Usuário já existe!"); if(!isStrongPassword(s)) throw new Error("Senha deve ter 4-6 números"); u[n]={ senha:s, transacoes:[], caixas:["Carteira","Banco","PicPay","Nubank"], pixKey:'', jurosAcumulados:[] }; saveUsers(u); return true; }
+    function loginUser(n,s) { let u=loadUsers(); if(!u[n]) throw new Error("Usuário não encontrado!"); if(u[n].senha!==s) throw new Error("Senha incorreta!"); currentUser=n; transacoes=u[n].transacoes||[]; caixas=u[n].caixas||["Carteira","Banco","PicPay","Nubank"]; pixKey=u[n].pixKey||''; jurosAcumulados=u[n].jurosAcumulados||[]; return true; }
+    function saveCurrentUser() { if(!currentUser) return; let u=loadUsers(); if(u[currentUser]) { u[currentUser].transacoes=transacoes; u[currentUser].caixas=caixas; u[currentUser].pixKey=pixKey; u[currentUser].jurosAcumulados=jurosAcumulados; saveUsers(u); } }
+
+    function getSaldoPorCaixa() { 
+        let s={}; 
+        caixas.forEach(c=>s[c]=0); 
+        transacoes.forEach(t=>{ 
+            if(s.hasOwnProperty(t.caixa)) {
+                if(t.tipo==='entrada') s[t.caixa] += t.valor;
+                else if(t.tipo==='saida') s[t.caixa] -= t.valor;
+            }
+        });
+        return s; 
+    }
+
+    function getEntradasSaidasPorCaixa() {
+        let result = {};
+        caixas.forEach(c => {
+            result[c] = { entradas: 0, saidas: 0 };
+        });
+        transacoes.forEach(t => {
+            if(result[t.caixa]) {
+                if(t.tipo === 'entrada') result[t.caixa].entradas += t.valor;
+                else if(t.tipo === 'saida') result[t.caixa].saidas += t.valor;
+            }
+        });
+        return result;
+    }
+
+    function atualizarSelectCaixas() { 
+        let opts=caixas.map(c=>`<option value="${escapeHtml(c)}">${escapeHtml(c)}</option>`).join(''); 
+        ['mobileCaixa','editCaixa'].forEach(id=>{ let el=document.getElementById(id); if(el) el.innerHTML=opts; }); 
+    }
+
+    // ==================== NAVEGAÇÃO ENTRE TELAS ====================
+    function showScreen(screenId) {
+        if (currentScreen !== 'main') {
+            screenHistory.push(currentScreen);
+        }
+        currentScreen = screenId;
+        
+        document.querySelectorAll('.content-screen').forEach(el => el.classList.remove('active'));
+        const target = document.getElementById('screen' + screenId.charAt(0).toUpperCase() + screenId.slice(1));
+        if (target) {
+            target.classList.add('active');
+        }
+        document.getElementById('mainMenuScreen').classList.add('hidden');
+        document.getElementById('backButton').classList.add('show');
+        if (screenId === 'movements') {
+            const list = document.getElementById('movementsList');
+            if (list) renderMovements(list);
+        } else if (screenId === 'caixas') {
+            const grid = document.getElementById('caixaTotalGrid');
+            if (grid) renderCaixas(grid);
+        } else if (screenId === 'add') {
+            document.getElementById('mobileData').value = new Date().toISOString().slice(0,10);
+            atualizarSelectCaixas();
+        } else if (screenId === 'calculator') {
+            initCalculator();
+        } else if (screenId === 'juros') {
+            atualizarJurosFull();
+            renderJurosLista();
+        }
+    }
+
+    function showMainMenu() {
+        currentScreen = 'main';
+        screenHistory = [];
+        document.querySelectorAll('.content-screen').forEach(el => el.classList.remove('active'));
+        document.getElementById('mainMenuScreen').classList.remove('hidden');
+        document.getElementById('backButton').classList.remove('show');
+        document.getElementById('movCountBadge').textContent = transacoes.length;
+        document.getElementById('jurosCountBadge').textContent = jurosAcumulados.length;
+        atualizarJurosFull();
+    }
+
+    function goBack() {
+        if (screenHistory.length > 0) {
+            const previousScreen = screenHistory.pop();
+            if (previousScreen === 'main') {
+                showMainMenu();
+            } else {
+                currentScreen = previousScreen;
+                document.querySelectorAll('.content-screen').forEach(el => el.classList.remove('active'));
+                const target = document.getElementById('screen' + previousScreen.charAt(0).toUpperCase() + previousScreen.slice(1));
+                if (target) {
+                    target.classList.add('active');
+                }
+                document.getElementById('mainMenuScreen').classList.add('hidden');
+                document.getElementById('backButton').classList.add('show');
+                if (previousScreen === 'movements') {
+                    const list = document.getElementById('movementsList');
+                    if (list) renderMovements(list);
+                } else if (previousScreen === 'caixas') {
+                    const grid = document.getElementById('caixaTotalGrid');
+                    if (grid) renderCaixas(grid);
+                } else if (previousScreen === 'calculator') {
+                    initCalculator();
+                } else if (previousScreen === 'juros') {
+                    atualizarJurosFull();
+                    renderJurosLista();
+                }
+            }
+        } else {
+            showMainMenu();
+        }
+    }
+
+    // ==================== JUROS ====================
+    function getSaldoTotal() {
+        let entradas = transacoes.filter(t=>t.tipo==='entrada').reduce((s,t)=>s+t.valor,0);
+        let saidas = transacoes.filter(t=>t.tipo==='saida').reduce((s,t)=>s+t.valor,0);
+        return entradas - saidas;
+    }
+
+    function atualizarJurosFull() {
+        const saldoAtual = document.getElementById('jurosSaldoAtual');
+        const saldo = getSaldoTotal();
+        if (saldoAtual) {
+            saldoAtual.textContent = formatMoney(saldo);
+            saldoAtual.className = 'value ' + (saldo > 0 ? 'positive' : saldo < 0 ? 'negative' : '');
+        }
+        // Atualiza total acumulado
+        const total = jurosAcumulados.reduce((sum, item) => sum + item.valorJuros, 0);
+        const totalEl = document.getElementById('totalJurosAcumulado');
+        if (totalEl) {
+            totalEl.textContent = formatMoney(total);
+        }
+    }
+
+    function getTaxaFromInputs() {
+        const select = document.getElementById('jurosTaxaSelect');
+        const manual = document.getElementById('jurosTaxaManual');
+        let taxa = parseFloat(select.value);
+        if (manual.value && manual.value.trim() !== '') {
+            const manualVal = parseFloat(manual.value);
+            if (!isNaN(manualVal) && manualVal >= 0) {
+                taxa = manualVal;
+            }
+        }
+        return taxa;
+    }
+
+    function calcularJurosPersonalizadoFull() {
+        const valorInput = document.getElementById('jurosValorBaseInputFull');
+        const taxa = getTaxaFromInputs();
+        const valorBase = parseFloat(valorInput.value.replace(',', '.'));
+        if (isNaN(taxa) || taxa < 0 || isNaN(valorBase) || valorBase < 0) {
+            alert('❌ Por favor, preencha o valor base com um número válido e selecione ou digite uma taxa.');
+            return;
+        }
+        const valorJuros = valorBase + (valorBase * taxa / 100);
+        const jurosItem = {
+            id: Date.now() + Math.random(),
+            data: new Date().toISOString().slice(0,10),
+            valorBase: valorBase,
+            taxa: taxa,
+            valorJuros: valorJuros,
+            descricao: `Juros ${taxa.toFixed(1)}% sobre ${formatMoney(valorBase)}`
+        };
+        jurosAcumulados.push(jurosItem);
+        saveCurrentUser();
+        
+        // Limpa o input
+        valorInput.value = '';
+        document.getElementById('jurosTaxaManual').value = '';
+        
+        // Atualiza a lista
+        renderJurosLista();
+        atualizarJurosFull();
+        document.getElementById('jurosCountBadge').textContent = jurosAcumulados.length;
+        
+        alert(`✅ Juros adicionado!\n\nTaxa: ${taxa.toFixed(1)}%\nValor base: ${formatMoney(valorBase)}\nValor com juros: ${formatMoney(valorJuros)}`);
+    }
+
+    function renderJurosLista() {
+        const container = document.getElementById('jurosLista');
+        if (!container) return;
+        if (jurosAcumulados.length === 0) {
+            container.innerHTML = '<div class="empty-state">Nenhum juros acumulado</div>';
+            return;
+        }
+        container.innerHTML = jurosAcumulados.map(item => {
+            return `<div class="juros-item">
+                <div class="juros-info">
+                    <div class="juros-desc">${escapeHtml(item.descricao)}</div>
+                    <div class="juros-meta">
+                        <span>📅 ${formatDateBR(item.data)}</span>
+                        <span>📊 ${item.taxa.toFixed(1)}%</span>
+                        <span>💰 Base: ${formatMoney(item.valorBase)}</span>
+                    </div>
+                </div>
+                <div style="display:flex; align-items:center; gap:4px;">
+                    <span class="juros-valor">${formatMoney(item.valorJuros)}</span>
+                    <button class="juros-delete" data-id="${item.id}">🗑️</button>
+                </div>
+            </div>`;
+        }).join('');
+        
+        container.querySelectorAll('.juros-delete').forEach(btn => {
+            btn.onclick = function() {
+                const id = parseFloat(this.dataset.id);
+                const item = jurosAcumulados.find(j => j.id === id);
+                if (!item) return;
+                pendingDeleteItem = { type: 'juros', id: id };
+                document.getElementById('passwordConfirmText').textContent = `Digite sua senha para excluir este juros: ${item.descricao}`;
+                verifyPasswordAndExecute(() => {
+                    if (pendingDeleteItem && pendingDeleteItem.type === 'juros') {
+                        jurosAcumulados = jurosAcumulados.filter(j => j.id !== pendingDeleteItem.id);
+                        pendingDeleteItem = null;
+                        saveCurrentUser();
+                        renderJurosLista();
+                        atualizarJurosFull();
+                        document.getElementById('jurosCountBadge').textContent = jurosAcumulados.length;
+                    }
+                });
+            };
+        });
+    }
+
+    // ==================== VERIFICAÇÃO DE SENHA ====================
+    function verifyPasswordAndExecute(callback) {
+        const modal = document.getElementById('passwordConfirmModal');
+        const input = document.getElementById('passwordConfirmInput');
+        const error = document.getElementById('passwordConfirmError');
+        
+        input.value = '';
+        error.textContent = '';
+        modal.classList.add('active');
+        setTimeout(() => input.focus(), 100);
+        
+        const confirmBtn = document.getElementById('passwordConfirmBtn');
+        const cancelBtn = document.getElementById('passwordCancelBtn');
+        
+        const newConfirmBtn = confirmBtn.cloneNode(true);
+        const newCancelBtn = cancelBtn.cloneNode(true);
+        confirmBtn.parentNode.replaceChild(newConfirmBtn, confirmBtn);
+        cancelBtn.parentNode.replaceChild(newCancelBtn, cancelBtn);
+        
+        newConfirmBtn.onclick = () => {
+            const password = input.value.trim();
+            if (!password) {
+                error.textContent = '❌ Digite sua senha!';
+                return;
+            }
+            const users = loadUsers();
+            if (!users[currentUser] || users[currentUser].senha !== password) {
+                error.textContent = '❌ Senha incorreta!';
+                return;
+            }
+            modal.classList.remove('active');
+            if (callback) callback();
+        };
+        newCancelBtn.onclick = () => {
+            modal.classList.remove('active');
+            pendingDeleteItem = null;
+        };
+        modal.onclick = (e) => {
+            if (e.target === modal) {
+                modal.classList.remove('active');
+                pendingDeleteItem = null;
+            }
+        };
+        input.onkeydown = (e) => {
+            if (e.key === 'Enter') {
+                newConfirmBtn.click();
+            }
+        };
+    }
+
+    // ==================== RENDER FUNCTIONS ====================
+    function renderMovements(container) {
+        let tipo = document.getElementById('filtroTipoMobile')?.value || 'todos';
+        let filtrados = transacoes.filter(t=>tipo==='todos'||t.tipo===tipo).sort((a,b)=>a.data<b.data?1:-1);
+        if(!filtrados.length){ 
+            container.innerHTML = '<div class="empty-state">💸 Nenhuma movimentação</div>'; 
+            return; 
+        }
+        container.innerHTML = filtrados.map(t=>{
+            let val=t.tipo==='entrada'?formatMoney(t.valor):`- ${formatMoney(t.valor)}`;
+            return `<div class="transaction-item ${t.tipo}">
+                <div class="transaction-info">
+                    <div class="transaction-desc">${escapeHtml(t.descricao)}</div>
+                    <div class="transaction-meta"><span>📅 ${formatDateBR(t.data)}</span><span>🏦 ${escapeHtml(t.caixa)}</span></div>
+                </div>
+                <div class="transaction-value">${val}</div>
+                <div class="transaction-actions">
+                    <button class="action-icon edit-trans" data-id="${t.id}" style="background:none;border:none;font-size:14px;cursor:pointer;color:var(--text-muted);">✏️</button>
+                    <button class="action-icon del-trans" data-id="${t.id}" style="background:none;border:none;font-size:14px;cursor:pointer;color:var(--danger);">🗑️</button>
+                </div>
+            </div>`;
+        }).join('');
+        container.querySelectorAll('.edit-trans').forEach(b=>b.onclick=()=>openEditModal(b.dataset.id));
+        container.querySelectorAll('.del-trans').forEach(b=>b.onclick=()=>deleteTransacaoComSenha(b.dataset.id));
+    }
+
+    function renderCaixas(container) {
+        let saldos = getSaldoPorCaixa();
+        let entradasSaidas = getEntradasSaidasPorCaixa();
+        
+        let gridHtml = '';
+        if (caixas.length === 0) {
+            gridHtml = '<div class="empty-state" style="grid-column:1/-1;">Nenhum caixa cadastrado</div>';
+        } else {
+            caixas.forEach(c => {
+                let ent = entradasSaidas[c]?.entradas || 0;
+                let sai = entradasSaidas[c]?.saidas || 0;
+                let saldo = saldos[c] || 0;
+                let saldoCls = saldo > 0 ? 'positive' : saldo < 0 ? 'negative' : 'zero';
+                
+                gridHtml += `<div class="caixa-total-card">
+                    <span class="caixa-icon">🏦</span>
+                    <div class="caixa-nome">${escapeHtml(c)}</div>
+                    <div class="caixa-linha">
+                        <span class="label">📥 Entradas</span>
+                        <span class="value entrada">${formatMoney(ent)}</span>
+                    </div>
+                    <div class="caixa-linha">
+                        <span class="label">📤 Saídas</span>
+                        <span class="value saida">${formatMoney(sai)}</span>
+                    </div>
+                    <div class="caixa-divider"></div>
+                    <div class="caixa-linha">
+                        <span class="label" style="font-weight:700;">💰 Saldo</span>
+                        <span class="value saldo ${saldoCls}">${formatMoney(saldo)}</span>
+                    </div>
+                </div>`;
+            });
+        }
+        container.innerHTML = gridHtml + `
+            <div style="margin-top:16px; background:var(--bg-elevated); border-radius:12px; padding:14px; grid-column:1/-1;">
+                <h4 style="font-size:12px; margin-bottom:8px; font-weight:700; color:var(--text-secondary); text-transform:uppercase; letter-spacing:0.3px;">➕ Gerenciar</h4>
+                <div style="display:flex; gap:6px; margin-bottom:10px;">
+                    <input type="text" id="newCaixaName" class="auth-input" placeholder="Nome" style="margin:0; padding:10px; font-size:13px;">
+                    <button id="createCaixaBtn" style="background:var(--bg-elevated); border:1px solid var(--border); padding:8px 14px; border-radius:10px; cursor:pointer; font-weight:600; transition:var(--transition);">Criar</button>
+                </div>
+                <div id="caixaListManage" class="caixa-list"></div>
+            </div>
+        `;
+        
+        let htmlManage = caixas.map(c => {
+            let tem = transacoes.some(t => t.caixa === c);
+            return `<div class="caixa-item">
+                <span>${escapeHtml(c)}</span>
+                ${tem ? '<span style="color:var(--text-muted);font-size:12px;">🔒</span>' : 
+                `<button class="delete-caixa-btn" style="background:none;border:none;font-size:14px;cursor:pointer;color:var(--danger);" data-caixa="${escapeHtml(c)}">🗑️</button>`}
+            </div>`;
+        }).join('');
+        let manageContainer = container.querySelector('#caixaListManage');
+        if (manageContainer) {
+            manageContainer.innerHTML = htmlManage || '<div class="empty-state">Nenhum caixa</div>';
+            manageContainer.querySelectorAll('.delete-caixa-btn').forEach(b => b.onclick = () => {
+                const caixaNome = b.dataset.caixa;
+                pendingDeleteItem = { type: 'caixa', nome: caixaNome };
+                document.getElementById('passwordConfirmText').textContent = `Digite sua senha para excluir o caixa: "${caixaNome}"`;
+                verifyPasswordAndExecute(() => {
+                    if (pendingDeleteItem && pendingDeleteItem.type === 'caixa') {
+                        caixas = caixas.filter(c => c !== pendingDeleteItem.nome);
+                        pendingDeleteItem = null;
+                        atualizarSelectCaixas();
+                        refreshAll();
+                        const grid = document.getElementById('caixaTotalGrid');
+                        if (grid) renderCaixas(grid);
+                    }
+                });
+            });
+        }
+        
+        let createBtn = container.querySelector('#createCaixaBtn');
+        if (createBtn) {
+            createBtn.onclick = () => {
+                let input = document.getElementById('newCaixaName');
+                if (!input.value.trim()) return alert("❌ Digite um nome");
+                if (caixas.includes(input.value.trim())) return alert("❌ Já existe!");
+                caixas.push(input.value.trim());
+                saveCurrentUser();
+                atualizarSelectCaixas();
+                refreshAll();
+                const grid = document.getElementById('caixaTotalGrid');
+                if (grid) renderCaixas(grid);
+                input.value = '';
+            };
+        }
+    }
+
+    // ==================== CALCULADORA ====================
+    let calcState = {
+        currentInput: '0',
+        previousInput: '',
+        operation: null,
+        shouldResetInput: false,
+        expression: '',
+        history: []
+    };
+
+    function updateCalcDisplay() {
+        const resultEl = document.getElementById('calcResult');
+        const exprEl = document.getElementById('calcExpression');
+        if (!resultEl) return;
+        resultEl.textContent = calcState.currentInput;
+        resultEl.className = 'calc-result';
+        if (exprEl) exprEl.textContent = calcState.expression;
+    }
+
+    function renderHistory() {
+        const container = document.getElementById('calcHistoryList');
+        if (!container) return;
+        if (calcState.history.length === 0) {
+            container.innerHTML = '<div class="calc-history-empty">Nenhum cálculo realizado</div>';
+            return;
+        }
+        container.innerHTML = calcState.history.map((item) => 
+            `<div class="calc-history-item">
+                <span class="h-expr">${escapeHtml(item.expression)}</span>
+                <span class="h-result">${escapeHtml(item.result)}</span>
+            </div>`
+        ).join('');
+        const historyContainer = document.getElementById('calcHistory');
+        if (historyContainer) historyContainer.scrollTop = historyContainer.scrollHeight;
+    }
+
+    function handleCalcAction(action) {
+        const num = parseFloat(calcState.currentInput);
+        
+        switch(action) {
+            case 'clear':
+                calcState.currentInput = '0';
+                calcState.previousInput = '';
+                calcState.operation = null;
+                calcState.shouldResetInput = false;
+                calcState.expression = '';
+                updateCalcDisplay();
+                return;
+            case 'sign':
+                if (calcState.currentInput !== '0') {
+                    if (calcState.currentInput.startsWith('-')) {
+                        calcState.currentInput = calcState.currentInput.slice(1);
+                    } else {
+                        calcState.currentInput = '-' + calcState.currentInput;
+                    }
+                }
+                updateCalcDisplay();
+                return;
+            case 'percent':
+                const percent = num / 100;
+                calcState.currentInput = String(percent);
+                updateCalcDisplay();
+                return;
+            case 'equals':
+                if (calcState.operation && calcState.previousInput) {
+                    const prev = parseFloat(calcState.previousInput);
+                    let result;
+                    const opSymbols = { add: '+', subtract: '−', multiply: '×', divide: '÷' };
+                    const expr = `${calcState.previousInput} ${opSymbols[calcState.operation]} ${calcState.currentInput}`;
+                    switch(calcState.operation) {
+                        case 'add': result = prev + num; break;
+                        case 'subtract': result = prev - num; break;
+                        case 'multiply': result = prev * num; break;
+                        case 'divide': 
+                            if (num === 0) {
+                                document.getElementById('calcResult').className = 'calc-result error';
+                                document.getElementById('calcResult').textContent = 'Erro';
+                                return;
+                            }
+                            result = prev / num; 
+                            break;
+                    }
+                    const resultStr = String(result);
+                    calcState.history.push({ expression: expr, result: resultStr });
+                    if (calcState.history.length > 50) calcState.history.shift();
+                    renderHistory();
+                    calcState.expression = expr + ' =';
+                    calcState.currentInput = resultStr;
+                    calcState.previousInput = '';
+                    calcState.operation = null;
+                    calcState.shouldResetInput = true;
+                    updateCalcDisplay();
+                }
+                return;
+            default:
+                if (['add', 'subtract', 'multiply', 'divide'].includes(action)) {
+                    if (calcState.operation && !calcState.shouldResetInput) {
+                        const prev = parseFloat(calcState.previousInput);
+                        let result;
+                        const opSymbols = { add: '+', subtract: '−', multiply: '×', divide: '÷' };
+                        switch(calcState.operation) {
+                            case 'add': result = prev + num; break;
+                            case 'subtract': result = prev - num; break;
+                            case 'multiply': result = prev * num; break;
+                            case 'divide': 
+                                if (num === 0) {
+                                    document.getElementById('calcResult').className = 'calc-result error';
+                                    document.getElementById('calcResult').textContent = 'Erro';
+                                    return;
+                                }
+                                result = prev / num; 
+                                break;
+                        }
+                        const expr = `${calcState.previousInput} ${opSymbols[calcState.operation]} ${calcState.currentInput}`;
+                        calcState.history.push({ expression: expr, result: String(result) });
+                        if (calcState.history.length > 50) calcState.history.shift();
+                        renderHistory();
+                        calcState.currentInput = String(result);
+                        calcState.expression = String(result);
+                    } else {
+                        calcState.expression = calcState.currentInput;
+                    }
+                    const opSymbols = { add: '+', subtract: '−', multiply: '×', divide: '÷' };
+                    calcState.expression += ' ' + opSymbols[action] + ' ';
+                    calcState.previousInput = calcState.currentInput;
+                    calcState.operation = action;
+                    calcState.shouldResetInput = true;
+                    updateCalcDisplay();
+                    return;
+                }
+                
+                if (action === 'decimal') {
+                    if (calcState.shouldResetInput) {
+                        calcState.currentInput = '0.';
+                        calcState.shouldResetInput = false;
+                    } else if (!calcState.currentInput.includes('.')) {
+                        calcState.currentInput += '.';
+                    }
+                    updateCalcDisplay();
+                    return;
+                }
+                
+                if (calcState.shouldResetInput) {
+                    calcState.currentInput = action;
+                    calcState.shouldResetInput = false;
+                } else {
+                    if (calcState.currentInput === '0' && action !== '0') {
+                        calcState.currentInput = action;
+                    } else if (calcState.currentInput !== '0') {
+                        calcState.currentInput += action;
+                    } else {
+                        calcState.currentInput = action;
+                    }
+                }
+                updateCalcDisplay();
+                return;
+        }
+    }
+
+    function initCalculator() {
+        document.querySelectorAll('#screenCalculator .calc-btn').forEach(btn => {
+            btn.removeEventListener('click', handleCalcClick);
+            btn.addEventListener('click', handleCalcClick);
+        });
+        
+        const display = document.getElementById('calcDisplay');
+        if (display) {
+            display.removeEventListener('click', copyCalcResult);
+            display.addEventListener('click', copyCalcResult);
+        }
+        
+        const clearBtn = document.getElementById('clearHistoryBtn');
+        if (clearBtn) {
+            clearBtn.removeEventListener('click', clearCalcHistory);
+            clearBtn.addEventListener('click', clearCalcHistory);
+        }
+        
+        updateCalcDisplay();
+        renderHistory();
+    }
+
+    function handleCalcClick(e) {
+        const action = this.dataset.action;
+        handleCalcAction(action);
+    }
+
+    function copyCalcResult() {
+        const result = document.getElementById('calcResult')?.textContent;
+        if (result && result !== '0' && result !== 'Erro') {
+            if (navigator.clipboard && navigator.clipboard.writeText) {
+                navigator.clipboard.writeText(result).then(() => {
+                    showCopyFeedback('✅ Resultado copiado!');
+                }).catch(() => {
+                    fallbackCopy(result);
+                });
+            } else {
+                fallbackCopy(result);
+            }
+        }
+    }
+
+    function clearCalcHistory() {
+        if (calcState.history.length === 0) return;
+        if (confirm('Limpar todo o histórico da calculadora?')) {
+            calcState.history = [];
+            renderHistory();
+        }
+    }
+
+    function showCopyFeedback(msg) {
+        const div = document.createElement('div');
+        div.className = 'pix-copy-feedback';
+        div.textContent = msg;
+        document.body.appendChild(div);
+        setTimeout(() => div.remove(), 1600);
+    }
+
+    function fallbackCopy(text) {
+        const textarea = document.createElement('textarea');
+        textarea.value = text;
+        textarea.style.position = 'fixed';
+        textarea.style.opacity = '0';
+        textarea.style.left = '-9999px';
+        document.body.appendChild(textarea);
+        textarea.select();
+        try {
+            document.execCommand('copy');
+            showCopyFeedback('✅ Copiado!');
+        } catch (e) {
+            alert('❌ Erro ao copiar.');
+        }
+        document.body.removeChild(textarea);
+    }
+
+    // ==================== REFRESH ====================
+    function refreshAll() {
+        let entradas = transacoes.filter(t=>t.tipo==='entrada').reduce((s,t)=>s+t.valor,0);
+        let saidas = transacoes.filter(t=>t.tipo==='saida').reduce((s,t)=>s+t.valor,0);
+        document.getElementById('mobileTotalEntradas').innerText = formatMoney(entradas);
+        document.getElementById('mobileTotalSaidas').innerText = formatMoney(saidas);
+        document.getElementById('mobileSaldo').innerText = formatMoney(entradas-saidas);
+        document.getElementById('movCountBadge').textContent = transacoes.length;
+        document.getElementById('jurosCountBadge').textContent = jurosAcumulados.length;
+        saveCurrentUser();
+        atualizarJurosFull();
+        
+        if (document.getElementById('screenMovements').classList.contains('active')) {
+            const list = document.getElementById('movementsList');
+            if (list) renderMovements(list);
+        }
+        if (document.getElementById('screenCaixas').classList.contains('active')) {
+            const grid = document.getElementById('caixaTotalGrid');
+            if (grid) renderCaixas(grid);
+        }
+        if (document.getElementById('screenJuros').classList.contains('active')) {
+            renderJurosLista();
+        }
+    }
+
+    function deleteTransacaoComSenha(id){
+        const t = transacoes.find(x => x.id == id);
+        if (!t) return;
+        pendingDeleteItem = { type: 'transaction', id: id };
+        document.getElementById('passwordConfirmText').textContent = `Digite sua senha para excluir: "${t.descricao}" (${formatMoney(t.valor)})`;
+        verifyPasswordAndExecute(() => {
+            if (pendingDeleteItem && pendingDeleteItem.type === 'transaction') {
+                transacoes = transacoes.filter(item => item.id != pendingDeleteItem.id);
+                pendingDeleteItem = null;
+                refreshAll();
+            }
+        });
+    }
+
+    function openEditModal(id){ 
+        let t=transacoes.find(x=>x.id==id); 
+        if(!t)return; 
+        document.getElementById('editId').value=t.id; 
+        document.getElementById('editDesc').value=t.descricao; 
+        document.getElementById('editValor').value=t.valor.toFixed(2); 
+        document.getElementById('editData').value=t.data; 
+        document.getElementById('editTipo').value=t.tipo; 
+        let sel=document.getElementById('editCaixa'); 
+        sel.innerHTML=caixas.map(c=>`<option value="${escapeHtml(c)}" ${c===t.caixa?'selected':''}>${escapeHtml(c)}</option>`).join(''); 
+        document.getElementById('editModal').classList.add('active'); 
+    }
+
+    function saveEdit(){
+        let id=document.getElementById('editId').value;
+        let idx=transacoes.findIndex(t=>t.id==id);
+        if(idx===-1)return;
+        let desc=document.getElementById('editDesc').value.trim();
+        let valRaw=document.getElementById('editValor').value.trim();
+        let caixa=document.getElementById('editCaixa').value;
+        let data=document.getElementById('editData').value;
+        let tipo=document.getElementById('editTipo').value;
+        if(!desc)return alert("❌ Descrição obrigatória");
+        let val=parseMoney(valRaw);
+        if(val===null)return alert("❌ Valor inválido!");
+        if(!data)data=new Date().toISOString().slice(0,10);
+        transacoes[idx]={...transacoes[idx], descricao:desc, valor:val, caixa, data, tipo};
+        document.getElementById('editModal').classList.remove('active');
+        refreshAll();
+    }
+
+    let tipoSelecionadoMobile = 'entrada';
+    function addTransacao(){
+        let desc=document.getElementById('mobileDesc').value.trim();
+        let valRaw=document.getElementById('mobileValor').value.trim();
+        let caixa=document.getElementById('mobileCaixa').value;
+        let data=document.getElementById('mobileData').value;
+        if(!desc)return alert("❌ Descrição obrigatória");
+        let val=parseMoney(valRaw);
+        if(val===null)return alert("❌ Valor inválido!");
+        if(!data)data=new Date().toISOString().slice(0,10);
+        transacoes.push({ id:Date.now()+Math.random(), tipo:tipoSelecionadoMobile, descricao:desc, caixa, valor:val, data });
+        document.getElementById('mobileDesc').value='';
+        document.getElementById('mobileValor').value='';
+        refreshAll();
+        alert(`✅ Movimentação adicionada!`);
+        showMainMenu();
+    }
+
+    function limparTodasTransacoes() {
+        if (transacoes.length === 0) {
+            alert('⚠️ Não há transações para limpar!');
+            return;
+        }
+        pendingDeleteItem = { type: 'clear_all' };
+        document.getElementById('passwordConfirmText').textContent = '⚠️ Digite sua senha para limpar TODAS as transações';
+        verifyPasswordAndExecute(() => {
+            if (pendingDeleteItem && pendingDeleteItem.type === 'clear_all') {
+                transacoes = [];
+                pendingDeleteItem = null;
+                refreshAll();
+                alert('✅ Todas as transações foram removidas!');
+            }
+        });
+    }
+
+    function toggleHideValues(){ 
+        document.body.classList.toggle('value-hidden'); 
+        localStorage.setItem('hideValuesPreference',document.body.classList.contains('value-hidden')); 
+        document.getElementById('hideValuesBtn').innerHTML=document.body.classList.contains('value-hidden')?'🔓':'🔒'; 
+    }
+
+    function toggleTheme(){ 
+        document.body.classList.toggle('dark-theme'); 
+        localStorage.setItem('themePreference',document.body.classList.contains('dark-theme')?'dark':'light'); 
+    }
+
+    function logout(){ 
+        if(confirm("Sair?")){ 
+            currentUser=null; 
+            document.getElementById('mainApp').style.display='none'; 
+            document.getElementById('loginScreen').style.display='flex'; 
+        } 
+    }
+
+    // ==================== PIX FUNCTIONS ====================
+    function openPixModal() {
+        document.getElementById('pixKeyInput').value = pixKey || '';
+        updatePixDisplay();
+        document.getElementById('pixModal').classList.add('active');
+    }
+
+    function updatePixDisplay() {
+        const display = document.getElementById('pixKeyText');
+        if (pixKey && pixKey.trim()) {
+            display.textContent = pixKey;
+            display.className = 'pix-key-text';
+        } else {
+            display.textContent = 'clique para definir';
+            display.className = 'pix-empty';
+        }
+    }
+
+    function copyPixKey() {
+        if (!pixKey || !pixKey.trim()) {
+            alert('❌ Nenhuma chave Pix cadastrada!');
+            return;
+        }
+        if (navigator.clipboard && navigator.clipboard.writeText) {
+            navigator.clipboard.writeText(pixKey).then(() => {
+                showCopyFeedback('✅ Chave Pix copiada!');
+            }).catch(() => {
+                fallbackCopy(pixKey);
+            });
+        } else {
+            fallbackCopy(pixKey);
+        }
+    }
+
+    function savePixKey() {
+        const key = document.getElementById('pixKeyInput').value.trim();
+        if (key) {
+            pixKey = key;
+            saveCurrentUser();
+            updatePixDisplay();
+            alert('✅ Chave Pix salva!');
+            document.getElementById('pixModal').classList.remove('active');
+        } else {
+            if (confirm('⚠️ Deseja remover a chave Pix?')) {
+                pixKey = '';
+                saveCurrentUser();
+                updatePixDisplay();
+                alert('✅ Chave Pix removida!');
+                document.getElementById('pixModal').classList.remove('active');
+            }
+        }
+    }
+
+    // ==================== EXPORTAR E IMPORTAR ====================
+    function exportarCodigo() {
+        const data = {
+            versao: '1.0',
+            usuario: currentUser,
+            dataExportacao: new Date().toISOString(),
+            transacoes: transacoes,
+            caixas: caixas,
+            pixKey: pixKey,
+            jurosAcumulados: jurosAcumulados
+        };
+        return JSON.stringify(data, null, 2);
+    }
+
+    function importarCodigo(json) {
+        try {
+            const data = JSON.parse(json);
+            if (!data.versao) throw new Error('Código não reconhecido.');
+            if (!data.transacoes || !Array.isArray(data.transacoes)) throw new Error('Dados inválidos: transações não encontradas');
+            if (!data.caixas || !Array.isArray(data.caixas)) throw new Error('Dados inválidos: caixas não encontrados');
+            
+            data.transacoes.forEach((t, index) => {
+                if (!t.id || !t.tipo || !t.descricao || !t.caixa || t.valor === undefined || !t.data) {
+                    throw new Error(`Transação ${index + 1} inválida: campos obrigatórios faltando`);
+                }
+                if (!['entrada', 'saida'].includes(t.tipo)) {
+                    throw new Error(`Tipo de transação ${index + 1} inválido: "${t.tipo}"`);
+                }
+                if (typeof t.valor !== 'number' || t.valor <= 0) {
+                    throw new Error(`Valor da transação ${index + 1} inválido: "${t.valor}"`);
+                }
+            });
+            
+            data.caixas.forEach((c, index) => {
+                if (!c || typeof c !== 'string' || !c.trim()) {
+                    throw new Error(`Caixa ${index + 1} inválido`);
+                }
+            });
+            
+            if (data.jurosAcumulados) {
+                data.jurosAcumulados.forEach((j, index) => {
+                    if (!j.id || !j.data || j.valorBase === undefined || j.taxa === undefined || j.valorJuros === undefined) {
+                        throw new Error(`Juros ${index + 1} inválido: campos obrigatórios faltando`);
+                    }
+                });
+            }
+            
+            const msg = `⚠️ Importar dados:\n\n📊 ${data.transacoes.length} transações\n🏦 ${data.caixas.length} caixas\n💳 ${data.pixKey ? 'Chave Pix definida' : 'Sem chave Pix'}\n📋 ${data.jurosAcumulados ? data.jurosAcumulados.length : 0} juros acumulados\n\nIsso substituirá todos os dados atuais. Continuar?`;
+            if (!confirm(msg)) return false;
+            
+            transacoes = data.transacoes;
+            caixas = data.caixas;
+            pixKey = data.pixKey || '';
+            jurosAcumulados = data.jurosAcumulados || [];
+            
+            saveCurrentUser();
+            atualizarSelectCaixas();
+            refreshAll();
+            alert(`✅ Dados importados com sucesso!\n\n📊 ${transacoes.length} transações carregadas\n🏦 ${caixas.length} caixas configurados\n📋 ${jurosAcumulados.length} juros acumulados`);
+            return true;
+        } catch (error) {
+            alert('❌ Erro ao importar:\n\n' + error.message);
+            return false;
+        }
+    }
+
+    function abrirModalExportar() {
+        const modal = document.getElementById('codeModal');
+        const title = document.getElementById('codeModalTitle');
+        const sub = document.getElementById('codeModalSub');
+        const textarea = document.getElementById('codeTextarea');
+        const actionBtn = document.getElementById('codeModalAction');
+        const cancelBtn = document.getElementById('codeModalCancel');
+        
+        title.textContent = '📤 Exportar Código';
+        sub.textContent = '📋 Copie o código abaixo para fazer backup dos seus dados';
+        textarea.value = exportarCodigo();
+        textarea.readOnly = true;
+        textarea.style.height = 'auto';
+        textarea.style.height = Math.min(textarea.scrollHeight, 350) + 'px';
+        actionBtn.textContent = '📋 Copiar';
+        actionBtn.className = 'btn-primary';
+        
+        actionBtn.onclick = () => {
+            if (navigator.clipboard && navigator.clipboard.writeText) {
+                navigator.clipboard.writeText(textarea.value).then(() => {
+                    alert('✅ Código copiado para a área de transferência!');
+                    modal.classList.remove('active');
+                }).catch(() => {
+                    textarea.select();
+                    document.execCommand('copy');
+                    alert('✅ Código copiado para a área de transferência!');
+                    modal.classList.remove('active');
+                });
+            } else {
+                textarea.select();
+                document.execCommand('copy');
+                alert('✅ Código copiado para a área de transferência!');
+                modal.classList.remove('active');
+            }
+        };
+        
+        cancelBtn.onclick = () => modal.classList.remove('active');
+        modal.classList.add('active');
+    }
+
+    function abrirModalImportar() {
+        const modal = document.getElementById('codeModal');
+        const title = document.getElementById('codeModalTitle');
+        const sub = document.getElementById('codeModalSub');
+        const textarea = document.getElementById('codeTextarea');
+        const actionBtn = document.getElementById('codeModalAction');
+        const cancelBtn = document.getElementById('codeModalCancel');
+        
+        title.textContent = '📥 Importar Código';
+        sub.textContent = '📝 Cole o código gerado pela exportação para restaurar seus dados';
+        textarea.value = '';
+        textarea.readOnly = false;
+        textarea.placeholder = 'Cole aqui o código de backup...';
+        textarea.style.height = '200px';
+        actionBtn.textContent = '📥 Importar';
+        actionBtn.className = 'btn-primary';
+        
+        actionBtn.onclick = () => {
+            const code = textarea.value.trim();
+            if (!code) {
+                alert('❌ Por favor, cole o código para importar!');
+                textarea.focus();
+                return;
+            }
+            try { JSON.parse(code); } catch (e) {
+                alert('❌ Código inválido!\n\nCertifique-se de que o código é um JSON válido gerado pela exportação.');
+                textarea.focus();
+                textarea.select();
+                return;
+            }
+            if (importarCodigo(code)) {
+                modal.classList.remove('active');
+            }
+        };
+        
+        cancelBtn.onclick = () => modal.classList.remove('active');
+        modal.classList.add('active');
+        setTimeout(() => textarea.focus(), 100);
+    }
+
+    // ==================== EVENTOS ====================
+    document.addEventListener('DOMContentLoaded', function() {
+        // ===== SUPORTE AO BOTÃO VOLTAR DO CELULAR =====
+        window.addEventListener('popstate', function(e) {
+            if (currentScreen !== 'main') {
+                e.preventDefault();
+                goBack();
+                history.pushState({ screen: currentScreen }, '');
+            }
+        });
+
+        let startX = 0;
+        let startY = 0;
+        document.addEventListener('touchstart', function(e) {
+            startX = e.touches[0].clientX;
+            startY = e.touches[0].clientY;
+        });
+        document.addEventListener('touchend', function(e) {
+            const endX = e.changedTouches[0].clientX;
+            const endY = e.changedTouches[0].clientY;
+            const diffX = endX - startX;
+            const diffY = endY - startY;
+            if (diffX > 80 && Math.abs(diffY) < 100 && currentScreen !== 'main') {
+                goBack();
+            }
+        });
+
+        history.pushState({ screen: 'main' }, '');
+
+        // Login/Register
+        document.getElementById('loginBtn').onclick = () => { 
+            try { 
+                loginUser(document.getElementById('loginNome').value.trim(), document.getElementById('loginSenha').value); 
+                document.getElementById('loginScreen').style.display='none'; 
+                document.getElementById('mainApp').style.display='block'; 
+                document.getElementById('userNameDisplay').innerText=currentUser; 
+                atualizarSelectCaixas(); 
+                refreshAll(); 
+                if(localStorage.getItem('themePreference')==='dark')document.body.classList.add('dark-theme'); 
+                if(localStorage.getItem('hideValuesPreference')==='true')document.body.classList.add('value-hidden'); 
+                document.getElementById('hideValuesBtn').innerHTML=document.body.classList.contains('value-hidden')?'🔓':'🔒';
+                updatePixDisplay();
+                showMainMenu();
+            } catch(e){ 
+                document.getElementById('loginErrorMsg').innerText=e.message; 
+            } 
+        };
+        document.getElementById('registerBtn').onclick = () => { 
+            try { 
+                registerUser(document.getElementById('regNome').value.trim(), document.getElementById('regSenha').value); 
+                alert("Conta criada!"); 
+                document.getElementById('regScreen').style.display='none'; 
+                document.getElementById('loginScreen').style.display='flex'; 
+            } catch(e){ 
+                document.getElementById('regErrorMsg').innerText=e.message; 
+            } 
+        };
+        document.getElementById('showRegLink').onclick = () => { document.getElementById('loginScreen').style.display='none'; document.getElementById('regScreen').style.display='flex'; };
+        document.getElementById('showLoginLink').onclick = () => { document.getElementById('regScreen').style.display='none'; document.getElementById('loginScreen').style.display='flex'; };
+        
+        // Menu Cards
+        document.querySelectorAll('.menu-card').forEach(card => {
+            card.onclick = () => {
+                const screen = card.dataset.screen;
+                showScreen(screen);
+                history.pushState({ screen: screen }, '');
+            };
+        });
+        
+        document.getElementById('logoArea').onclick = goBack;
+        document.getElementById('backButton').onclick = goBack;
+        
+        // Menu Dropdown
+        document.getElementById('menuBtn').onclick = (e) => { e.stopPropagation(); document.getElementById('menuContent').classList.toggle('show-menu'); };
+        document.addEventListener('click', () => document.getElementById('menuContent').classList.remove('show-menu'));
+        document.getElementById('menuTheme').onclick = toggleTheme;
+        document.getElementById('menuLogout').onclick = logout;
+        document.getElementById('menuClearAll').onclick = limparTodasTransacoes;
+        document.getElementById('menuDeleteAccount').onclick = () => document.getElementById('deleteAccountModal').classList.add('active');
+        document.getElementById('menuPix').onclick = openPixModal;
+        document.getElementById('hideValuesBtn').onclick = toggleHideValues;
+        
+        // Export/Import
+        document.getElementById('menuExportCode').onclick = () => {
+            document.getElementById('menuContent').classList.remove('show-menu');
+            abrirModalExportar();
+        };
+        document.getElementById('menuImportCode').onclick = () => {
+            document.getElementById('menuContent').classList.remove('show-menu');
+            abrirModalImportar();
+        };
+        
+        // Edit Modal
+        document.getElementById('saveEditBtn').onclick = saveEdit;
+        document.getElementById('cancelEditBtn').onclick = () => document.getElementById('editModal').classList.remove('active');
+        
+        // Delete Account
+        document.getElementById('confirmDeleteAccountBtn').onclick = () => { 
+            let pwd=document.getElementById('deleteConfirmPassword').value; 
+            let u=loadUsers(); 
+            if(!u[currentUser]||u[currentUser].senha!==pwd){ alert("Senha incorreta!"); return; } 
+            delete u[currentUser]; 
+            saveUsers(u); 
+            alert("Conta excluída!"); 
+            document.getElementById('deleteAccountModal').classList.remove('active'); 
+            logout(); 
+        };
+        document.getElementById('cancelDeleteAccountBtn').onclick = () => document.getElementById('deleteAccountModal').classList.remove('active');
+        
+        // Force Update
+        document.getElementById('forceUpdateBtn').onclick = () => { 
+            let np=document.getElementById('forceNewPassword').value; 
+            let cp=document.getElementById('forceConfirmPassword').value; 
+            if(!np||!cp)return document.getElementById('forceErrorMsg').innerText="Preencha todos!"; 
+            if(np!==cp)return document.getElementById('forceErrorMsg').innerText="Senhas não coincidem!"; 
+            if(!isStrongPassword(np))return document.getElementById('forceErrorMsg').innerText="Senha fraca!"; 
+            let u=loadUsers(); 
+            u[currentUser].senha=np; 
+            saveUsers(u); 
+            document.getElementById('forceUpdateModal').style.display='none'; 
+            document.getElementById('mainApp').style.display='block'; 
+            refreshAll(); 
+            alert("✅ Senha atualizada!"); 
+        };
+        
+        // Adicionar Transação
+        document.querySelectorAll('#screenAdd .tipo-btn').forEach(b=>b.onclick=function(){
+            document.querySelectorAll('#screenAdd .tipo-btn').forEach(x=>x.classList.remove('active'));
+            this.classList.add('active');
+            tipoSelecionadoMobile = this.dataset.tipoMobile;
+        });
+        document.getElementById('mobileAddTransacao').onclick = addTransacao;
+        document.getElementById('mobileAddCaixaBtn').onclick = () => {
+            let n = prompt("Nome do novo caixa:");
+            if (n && n.trim()) {
+                if (caixas.includes(n.trim())) return alert("❌ Já existe!");
+                caixas.push(n.trim());
+                saveCurrentUser();
+                atualizarSelectCaixas();
+                refreshAll();
+                alert(`✅ Caixa "${n.trim()}" criado!`);
+            }
+        };
+        
+        // Filtro Extrato
+        document.getElementById('filtroTipoMobile').onchange = () => {
+            const list = document.getElementById('movementsList');
+            if (list) renderMovements(list);
+        };
+        
+        // PIX
+        document.getElementById('pixKeyDisplay').addEventListener('click', copyPixKey);
+        document.getElementById('savePixBtn').onclick = savePixKey;
+        document.getElementById('cancelPixBtn').onclick = () => document.getElementById('pixModal').classList.remove('active');
+        document.getElementById('pixModal').addEventListener('click', function(e) {
+            if (e.target === this) this.classList.remove('active');
+        });
+        
+        // Code Modal close
+        document.getElementById('codeModalCancel').onclick = () => document.getElementById('codeModal').classList.remove('active');
+        document.getElementById('codeModal').addEventListener('click', (e) => {
+            if (e.target === document.getElementById('codeModal')) {
+                document.getElementById('codeModal').classList.remove('active');
+            }
+        });
+
+        // ===== JUROS: EVENTOS DA TELA COMPLETA =====
+        document.getElementById('jurosCalcularBtnFull').addEventListener('click', calcularJurosPersonalizadoFull);
+        
+        // Ao digitar no campo manual, limpa o select (opcional)
+        document.getElementById('jurosTaxaManual').addEventListener('input', function() {
+            if (this.value && this.value.trim() !== '') {
+                // Não força nada, apenas permite que o valor manual seja usado
+            }
+        });
+        
+        updatePixDisplay();
+        atualizarJurosFull();
+        renderJurosLista();
+    });
+</script>
+</body>
+</html>
