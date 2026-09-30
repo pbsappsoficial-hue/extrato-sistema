@@ -28,7 +28,6 @@
         .auth-screen { position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: var(--bg-page); display: flex; align-items: center; justify-content: center; z-index: 1000; padding: 20px; }
         .auth-card { background: var(--bg-card); border-radius: 24px; padding: 32px 24px; width: 100%; max-width: 340px; box-shadow: var(--shadow); border: 1px solid var(--border); }
         .auth-card .auth-logo { text-align: center; margin-bottom: 12px; }
-        .auth-card .auth-logo img { width: 64px; height: 64px; border-radius: 16px; object-fit: contain; background: var(--bg-elevated); padding: 4px; border: 2px solid var(--border); }
         .auth-card h2 { font-size: 24px; font-weight: 700; text-align: center; background: linear-gradient(135deg, #2ecc71, #3498db); -webkit-background-clip: text; background-clip: text; color: transparent; }
         .auth-card .sub { color: var(--text-secondary); margin-bottom: 24px; font-size: 14px; text-align: center; }
         .auth-input { width: 100%; padding: 14px 16px; margin-bottom: 12px; background: var(--bg-elevated); border: 1px solid var(--border); border-radius: 12px; color: var(--text-primary); font-size: 15px; transition: var(--transition); }
@@ -292,6 +291,23 @@
             text-align: center;
         }
 
+        /* Preview do cálculo de juros */
+        #jurosResultadoPreview {
+            animation: fadeIn 0.3s ease;
+        }
+        #jurosSalvarBtnFull {
+            background: var(--success) !important;
+        }
+        #jurosSalvarBtnFull:hover {
+            box-shadow: 0 4px 16px rgba(46,204,113,0.3) !important;
+        }
+        #jurosCancelarBtnFull {
+            background: var(--text-muted) !important;
+        }
+        #jurosCancelarBtnFull:hover {
+            box-shadow: 0 4px 16px rgba(142,142,160,0.3) !important;
+        }
+
         /* ===== LISTA DE JUROS ACUMULADOS ===== */
         .juros-acumulados {
             margin-top: 16px;
@@ -330,6 +346,8 @@
             display: flex;
             flex-direction: column;
             gap: 2px;
+            flex: 1;
+            min-width: 0;
         }
         .juros-item .juros-info .juros-desc {
             font-weight: 600;
@@ -338,15 +356,19 @@
         .juros-item .juros-info .juros-meta {
             font-size: 11px;
             color: var(--text-muted);
+            display: flex;
+            flex-wrap: wrap;
+            gap: 4px;
         }
         .juros-item .juros-info .juros-meta span {
-            margin-right: 10px;
+            margin-right: 6px;
         }
         .juros-item .juros-valor {
             font-weight: 700;
             font-size: 14px;
             color: var(--success);
             margin-right: 8px;
+            white-space: nowrap;
         }
         .juros-item .juros-delete {
             background: none;
@@ -1087,7 +1109,19 @@
                     <label>💰 Valor base para cálculo</label>
                     <input type="number" id="jurosValorBaseInputFull" placeholder="Ex: 1000" step="0.01" min="0">
                 </div>
-                <button id="jurosCalcularBtnFull">Calcular e Adicionar Juros</button>
+                
+                <!-- RESULTADO DO CÁLCULO (não salvo) -->
+                <div id="jurosResultadoPreview" style="display:none; background:var(--bg-elevated); border-radius:12px; padding:14px; margin-top:8px; border:2px dashed var(--warning); text-align:center;">
+                    <div style="font-size:11px; color:var(--text-muted); text-transform:uppercase; letter-spacing:0.5px; font-weight:700;">Resultado do cálculo</div>
+                    <div style="font-size:24px; font-weight:800; color:var(--warning); margin:4px 0;" id="jurosPreviewValor">R$ 0,00</div>
+                    <div style="font-size:12px; color:var(--text-secondary);" id="jurosPreviewDetalhe">—</div>
+                </div>
+
+                <div style="display:flex; gap:8px; margin-top:8px;">
+                    <button id="jurosCalcularBtnFull" style="flex:1;">🧮 Calcular</button>
+                    <button id="jurosSalvarBtnFull" style="flex:1; display:none; background:var(--success);">💾 Salvar Juros</button>
+                </div>
+                <button id="jurosCancelarBtnFull" style="display:none; background:var(--text-muted); margin-top:4px;">✖ Cancelar</button>
             </div>
 
             <!-- Lista de juros acumulados -->
@@ -1167,8 +1201,9 @@
     let currentScreen = 'main';
     let screenHistory = [];
     let jurosAcumulados = [];
+    let jurosPreview = null; // resultado temporário (não salvo)
 
-    // ==================== PARSE MONEY CORRIGIDO ====================
+    // ==================== PARSE MONEY ====================
     function parseMoney(v) { 
         if(!v) return null; 
         let str = String(v).trim().replace(/[^\d.,]/g, ''); 
@@ -1181,22 +1216,17 @@
             const lastComma = str.lastIndexOf(',');
             const lastDot = str.lastIndexOf('.');
             if(lastComma > lastDot) {
-                // Padrão BR: 1.234,56
                 str = str.replace(/\./g, '').replace(',', '.');
             } else {
-                // Padrão US: 1,234.56
                 str = str.replace(/,/g, '');
             }
         } else if(hasComma) {
-            // Só vírgula: decimal (padrão BR)
             str = str.replace(',', '.');
         } else if(hasDot) {
             const parts = str.split('.');
             if(parts.length > 2) {
-                // Múltiplos pontos = separador de milhar
                 str = str.replace(/\./g, '');
             }
-            // Um único ponto: trata como decimal (1.50 = 1,50)
         }
         
         let n = parseFloat(str); 
@@ -1272,6 +1302,7 @@
         } else if (screenId === 'calculator') {
             initCalculator();
         } else if (screenId === 'juros') {
+            cancelarJurosPreview();
             atualizarJurosFull();
             renderJurosLista();
         }
@@ -1311,6 +1342,7 @@
                 } else if (previousScreen === 'calculator') {
                     initCalculator();
                 } else if (previousScreen === 'juros') {
+                    cancelarJurosPreview();
                     atualizarJurosFull();
                     renderJurosLista();
                 }
@@ -1354,34 +1386,93 @@
         return taxa;
     }
 
-    function calcularJurosPersonalizadoFull() {
+    // PASSO 1: Apenas calcula e mostra o preview (NÃO salva)
+    function calcularJurosPreview() {
         const valorInput = document.getElementById('jurosValorBaseInputFull');
         const taxa = getTaxaFromInputs();
         const valorBase = parseFloat(valorInput.value.replace(',', '.'));
+        
         if (isNaN(taxa) || taxa < 0 || isNaN(valorBase) || valorBase < 0) {
             alert('❌ Por favor, preencha o valor base com um número válido e selecione ou digite uma taxa.');
             return;
         }
-        const valorJuros = valorBase + (valorBase * taxa / 100);
-        const jurosItem = {
-            id: Date.now() + Math.random(),
-            data: new Date().toISOString().slice(0,10),
+        
+        const valorFinal = valorBase + (valorBase * taxa / 100);
+        const apenasJuros = valorFinal - valorBase;
+        
+        // Guarda o preview em memória (não salva nada ainda)
+        jurosPreview = {
             valorBase: valorBase,
             taxa: taxa,
-            valorJuros: valorJuros,
+            valorJuros: valorFinal,
+            apenasJuros: apenasJuros,
             descricao: `Juros ${taxa.toFixed(1)}% sobre ${formatMoney(valorBase)}`
         };
-        jurosAcumulados.push(jurosItem);
+        
+        // Mostra o preview
+        const preview = document.getElementById('jurosResultadoPreview');
+        preview.style.display = 'block';
+        document.getElementById('jurosPreviewValor').textContent = formatMoney(valorFinal);
+        document.getElementById('jurosPreviewDetalhe').innerHTML = 
+            `Base: ${formatMoney(valorBase)} + Juros: ${formatMoney(apenasJuros)} (${taxa.toFixed(1)}%)`;
+        
+        // Mostra botões de salvar/cancelar
+        document.getElementById('jurosSalvarBtnFull').style.display = 'block';
+        document.getElementById('jurosCancelarBtnFull').style.display = 'block';
+        
+        // Scroll suave até o preview
+        preview.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    }
+
+    // PASSO 2: Salva o preview no histórico (com data e próximo rendimento em 30 dias)
+    function salvarJurosPreview() {
+        if (!jurosPreview) {
+            alert('❌ Nenhum cálculo para salvar. Clique em "Calcular" primeiro.');
+            return;
+        }
+        
+        const hoje = new Date();
+        const proximo = new Date(hoje);
+        proximo.setDate(proximo.getDate() + 30);
+        
+        const item = {
+            id: Date.now() + Math.random(),
+            data: hoje.toISOString().slice(0,10),
+            proximoRendimento: proximo.toISOString().slice(0,10),
+            valorBase: jurosPreview.valorBase,
+            taxa: jurosPreview.taxa,
+            valorJuros: jurosPreview.valorJuros,
+            apenasJuros: jurosPreview.apenasJuros,
+            descricao: jurosPreview.descricao
+        };
+        
+        jurosAcumulados.push(item);
         saveCurrentUser();
         
-        valorInput.value = '';
-        document.getElementById('jurosTaxaManual').value = '';
+        // Limpa o preview
+        cancelarJurosPreview();
         
+        // Atualiza telas
         renderJurosLista();
         atualizarJurosFull();
         document.getElementById('jurosCountBadge').textContent = jurosAcumulados.length;
         
-        alert(`✅ Juros adicionado!\n\nTaxa: ${taxa.toFixed(1)}%\nValor base: ${formatMoney(valorBase)}\nValor com juros: ${formatMoney(valorJuros)}`);
+        alert(`✅ Juros salvos!\n\n💵 Valor final: ${formatMoney(item.valorJuros)}\n📈 Apenas juros: ${formatMoney(item.apenasJuros)} (${item.taxa.toFixed(1)}%)\n📅 Próximo rendimento: ${formatDateBR(item.proximoRendimento)}`);
+    }
+
+    // Cancelar o preview (não salva)
+    function cancelarJurosPreview() {
+        jurosPreview = null;
+        const preview = document.getElementById('jurosResultadoPreview');
+        if (preview) preview.style.display = 'none';
+        const salvarBtn = document.getElementById('jurosSalvarBtnFull');
+        if (salvarBtn) salvarBtn.style.display = 'none';
+        const cancelarBtn = document.getElementById('jurosCancelarBtnFull');
+        if (cancelarBtn) cancelarBtn.style.display = 'none';
+        const valorInput = document.getElementById('jurosValorBaseInputFull');
+        if (valorInput) valorInput.value = '';
+        const manualInput = document.getElementById('jurosTaxaManual');
+        if (manualInput) manualInput.value = '';
     }
 
     function renderJurosLista() {
@@ -1391,7 +1482,19 @@
             container.innerHTML = '<div class="empty-state">Nenhum juros acumulado</div>';
             return;
         }
-        container.innerHTML = jurosAcumulados.map(item => {
+        // Ordena do mais recente para o mais antigo
+        const ordenados = [...jurosAcumulados].sort((a,b) => a.data < b.data ? 1 : -1);
+        
+        container.innerHTML = ordenados.map(item => {
+            const diasRestantes = item.proximoRendimento 
+                ? Math.ceil((new Date(item.proximoRendimento) - new Date()) / (1000*60*60*24))
+                : null;
+            const statusProximo = diasRestantes !== null 
+                ? (diasRestantes <= 0 
+                    ? '<span style="color:var(--success); font-weight:700;">✅ Rendimento disponível</span>' 
+                    : `<span style="color:var(--warning);">⏳ Faltam ${diasRestantes} dias</span>`)
+                : '';
+            
             return `<div class="juros-item">
                 <div class="juros-info">
                     <div class="juros-desc">${escapeHtml(item.descricao)}</div>
@@ -1399,7 +1502,9 @@
                         <span>📅 ${formatDateBR(item.data)}</span>
                         <span>📊 ${item.taxa.toFixed(1)}%</span>
                         <span>💰 Base: ${formatMoney(item.valorBase)}</span>
+                        ${item.proximoRendimento ? `<span>🔄 Próx: ${formatDateBR(item.proximoRendimento)}</span>` : ''}
                     </div>
+                    ${statusProximo ? `<div style="font-size:11px; margin-top:2px;">${statusProximo}</div>` : ''}
                 </div>
                 <div style="display:flex; align-items:center; gap:4px;">
                     <span class="juros-valor">${formatMoney(item.valorJuros)}</span>
@@ -1961,6 +2066,7 @@
 
     function updatePixDisplay() {
         const display = document.getElementById('pixKeyText');
+        if (!display) return;
         if (pixKey && pixKey.trim()) {
             display.textContent = pixKey;
             display.className = 'pix-key-text';
@@ -2305,12 +2411,10 @@
             }
         });
 
-        document.getElementById('jurosCalcularBtnFull').addEventListener('click', calcularJurosPersonalizadoFull);
-        
-        document.getElementById('jurosTaxaManual').addEventListener('input', function() {
-            if (this.value && this.value.trim() !== '') {
-            }
-        });
+        // ===== JUROS: eventos =====
+        document.getElementById('jurosCalcularBtnFull').addEventListener('click', calcularJurosPreview);
+        document.getElementById('jurosSalvarBtnFull').addEventListener('click', salvarJurosPreview);
+        document.getElementById('jurosCancelarBtnFull').addEventListener('click', cancelarJurosPreview);
         
         updatePixDisplay();
         atualizarJurosFull();
@@ -2318,4 +2422,4 @@
     });
 </script>
 </body>
-    </html>
+</html>
